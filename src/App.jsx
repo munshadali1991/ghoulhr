@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import { appTheme } from './theme/appTheme';
 import { DashboardPage } from './pages/DashboardPage';
+import { OrgAdminDashboard } from './pages/OrgAdminDashboard';
 import { LoginPage } from './pages/LoginPage';
 import { bootstrapSuperAdminRequest, loginRequest } from './services/authApi';
 import { clearSession, persistSession, readSession } from './utils/session';
@@ -20,6 +21,7 @@ function App() {
 
   const user = session?.user;
   const userName = useMemo(() => user?.email?.split('@')[0] || 'User', [user?.email]);
+  const userRole = user?.role;
 
   const handleChange = (field) => (event) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));
@@ -41,11 +43,18 @@ function App() {
         accessToken: authResult.accessToken,
         user: authResult.user,
       };
+      
+      // Save session first
       persistSession(nextSession);
       setSession(nextSession);
-      const redirectUrl = getTenantRedirectUrl(authResult?.user?.organizationSubdomain);
+      
+      // Get redirect URL with session data for cross-subdomain transfer
+      const redirectUrl = getTenantRedirectUrl(authResult?.user?.organizationSubdomain, nextSession);
+      
       if (redirectUrl) {
         window.location.assign(redirectUrl);
+      } else {
+        setLoading(false);
       }
     } catch (loginError) {
       if (mode === 'superadmin' && loginError.status === 401) {
@@ -55,19 +64,24 @@ function App() {
             accessToken: bootstrapResult.accessToken,
             user: bootstrapResult.user,
           };
+          
+          // Save session first
           persistSession(nextSession);
           setSession(nextSession);
-          const redirectUrl = getTenantRedirectUrl(bootstrapResult?.user?.organizationSubdomain);
+          
+          // Get redirect URL with session data for cross-subdomain transfer
+          const redirectUrl = getTenantRedirectUrl(bootstrapResult?.user?.organizationSubdomain, nextSession);
+          
           if (redirectUrl) {
             window.location.assign(redirectUrl);
+          } else {
+            setLoading(false);
           }
-          setLoading(false);
           return;
         } catch (bootstrapError) {
           setError(bootstrapError.message);
-          setLoading(false);
-          return;
         }
+        return;
       }
 
       setError(loginError.message);
@@ -81,19 +95,31 @@ function App() {
     setSession(null);
   };
 
+  const renderDashboard = () => {
+    const dashboardProps = {
+      accessToken: session?.accessToken,
+      user,
+      userName,
+      mobileDrawerOpen,
+      onOpenMobileDrawer: () => setMobileDrawerOpen(true),
+      onCloseMobileDrawer: () => setMobileDrawerOpen(false),
+      onLogout: handleLogout,
+    };
+
+    // Route to different dashboards based on user role
+    if (userRole === 'ORG_ADMIN') {
+      return <OrgAdminDashboard {...dashboardProps} />;
+    }
+
+    // Default to Super Admin dashboard for SUPER_ADMIN and other roles
+    return <DashboardPage {...dashboardProps} />;
+  };
+
   return (
     <ThemeProvider theme={appTheme}>
       <CssBaseline />
       {session?.accessToken ? (
-        <DashboardPage
-          accessToken={session?.accessToken}
-          user={user}
-          userName={userName}
-          mobileDrawerOpen={mobileDrawerOpen}
-          onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
-          onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
-          onLogout={handleLogout}
-        />
+        renderDashboard()
       ) : (
         <LoginPage
           mode={mode}

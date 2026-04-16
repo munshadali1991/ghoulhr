@@ -1,4 +1,4 @@
-export function getTenantRedirectUrl(organizationSubdomain) {
+export function getTenantRedirectUrl(organizationSubdomain, sessionData = null) {
   if (!organizationSubdomain || typeof window === 'undefined') {
     return null;
   }
@@ -11,24 +11,35 @@ export function getTenantRedirectUrl(organizationSubdomain) {
 
   const portPart = port ? `:${port}` : '';
   const isLocalHost = hostname === 'localhost' || hostname.endsWith('.localhost');
+  
+  let targetHost;
   if (isLocalHost) {
-    const targetHost = `${organizationSubdomain}.localhost`;
+    targetHost = `${organizationSubdomain}.localhost`;
     if (hostname === targetHost) {
       return null;
     }
-    return `${protocol}//${targetHost}${portPart}`;
+  } else {
+    const hostParts = hostname.split('.');
+    if (hostParts.length < 2) {
+      return null;
+    }
+    const rootDomain = hostParts.slice(-2).join('.');
+    targetHost = `${organizationSubdomain}.${rootDomain}`;
+    if (hostname === targetHost) {
+      return null;
+    }
   }
 
-  const hostParts = hostname.split('.');
-  if (hostParts.length < 2) {
-    return null;
+  // If session data is provided, encode it in URL for cross-subdomain transfer
+  let url = `${protocol}//${targetHost}${portPart}`;
+  if (sessionData) {
+    try {
+      const encodedSession = btoa(JSON.stringify(sessionData));
+      url += `?session=${encodedSession}`;
+    } catch (error) {
+      console.error('Failed to encode session data:', error);
+    }
   }
-
-  const rootDomain = hostParts.slice(-2).join('.');
-  const targetHost = `${organizationSubdomain}.${rootDomain}`;
-  if (hostname === targetHost) {
-    return null;
-  }
-
-  return `${protocol}//${targetHost}${portPart}`;
+  
+  return url;
 }
