@@ -132,6 +132,12 @@ export function OrganizationFormPage({ accessToken, onSaved }) {
         createdAt: _createdAt,
         updatedAt: _updatedAt,
         deletedAt: _deletedAt,
+        dbName: _dbName,
+        dbHost: _dbHost,
+        dbUser: _dbUser,
+        dbPassword: _dbPassword,
+        orgPort: _orgPort,
+        org_port: _org_port,
         ...rest
       } = form;
 

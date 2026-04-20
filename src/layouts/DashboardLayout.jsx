@@ -18,6 +18,7 @@ export function DashboardLayout({
   const location = useLocation();
   const navigate = useNavigate();
   const userName = user?.email?.split('@')[0] || 'User';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   const computedNavItems = (navItems ?? []).map((item) => ({
     ...item,
@@ -64,7 +65,7 @@ export function DashboardLayout({
                 Welcome back, {userName}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Superadmin control center.
+                {isSuperAdmin ? 'Superadmin control center.' : 'Organization workspace.'}
               </Typography>
             </Box>
             <Button color="inherit" startIcon={<LogoutRoundedIcon />} onClick={onLogout}>

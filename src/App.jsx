@@ -8,6 +8,7 @@ import { clearSession, persistSession, readSession } from './utils/session';
 import { getTenantRedirectUrl } from './utils/tenant';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { OverviewPage } from './pages/OverviewPage';
+import { OrgDashboardPage } from './pages/OrgDashboardPage';
 import { OrganizationsPage } from './pages/OrganizationsPage';
 import { OrganizationFormPage } from './pages/OrganizationFormPage';
 import {
@@ -30,6 +31,7 @@ function App() {
   });
 
   const user = session?.user;
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const userName = useMemo(() => user?.email?.split('@')[0] || 'User', [user?.email]);
   const [organizations, setOrganizations] = useState([]);
   const [deletedOrganizations, setDeletedOrganizations] = useState([]);
@@ -68,9 +70,11 @@ function App() {
       persistSession(nextSession);
       setSession(nextSession);
       
-      // Get redirect URL with session data for cross-subdomain transfer
-      const redirectUrl = getTenantRedirectUrl(authResult?.user?.organizationSubdomain, nextSession);
-      
+      const shouldRedirectToTenant = authResult?.user?.role !== 'SUPER_ADMIN';
+      const redirectUrl = shouldRedirectToTenant
+        ? getTenantRedirectUrl(authResult?.user?.organizationSubdomain, nextSession)
+        : null;
+
       if (redirectUrl) {
         window.location.assign(redirectUrl);
       } else {
@@ -89,9 +93,11 @@ function App() {
           persistSession(nextSession);
           setSession(nextSession);
           
-          // Get redirect URL with session data for cross-subdomain transfer
-          const redirectUrl = getTenantRedirectUrl(bootstrapResult?.user?.organizationSubdomain, nextSession);
-          
+          const shouldRedirectToTenant = bootstrapResult?.user?.role !== 'SUPER_ADMIN';
+          const redirectUrl = shouldRedirectToTenant
+            ? getTenantRedirectUrl(bootstrapResult?.user?.organizationSubdomain, nextSession)
+            : null;
+
           if (redirectUrl) {
             window.location.assign(redirectUrl);
           } else {
@@ -183,13 +189,15 @@ function App() {
     <ThemeProvider theme={appTheme}>
       <CssBaseline />
       <BrowserRouter>
-        {session?.accessToken ? (
+        {session?.accessToken && isSuperAdmin ? (
           <DashboardLayout
             user={user}
-            navItems={[
-              { label: 'Dashboard', path: '/dashboard' },
-              { label: 'Organizations', path: '/organizations' },
-            ]}
+            navItems={
+              [
+                { label: 'Dashboard', path: '/dashboard' },
+                { label: 'Organizations', path: '/organizations' },
+              ]
+            }
             mobileDrawerOpen={mobileDrawerOpen}
             onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
             onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
@@ -242,6 +250,16 @@ function App() {
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </DashboardLayout>
+        ) : session?.accessToken ? (
+          <OrgDashboardPage
+            accessToken={session?.accessToken}
+            user={user}
+            userName={userName}
+            mobileDrawerOpen={mobileDrawerOpen}
+            onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
+            onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
+            onLogout={handleLogout}
+          />
         ) : (
           <Routes>
             <Route
