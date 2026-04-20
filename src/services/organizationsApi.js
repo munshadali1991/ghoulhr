@@ -63,6 +63,10 @@ export function restoreOrganization(accessToken, organizationId) {
   });
 }
 
+export function getOrganizationById(accessToken, organizationId) {
+  return authorizedRequest(`/organizations/id/${organizationId}`, accessToken);
+}
+
 export function getSuperAdminDashboardStats(accessToken) {
   return authorizedRequest('/organizations/stats', accessToken);
 }

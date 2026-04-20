@@ -1,12 +1,22 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CssBaseline, ThemeProvider } from '@mui/material';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { appTheme } from './theme/appTheme';
-import { DashboardPage } from './pages/DashboardPage';
-import { OrgAdminDashboard } from './pages/OrgAdminDashboard';
 import { LoginPage } from './pages/LoginPage';
 import { bootstrapSuperAdminRequest, loginRequest } from './services/authApi';
 import { clearSession, persistSession, readSession } from './utils/session';
 import { getTenantRedirectUrl } from './utils/tenant';
+import { DashboardLayout } from './layouts/DashboardLayout';
+import { OverviewPage } from './pages/OverviewPage';
+import { OrganizationsPage } from './pages/OrganizationsPage';
+import { OrganizationFormPage } from './pages/OrganizationFormPage';
+import {
+  listDeletedOrganizations,
+  listOrganizations,
+  getSuperAdminDashboardStats,
+  deleteOrganization,
+  restoreOrganization,
+} from './services/organizationsApi';
 
 function App() {
   const [session, setSession] = useState(() => readSession());
@@ -21,7 +31,17 @@ function App() {
 
   const user = session?.user;
   const userName = useMemo(() => user?.email?.split('@')[0] || 'User', [user?.email]);
-  const userRole = user?.role;
+  const [organizations, setOrganizations] = useState([]);
+  const [deletedOrganizations, setDeletedOrganizations] = useState([]);
+  const [stats, setStats] = useState({
+    totalOrganizations: 0,
+    totalUsers: 0,
+    totalRevenue: 0,
+    organizationGrowth: [],
+  });
+  const [orgLoading, setOrgLoading] = useState(true);
+  const [orgError, setOrgError] = useState('');
+  const [orgSearch, setOrgSearch] = useState('');
 
   const handleChange = (field) => (event) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));
@@ -95,42 +115,153 @@ function App() {
     setSession(null);
   };
 
-  const renderDashboard = () => {
-    const dashboardProps = {
-      accessToken: session?.accessToken,
-      user,
-      userName,
-      mobileDrawerOpen,
-      onOpenMobileDrawer: () => setMobileDrawerOpen(true),
-      onCloseMobileDrawer: () => setMobileDrawerOpen(false),
-      onLogout: handleLogout,
-    };
-
-    // Route to different dashboards based on user role
-    if (userRole === 'ORG_ADMIN') {
-      return <OrgAdminDashboard {...dashboardProps} />;
+  const loadOrganizationsAndStats = async () => {
+    if (!session?.accessToken || user?.role !== 'SUPER_ADMIN') {
+      setOrgLoading(false);
+      return;
     }
+    setOrgError('');
+    setOrgLoading(true);
+    try {
+      const [orgs, deleted, statsResponse] = await Promise.all([
+        listOrganizations(session.accessToken),
+        listDeletedOrganizations(session.accessToken),
+        getSuperAdminDashboardStats(session.accessToken),
+      ]);
+      setOrganizations(Array.isArray(orgs) ? orgs : []);
+      setDeletedOrganizations(Array.isArray(deleted) ? deleted : []);
+      if (statsResponse) {
+        setStats(statsResponse);
+      }
+    } catch (err) {
+      setOrgError(err.message);
+    } finally {
+      setOrgLoading(false);
+    }
+  };
 
-    // Default to Super Admin dashboard for SUPER_ADMIN and other roles
-    return <DashboardPage {...dashboardProps} />;
+  useEffect(() => {
+    // Load dashboard data whenever a SUPER_ADMIN logs in or token changes
+    if (session?.accessToken && user?.role === 'SUPER_ADMIN') {
+      loadOrganizationsAndStats();
+    } else {
+      setOrganizations([]);
+      setDeletedOrganizations([]);
+      setStats({
+        totalOrganizations: 0,
+        totalUsers: 0,
+        totalRevenue: 0,
+        organizationGrowth: [],
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken, user?.role]);
+
+  const handleOrgDelete = async (id) => {
+    if (!session?.accessToken) return;
+    setOrgError('');
+    try {
+      await deleteOrganization(session.accessToken, id);
+      await loadOrganizationsAndStats();
+    } catch (err) {
+      setOrgError(err.message);
+    }
+  };
+
+  const handleOrgRestore = async (id) => {
+    if (!session?.accessToken) return;
+    setOrgError('');
+    try {
+      await restoreOrganization(session.accessToken, id);
+      await loadOrganizationsAndStats();
+    } catch (err) {
+      setOrgError(err.message);
+    }
   };
 
   return (
     <ThemeProvider theme={appTheme}>
       <CssBaseline />
-      {session?.accessToken ? (
-        renderDashboard()
-      ) : (
-        <LoginPage
-          mode={mode}
-          setMode={setMode}
-          form={form}
-          onFieldChange={handleChange}
-          onSubmit={handleSubmit}
-          loading={loading}
-          error={error}
-        />
-      )}
+      <BrowserRouter>
+        {session?.accessToken ? (
+          <DashboardLayout
+            user={user}
+            navItems={[
+              { label: 'Dashboard', path: '/dashboard' },
+              { label: 'Organizations', path: '/organizations' },
+            ]}
+            mobileDrawerOpen={mobileDrawerOpen}
+            onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
+            onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
+            onLogout={handleLogout}
+          >
+            <Routes>
+              <Route
+                path="/dashboard"
+                element={
+                  <OverviewPage
+                    stats={stats}
+                    activeCount={organizations.filter((o) => o.status === 'ACTIVE').length}
+                    inactiveCount={organizations.filter((o) => o.status === 'INACTIVE').length}
+                  />
+                }
+              />
+              <Route
+                path="/organizations"
+                element={
+                  <OrganizationsPage
+                    organizations={organizations}
+                    deletedOrganizations={deletedOrganizations}
+                    isLoading={orgLoading}
+                    error={orgError}
+                    search={orgSearch}
+                    onSearchChange={(e) => setOrgSearch(e.target.value)}
+                    onDelete={handleOrgDelete}
+                    onRestore={handleOrgRestore}
+                  />
+                }
+              />
+              <Route
+                path="/organizations/new"
+                element={
+                  <OrganizationFormPage
+                    accessToken={session?.accessToken}
+                    onSaved={loadOrganizationsAndStats}
+                  />
+                }
+              />
+              <Route
+                path="/organizations/:id/edit"
+                element={
+                  <OrganizationFormPage
+                    accessToken={session?.accessToken}
+                    onSaved={loadOrganizationsAndStats}
+                  />
+                }
+              />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </DashboardLayout>
+        ) : (
+          <Routes>
+            <Route
+              path="/login"
+              element={
+                <LoginPage
+                  mode={mode}
+                  setMode={setMode}
+                  form={form}
+                  onFieldChange={handleChange}
+                  onSubmit={handleSubmit}
+                  loading={loading}
+                  error={error}
+                />
+              }
+            />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        )}
+      </BrowserRouter>
     </ThemeProvider>
   );
 }
