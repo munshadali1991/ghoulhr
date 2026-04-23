@@ -10,7 +10,9 @@ The GhoulHRMS frontend is a **React-based single-page application (SPA)** that p
 - **UI Library:** Material UI (MUI) 7
 - **Styling:** Emotion (MUI's default)
 - **HTTP Client:** Native Fetch API
-- **State Management:** React hooks (useState, useMemo, useEffect)
+- **State Management:** React hooks (useState, useMemo, useEffect) + React Query (@tanstack/react-query)
+- **Routing:** React Router DOM 7
+- **Form Management:** React Hook Form
 - **Language:** JavaScript (JSX)
 
 **Role in System:** Serves as the administrative interface for Super Admins and Organization Admins to manage organizations, employees, payroll, and view dashboard statistics. Communicates with the backend API ([See Backend API](./BACKEND.md#api-endpoints)).
@@ -31,18 +33,38 @@ frontend/ghoulhr/
 │   │       └── SidebarContent.jsx         # Reusable sidebar component
 │   ├── config/
 │   │   └── appConfig.js                   # Environment variables & constants
+│   ├── examples/
+│   │   └── settingsUsageExamples.js       # Settings API usage examples
+│   ├── hooks/
+│   │   ├── useSettings.js                 # Custom hook for settings management
+│   │   ├── useEmployeeSettings.js         # Custom hook for employee settings
+│   │   └── useAttendanceSettings.js       # Custom hook for attendance settings
+│   ├── layouts/
+│   │   └── DashboardLayout.jsx            # Main dashboard layout wrapper
 │   ├── pages/
-│   │   ├── DashboardPage.jsx              # Super Admin dashboard (777 lines)
+│   │   ├── DashboardPage.jsx              # Legacy: Old Super Admin dashboard (replaced)
 │   │   ├── LoginPage.jsx                  # Authentication page
-│   │   └── OrgAdminDashboard.jsx          # Organization Admin dashboard (400 lines)
+│   │   ├── OrgAdminDashboard.jsx          # Organization Admin dashboard (400 lines)
+│   │   ├── OrgDashboardPage.jsx           # Wrapper for OrgAdminDashboard
+│   │   ├── OrganizationFormPage.jsx       # Create/Edit organization form (608 lines)
+│   │   ├── OrganizationsPage.jsx          # Organizations list & recycle bin (201 lines)
+│   │   ├── OverviewPage.jsx               # Super Admin overview/dashboard stats (107 lines)
+│   │   ├── SettingsPage.jsx               # Organization settings page with tabs (600+ lines)
+│   │   ├── EmployeeSettingsForm.jsx       # Employee settings form component
+│   │   └── AttendanceSettingsForm.jsx     # Attendance & shift settings form component (911 lines)
 │   ├── services/
 │   │   ├── authApi.js                     # Authentication API calls
 │   │   ├── organizationsApi.js            # Organization API calls
-│   │   └── orgAdminApi.js                 # Organization Admin API calls
+│   │   ├── orgAdminApi.js                 # Organization Admin API calls
+│   │   ├── settingsApi.js                 # Settings API calls (profile, employee, attendance)
+│   │   └── settingsApi.examples.js        # Settings API usage examples
 │   ├── theme/
 │   │   └── appTheme.js                    # MUI theme configuration
+│   ├── types/
+│   │   └── settings.types.js              # JSDoc type definitions for settings
 │   ├── utils/
 │   │   ├── session.js                     # LocalStorage session management
+│   │   ├── settingsMapper.js              # Settings array-to-object mapper
 │   │   └── tenant.js                      # Subdomain-based redirect logic
 │   ├── App.jsx                            # Root component with auth routing
 │   ├── main.jsx                           # Entry point
@@ -61,66 +83,76 @@ frontend/ghoulhr/
 ### Component Hierarchy
 
 ```
-<App> (Auth state manager & role-based routing)
-├── <LoginPage> (if not authenticated)
-│   ├── Tabs (Super Admin / Employee modes)
-│   ├── Email/Password form
-│   └── Submit → calls authApi.js
-│
-└── Role-Based Dashboard Routing (if authenticated)
-    ├── SUPER_ADMIN → <DashboardPage>
-    │   ├── AppBar (top navigation)
-    │   ├── SidebarContent (reusable drawer)
-    │   └── Main Content
-    │       ├── Overview Section (stats cards, growth chart)
-    │       └── Organizations Section
-    │           ├── Create/Edit Form (accordion-based)
-    │           ├── Organizations Table
-    │           └── Recycle Bin Table
+<QueryClientProvider> (React Query setup)
+└── <App> (Auth state manager & role-based routing)
+    ├── <LoginPage> (if not authenticated)
+    │   ├── Tabs (Super Admin / Employee modes)
+    │   ├── Email/Password form
+    │   └── Submit → calls authApi.js
     │
-    └── ORG_ADMIN → <OrgAdminDashboard>
-        ├── AppBar (organization admin panel)
-        ├── SidebarContent (reusable drawer)
-        └── Main Content
-            ├── Welcome Banner (org info)
-            ├── Stats Cards (employees, attendance, payroll)
-            ├── Quick Actions
-            └── Recent Activity Feed
+    └── Role-Based Dashboard Routing (if authenticated)
+        ├── SUPER_ADMIN → <DashboardLayout> + React Router
+        │   ├── AppBar (top navigation)
+        │   ├── SidebarContent (reusable drawer)
+        │   └── Routes
+        │       ├── /dashboard → <OverviewPage>
+        │       │   ├── Stats Cards (orgs, users, revenue)
+        │       │   ├── Growth Chart (last 6 months)
+        │       │   └── Org Status Snapshot
+        │       ├── /organizations → <OrganizationsPage>
+        │       │   ├── Organizations Table
+        │       │   ├── Search & Filter
+        │       │   └── Recycle Bin Table
+        │       ├── /organizations/new → <OrganizationFormPage>
+        │       └── /organizations/:id/edit → <OrganizationFormPage>
+        │
+        └── ORG_ADMIN → <OrgDashboardPage> → <OrgAdminDashboard>
+            ├── AppBar (organization admin panel)
+            ├── SidebarContent (reusable drawer)
+            └── Main Content
+                ├── Welcome Banner (org info)
+                ├── Stats Cards (employees, attendance, payroll)
+                ├── Quick Actions
+                └── Recent Activity Feed
 ```
 
 ### Design Patterns
 
 1. **Conditional Rendering:** Auth state determines login vs dashboard
-2. **Container/Presentational:** `App.jsx` manages state, pages render UI
+2. **Layout Pattern:** `DashboardLayout` wraps authenticated routes with shared UI
 3. **Service Layer Pattern:** API calls isolated in `services/*.js` files
-4. **Custom Hooks Alternative:** Using plain functions in `utils/` for session/tenant logic
+4. **Custom Hooks:** `useSettings` for settings management with React Query
+5. **Component Composition:** Pages composed of smaller, focused components
+6. **Route-Based Code Splitting:** Each section is a separate route/component
 
 ---
 
 ## 4. Routing
 
-**No client-side router (React Router) is used.** Routing is handled through:
+**React Router DOM 7 is now used for client-side routing.** Routing is handled through:
 
 1. **Auth-based conditional rendering:**
-   - No session → `<LoginPage>`
+   - No session → `<LoginPage>` at `/login`
    - Valid session → Role-based dashboard routing
 
 2. **Role-based dashboard routing:**
-   - `user.role === 'SUPER_ADMIN'` → `<DashboardPage>`
-   - `user.role === 'ORG_ADMIN'` → `<OrgAdminDashboard>`
-   - Other roles → `<DashboardPage>` (default)
+   - `user.role === 'SUPER_ADMIN'` → `<DashboardLayout>` with routes
+   - `user.role === 'ORG_ADMIN'` → `<OrgDashboardPage>` (wraps `<OrgAdminDashboard>`)
+   - Other roles → `<DashboardLayout>` with routes (default)
 
-3. **Section-based navigation (internal state):**
-   - `activeSection` state controls dashboard sections
-   - SUPER_ADMIN values: `'overview'`, `'organizations'`, `'users'`, `'billing'`, `'settings'`
-   - ORG_ADMIN values: `'overview'`, `'employees'`, `'attendance'`, `'payroll'`, `'organization'`
+3. **SUPER_ADMIN Routes:**
+   - `/dashboard` → `<OverviewPage>` (stats, growth chart)
+   - `/organizations` → `<OrganizationsPage>` (list, search, recycle bin)
+   - `/organizations/new` → `<OrganizationFormPage>` (create mode)
+   - `/organizations/:id/edit` → `<OrganizationFormPage>` (edit mode)
+   - `*` → Redirect to `/dashboard`
 
 4. **Tenant subdomain redirects with session transfer:**
    - After login, redirects to `{subdomain}.ghoulhr.com` via `window.location.assign()`
    - Session data encoded in URL parameters for cross-subdomain transfer
    - Logic in [tenant.js](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/utils/tenant.js) and [session.js](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/utils/session.js)
 
-**Current Limitation:** Only `overview` and `organizations` sections are implemented for SUPER_ADMIN; `overview` section implemented for ORG_ADMIN; other sections show placeholder content.
+**Architecture Improvement:** Replaced internal state-based section navigation with proper URL-based routing, enabling bookmarking, browser history, and deep linking.
 
 ---
 
@@ -131,16 +163,35 @@ frontend/ghoulhr/
 | Component | File | Purpose | Lines |
 |-----------|------|---------|-------|
 | LoginPage | [pages/LoginPage.jsx](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/pages/LoginPage.jsx) | Email/password authentication form | 221 |
-| DashboardPage | [pages/DashboardPage.jsx](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/pages/DashboardPage.jsx) | Super Admin dashboard with org management | 777 |
+| OverviewPage | [pages/OverviewPage.jsx](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/pages/OverviewPage.jsx) | Super Admin dashboard overview with stats | 107 |
+| OrganizationsPage | [pages/OrganizationsPage.jsx](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/pages/OrganizationsPage.jsx) | Organizations list with search & recycle bin | 201 |
+| OrganizationFormPage | [pages/OrganizationFormPage.jsx](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/pages/OrganizationFormPage.jsx) | Create/Edit organization form (6 sections) | 608 |
 | OrgAdminDashboard | [pages/OrgAdminDashboard.jsx](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/pages/OrgAdminDashboard.jsx) | Organization Admin dashboard | 400 |
+| OrgDashboardPage | [pages/OrgDashboardPage.jsx](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/pages/OrgDashboardPage.jsx) | Wrapper for OrgAdminDashboard | 6 |
+| SettingsPage | [pages/SettingsPage.jsx](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/pages/SettingsPage.jsx) | Organization settings management with tabs (Organization, Employees, Attendance) | 600+ |
+| EmployeeSettingsForm | [pages/EmployeeSettingsForm.jsx](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/pages/EmployeeSettingsForm.jsx) | Employee ID generation & field configuration | 350+ |
+| AttendanceSettingsForm | [pages/AttendanceSettingsForm.jsx](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/pages/AttendanceSettingsForm.jsx) | Attendance & shift settings with dynamic forms | 911 |
+| DashboardPage | [pages/DashboardPage.jsx](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/pages/DashboardPage.jsx) | **LEGACY:** Old monolithic dashboard (replaced) | 777 |
+
+### Layout Components
+
+| Component | File | Purpose |
+|-----------|------|---------||
+| DashboardLayout | [layouts/DashboardLayout.jsx](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/layouts/DashboardLayout.jsx) | Main layout wrapper with AppBar, Drawer, and Routes |
 
 ### Reusable Components
 
 | Component | File | Purpose |
-|-----------|------|---------|
+|-----------|------|---------||
 | SidebarContent | [components/layout/SidebarContent.jsx](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/components/layout/SidebarContent.jsx) | Navigation sidebar with user info |
 
 ### Component Breakdown
+
+**DashboardLayout:**
+- Props: `user`, `navItems`, `mobileDrawerOpen`, `onOpenMobileDrawer`, `onCloseMobileDrawer`, `onLogout`, `children`
+- Responsive layout with fixed drawer (280px width) on desktop, temporary drawer on mobile
+- Uses `useLocation` and `useNavigate` from React Router for active nav item highlighting
+- Wraps all authenticated routes with shared AppBar and Sidebar
 
 **SidebarContent:**
 - Props: `user`, `navItems`, `onItemClick`
@@ -153,13 +204,27 @@ frontend/ghoulhr/
 - Gradient background with marketing features list
 - Password visibility toggle
 
-**DashboardPage (SUPER_ADMIN):**
-- Props: `accessToken`, `user`, `userName`, `mobileDrawerOpen`, `onOpenMobileDrawer`, `onCloseMobileDrawer`, `onLogout`
-- Responsive layout with fixed drawer (280px width)
-- Accordion-based organization form (6 sections, 50+ fields)
-- Searchable organization table
-- Recycle bin for soft-deleted organizations
-- Dashboard stats with progress bars
+**OverviewPage (SUPER_ADMIN):**
+- Props: `stats`, `activeCount`, `inactiveCount`
+- Stats cards: Total Organizations, Total Users, Total Revenue
+- Organization Growth chart (last 6 months) with progress bars
+- Org Status Snapshot (Active/Inactive counts)
+
+**OrganizationsPage (SUPER_ADMIN):**
+- Props: `organizations`, `deletedOrganizations`, `isLoading`, `error`, `search`, `onSearchChange`, `onEdit`, `onDelete`, `onRestore`
+- Searchable organization table with status chips
+- Actions: Edit (navigates to form), Delete (soft delete)
+- Recycle bin table for soft-deleted organizations with Restore action
+- Loading spinner and empty state handling
+
+**OrganizationFormPage (SUPER_ADMIN):**
+- Props: `accessToken`, `onSaved`
+- Accordion-based form with 6 sections, 50+ fields
+- Sections: Basic Details, Address, Statutory & Compliance, Payroll Settings, Admin User, Bank Details
+- Create and Edit modes (detected via `useParams`)
+- Loads organization data for edit mode via `getOrganizationById`
+- Prevents double-fetch in React StrictMode using `useRef`
+- Strips backend-managed fields (id, timestamps, db credentials) before submission
 
 **OrgAdminDashboard (ORG_ADMIN):**
 - Props: `accessToken`, `user`, `userName`, `mobileDrawerOpen`, `onOpenMobileDrawer`, `onCloseMobileDrawer`, `onLogout`
@@ -169,11 +234,46 @@ frontend/ghoulhr/
 - Recent activity feed
 - Role indicator showing "Organization Admin Panel"
 
+**SettingsPage:**
+- Props: `accessToken`, `organizationId`
+- **Tabbed Interface:** Three tabs for different settings categories
+  - **Tab 1: Organization** - Profile settings with logo upload
+  - **Tab 2: Employees** - Employee ID generation and required fields configuration
+  - **Tab 3: Attendance** - Working days, shift management, and attendance rules
+- Regional settings: Timezone, Currency, Date Format, Language
+- Uses `react-hook-form` for form management
+- Uses custom hooks with React Query (`useSettings`, `useEmployeeSettings`, `useAttendanceSettings`)
+- Success/error alerts with auto-dismiss
+- Logo preview with base64 conversion
+
+**EmployeeSettingsForm:**
+- Props: `accessToken`, `organizationId`
+- Employee ID configuration: prefix, auto-generation toggle
+- Required fields multi-select with pre-defined options
+- Default probation period configuration
+- Form validation for required fields
+- Uses `useEmployeeSettings` hook with React Query
+
+**AttendanceSettingsForm:**
+- Props: `accessToken`, `organizationId`
+- **8 Configuration Sections:**
+  1. **Working Days** - Multi-select chips for weekdays (Mon-Sun)
+  2. **Shift Management** - Dynamic add/remove shifts with `useFieldArray`
+  3. **Grace Period** - Numeric input for late check-in tolerance
+  4. **Half-Day Rule** - Minutes threshold for half-day marking
+  5. **Overtime** - Toggle switch with conditional rules (max hours, multiplier)
+  6. **Attendance Mode** - Dropdown: manual, biometric, geo, IP-based
+  7. **Geo-Fencing** - Toggle for location-based attendance
+  8. **Allowed IP Addresses** - Tag input for IP whitelist (supports CIDR)
+- Form validation: time format (HH:mm), required fields, IP format
+- Dynamic shift array with add/remove functionality
+- Uses `useAttendanceSettings` hook with React Query
+
 ---
 
 ## 6. State Management
 
-**Approach:** React built-in hooks (no Redux/Zustand)
+**Approach:** React built-in hooks + React Query (@tanstack/react-query)
 
 ### Global State (App.jsx)
 
@@ -185,37 +285,132 @@ const [loading, setLoading] = useState(false);
 const [error, setError] = useState('');
 const [form, setForm] = useState({ email: '', password: '' });
 const userRole = user?.role;  // Used for role-based dashboard routing
-```
 
-### Role-Based Dashboard Routing (App.jsx)
-
-```javascript
-const renderDashboard = () => {
-  const dashboardProps = { /* ... */ };
-  
-  // Route to different dashboards based on user role
-  if (userRole === 'ORG_ADMIN') {
-    return <OrgAdminDashboard {...dashboardProps} />;
-  }
-  
-  // Default to Super Admin dashboard for SUPER_ADMIN and other roles
-  return <DashboardPage {...dashboardProps} />;
-};
-```
-
-### Dashboard State (DashboardPage.jsx)
-
-```javascript
-const [activeSection, setActiveSection] = useState('overview');
+// Organization data (SUPER_ADMIN)
 const [organizations, setOrganizations] = useState([]);
 const [deletedOrganizations, setDeletedOrganizations] = useState([]);
 const [stats, setStats] = useState({ totalOrganizations: 0, totalUsers: 0, ... });
-const [isLoading, setIsLoading] = useState(true);
-const [error, setError] = useState('');
-const [search, setSearch] = useState('');
-const [editingOrganizationId, setEditingOrganizationId] = useState(null);
-const [createForm, setCreateForm] = useState(emptyOrganizationForm);
-const [isCreating, setIsCreating] = useState(false);
+const [orgLoading, setOrgLoading] = useState(true);
+const [orgError, setOrgError] = useState('');
+const [orgSearch, setOrgSearch] = useState('');
+```
+
+### React Query Setup (App.jsx)
+
+```javascript
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+// Wrapped in QueryClientProvider
+<QueryClientProvider client={queryClient}>
+  <App />
+</QueryClientProvider>
+```
+
+### Custom Hooks
+
+**File:** [hooks/useSettings.js](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/hooks/useSettings.js)
+
+```javascript
+export function useSettings(accessToken, organizationId) {
+  const queryClient = useQueryClient();
+
+  // Fetch settings
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => getOrgProfile(accessToken, organizationId),
+    enabled: !!accessToken && !!organizationId,
+    staleTime: 5 * 60 * 1000,  // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000,    // Keep in GC for 10 minutes
+  });
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: (formData) => updateOrgProfile(accessToken, organizationId, formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+    },
+  });
+
+  return {
+    settings: data || {},
+    isLoading,
+    error: error || updateMutation.error,
+    updateSettings: updateMutation.mutate,
+    isUpdating: updateMutation.isPending,
+    refetch,
+  };
+}
+```
+
+**File:** [hooks/useEmployeeSettings.js](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/hooks/useEmployeeSettings.js)
+
+```javascript
+export function useEmployeeSettings(accessToken, organizationId) {
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: EMPLOYEE_SETTINGS_QUERY_KEY,
+    queryFn: () => getEmployeeSettings(accessToken, organizationId),
+    enabled: !!accessToken && !!organizationId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (formData) => updateEmployeeSettings(accessToken, organizationId, formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: EMPLOYEE_SETTINGS_QUERY_KEY });
+    },
+  });
+
+  return {
+    settings: data || {},
+    isLoading,
+    error: error || updateMutation.error,
+    updateSettings: updateMutation.mutate,
+    isUpdating: updateMutation.isPending,
+    refetch,
+  };
+}
+```
+
+**File:** [hooks/useAttendanceSettings.js](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/hooks/useAttendanceSettings.js)
+
+```javascript
+export function useAttendanceSettings(accessToken, organizationId) {
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ATTENDANCE_SETTINGS_QUERY_KEY,
+    queryFn: () => getAttendanceSettings(accessToken, organizationId),
+    enabled: !!accessToken && !!organizationId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (formData) => updateAttendanceSettings(accessToken, organizationId, formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ATTENDANCE_SETTINGS_QUERY_KEY });
+    },
+  });
+
+  return {
+    settings: data || {},
+    isLoading,
+    error: error || updateMutation.error,
+    updateSettings: updateMutation.mutate,
+    isUpdating: updateMutation.isPending,
+    refetch,
+  };
+}
 ```
 
 ### Derived State (useMemo)
@@ -233,6 +428,11 @@ const userName = useMemo(() => user?.email?.split('@')[0] || 'User', [user?.emai
 - Stored data: `{ accessToken, user }`
 - Functions: [session.js](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/utils/session.js) (`readSession`, `persistSession`, `clearSession`)
 - **Cross-subdomain transfer:** Session data encoded in URL parameters during redirect, decoded and saved to localStorage on target subdomain
+
+**State Management Improvements:**
+1. **React Query** replaces manual data fetching for settings with caching, auto-refetch, and mutation support
+2. **Component-level state** for organizations data in App.jsx (could be migrated to React Query)
+3. **React Hook Form** for form state management in SettingsPage with validation
 
 ---
 
@@ -329,25 +529,85 @@ All requests include `Authorization: Bearer {accessToken}` header.
 | `getOrganizationPayroll(accessToken, organizationId, month)` | GET | `/org-admin/payroll` | Fetch payroll data |
 | `getOrganizationDetails(accessToken, organizationId)` | GET | `/org-admin/organization/:id` | Fetch org details |
 
-### Data Loading Pattern
+### Settings API
+
+**File:** [services/settingsApi.js](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/services/settingsApi.js)
+
+All requests include `Authorization: Bearer {accessToken}` and `x-org-id` headers for multi-tenant support.
+
+| Function | Method | Endpoint | Purpose |
+|----------|--------|----------|---------||
+| `getAllSettings(accessToken, organizationId)` | GET | `/settings` | Fetch all organization settings |
+| `getSettingByKey(accessToken, organizationId, key)` | GET | `/settings/:key` | Fetch specific setting |
+| `updateSetting(accessToken, organizationId, payload)` | POST | `/settings` | Create/update setting |
+| `updateOrgProfile(accessToken, organizationId, profileData)` | POST | `/settings/profile` | Batch update org profile |
+| `getOrgProfile(accessToken, organizationId)` | GET | `/settings/profile` | Fetch org profile (auto-mapped to object) |
+| `getEmployeeSettings(accessToken, organizationId)` | GET | `/settings/employee` | Fetch employee settings |
+| `updateEmployeeSettings(accessToken, organizationId, employeeData)` | POST | `/settings/employee` | Update employee settings |
+| `getAttendanceSettings(accessToken, organizationId)` | GET | `/settings/attendance` | Fetch attendance settings |
+| `updateAttendanceSettings(accessToken, organizationId, attendanceData)` | POST | `/settings/attendance` | Update attendance settings |
+
+### Data Loading Patterns
+
+**Manual Data Loading (Organizations - App.jsx):**
 
 ```javascript
-// DashboardPage.jsx:167-193
-const loadOrganizations = async () => {
-  const [organizationsResponse, deletedOrganizationsResponse, statsResponse] = await Promise.all([
-    listOrganizations(accessToken),
-    listDeletedOrganizations(accessToken),
-    getSuperAdminDashboardStats(accessToken),
-  ]);
-  // ...
+// App.jsx: Load organizations and stats
+const loadOrganizationsAndStats = async () => {
+  if (!session?.accessToken || user?.role !== 'SUPER_ADMIN') {
+    setOrgLoading(false);
+    return;
+  }
+  setOrgError('');
+  setOrgLoading(true);
+  try {
+    const [orgs, deleted, statsResponse] = await Promise.all([
+      listOrganizations(session.accessToken),
+      listDeletedOrganizations(session.accessToken),
+      getSuperAdminDashboardStats(session.accessToken),
+    ]);
+    setOrganizations(Array.isArray(orgs) ? orgs : []);
+    setDeletedOrganizations(Array.isArray(deleted) ? deleted : []);
+    if (statsResponse) {
+      setStats(statsResponse);
+    }
+  } catch (err) {
+    setOrgError(err.message);
+  } finally {
+    setOrgLoading(false);
+  }
 };
 
 useEffect(() => {
-  loadOrganizations();
-}, [accessToken, isSuperAdmin]);
+  // Load dashboard data whenever a SUPER_ADMIN logs in or token changes
+  if (session?.accessToken && user?.role === 'SUPER_ADMIN') {
+    loadOrganizationsAndStats();
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [session?.accessToken, user?.role]);
 ```
 
-**Note:** Uses `Promise.all` for parallel requests to improve performance.
+**React Query Pattern (Settings - useSettings hook):**
+
+```javascript
+// hooks/useSettings.js
+const { data, isLoading, error } = useQuery({
+  queryKey: ['settings'],
+  queryFn: () => getOrgProfile(accessToken, organizationId),
+  enabled: !!accessToken && !!organizationId,
+  staleTime: 5 * 60 * 1000,
+  gcTime: 10 * 60 * 1000,
+});
+
+const updateMutation = useMutation({
+  mutationFn: (formData) => updateOrgProfile(accessToken, organizationId, formData),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['settings'] });
+  },
+});
+```
+
+**Note:** Uses `Promise.all` for parallel requests to improve performance. React Query provides automatic caching, background refetching, and optimistic updates.
 
 ---
 
@@ -501,8 +761,14 @@ export const appTheme = createTheme({
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `VITE_API_BASE_URL` | No | `http://localhost:3000` | Backend API URL |
+| `VITE_API_BASE_URL` | No | `http://localhost:8080` | Backend API URL (proxy port) |
 | `VITE_BOOTSTRAP_ADMIN_KEY` | Yes | - | Secret key for SUPER_ADMIN bootstrap ([See backend](./BACKEND.md#bootstrap-super-admin-flow)) |
+
+**API URL Configuration:**
+The [appConfig.js](file:///d:/Web%20dev/ghoulhr/frontend/ghoulhr/src/config/appConfig.js) file now implements dynamic API URL resolution:
+- Detects subdomain from hostname (e.g., `buggy.localhost` → `buggy`)
+- Routes requests through proxy on port 8080: `http://{subdomain}.localhost:8080`
+- Falls back to `VITE_API_BASE_URL` or `http://localhost:8080`
 
 **⚠️ Security Warning:** `VITE_BOOTSTRAP_ADMIN_KEY` is exposed in client-side code. Anyone can inspect the bundled JavaScript to retrieve this key. This is a **critical security issue** that should be addressed.
 
@@ -547,17 +813,24 @@ npm run lint         # ESLint check
 ## 12. Conventions
 
 ### File Naming
-- **Components:** PascalCase (e.g., `LoginPage.jsx`, `SidebarContent.jsx`)
-- **Utilities:** camelCase (e.g., `session.js`, `tenant.js`)
-- **Services:** camelCase with "Api" suffix (e.g., `authApi.js`, `organizationsApi.js`)
+- **Components:** PascalCase (e.g., `LoginPage.jsx`, `SidebarContent.jsx`, `DashboardLayout.jsx`)
+- **Pages:** PascalCase with "Page" suffix (e.g., `OverviewPage.jsx`, `OrganizationsPage.jsx`)
+- **Layouts:** PascalCase with "Layout" suffix (e.g., `DashboardLayout.jsx`)
+- **Hooks:** camelCase with "use" prefix (e.g., `useSettings.js`)
+- **Utilities:** camelCase (e.g., `session.js`, `tenant.js`, `settingsMapper.js`)
+- **Services:** camelCase with "Api" suffix (e.g., `authApi.js`, `organizationsApi.js`, `settingsApi.js`)
+- **Types:** camelCase with ".types" suffix (e.g., `settings.types.js`)
 
 ### Folder Structure
-- `pages/` → Route-level components
+- `pages/` → Route-level components (one per route)
+- `layouts/` → Layout wrapper components
 - `components/` → Reusable UI components
+- `hooks/` → Custom React hooks
 - `services/` → API integration layer
 - `utils/` → Pure utility functions
 - `config/` → Configuration constants
 - `theme/` → Styling configuration
+- `types/` → JSDoc type definitions
 
 ### Component Structure
 ```javascript
@@ -590,6 +863,63 @@ export function functionName(accessToken, params) {
 }
 ```
 
+### React Query Hook Pattern
+```javascript
+export function useFeatureName(accessToken, id) {
+  const queryClient = useQueryClient();
+
+  // Fetch data
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['featureName', id],
+    queryFn: () => fetchData(accessToken, id),
+    enabled: !!accessToken && !!id,
+  });
+
+  // Update mutation
+  const mutation = useMutation({
+    mutationFn: (formData) => updateData(accessToken, id, formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['featureName', id] });
+    },
+  });
+
+  return {
+    data: data || {},
+    isLoading,
+    error,
+    updateData: mutation.mutate,
+    isUpdating: mutation.isPending,
+  };
+}
+```
+
+### Form Management Pattern (React Hook Form)
+```javascript
+export function FormPage() {
+  const { register, handleSubmit, formState: { errors }, reset } = useForm({
+    defaultValues: {
+      name: '',
+      setting: 'value',
+    },
+  });
+
+  const onSubmit = async (formData) => {
+    await updateSettings(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <TextField
+        {...register('name', { required: 'Name is required' })}
+        error={!!errors.name}
+        helperText={errors.name?.message}
+      />
+      <Button type="submit">Save</Button>
+    </form>
+  );
+}
+```
+
 ---
 
 ## 13. Observations & Improvements
@@ -600,24 +930,41 @@ export function functionName(accessToken, params) {
 3. **Parallel Data Loading:** `Promise.all` for dashboard stats
 4. **Error Handling:** User-friendly error messages from backend
 5. **Tenant Awareness:** Automatic subdomain redirect after login
-6. **Modern Stack:** React 19, Vite 7, MUI 7 (latest versions)
+6. **Modern Stack:** React 19, Vite 7, MUI 7, React Router 7 (latest versions)
 7. **Role-Based Dashboards:** Separate dashboards for SUPER_ADMIN and ORG_ADMIN
 8. **Cross-Subdomain Session Transfer:** Session data preserved during subdomain redirects
+9. **React Query Integration:** Automatic caching, background refetching, and mutations for settings
+10. **React Hook Form:** Efficient form management with validation support
+11. **Component Architecture:** Well-separated pages with single responsibilities
+12. **Route-Based Navigation:** Proper URL-based routing enables bookmarking and deep linking
+13. **Settings System:** Comprehensive organization settings with regional preferences, employee configuration, and attendance management
+14. **Type Safety:** JSDoc type definitions in `types/settings.types.js`
+15. **Tabbed Settings Interface:** Organized settings into logical tabs (Organization, Employees, Attendance)
+16. **Dynamic Form Arrays:** `useFieldArray` for shift management with add/remove functionality
+17. **Comprehensive Validation:** Time format validation, IP validation, required field checks
+18. **Reusable Custom Hooks:** Consistent React Query pattern across all settings types
+
+### 🚀 Architecture Improvements (Completed)
+1. **React Router DOM:** Replaced internal state-based navigation with proper routing
+2. **Component Decomposition:** Split 777-line `DashboardPage` into focused components:
+   - `OverviewPage` (107 lines) - Stats and charts
+   - `OrganizationsPage` (201 lines) - List and recycle bin
+   - `OrganizationFormPage` (608 lines) - Create/Edit form
+3. **Layout Pattern:** Introduced `DashboardLayout` for shared UI across routes
+4. **Custom Hooks:** `useSettings` hook with React Query for data fetching (✅ Extended to `useEmployeeSettings` and `useAttendanceSettings`)
+5. **Form Management:** `react-hook-form` for efficient form state and validation (✅ Extended with `useFieldArray` for dynamic shifts)
 
 ### ⚠️ UI/UX Issues
 1. **No Loading Skeletons:** Dashboard shows spinner but no skeleton screens
-2. **No Form Validation:** Organization form has no client-side validation
+2. **No Client-Side Validation:** Organization form lacks validation (except required fields)
 3. **No Confirmation Dialogs:** Delete operations happen without confirmation
-4. **No Success Messages:** Operations complete silently (only errors shown)
+4. **No Success Messages:** Operations complete silently (only errors shown) - *Partially fixed in SettingsPage*
 5. **Large Form Overwhelming:** 50+ fields in accordion may confuse users
 6. **No Pagination:** Organization table shows all records
 
 ### 🚀 Performance Improvements
-1. **Code Splitting:** Use `React.lazy()` for DashboardPage
-   ```javascript
-   const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
-   ```
-2. **React Query/SWR:** Replace manual data fetching with caching library
+1. **~~Code Splitting:~~** ~~Use `React.lazy()` for DashboardPage~~ **DONE:** Routes are already separated into different components
+2. **React Query/SWR:** ~~Replace manual data fetching~~ **DONE:** Settings uses React Query; Organizations could be migrated
 3. **Debounce Search:** Add debounce to organization search input
 4. **Memoize Components:** Wrap `SidebarContent` with `React.memo`
 5. **Virtualization:** Use `@mui/x-data-grid` for large organization lists
@@ -630,34 +977,30 @@ export function functionName(accessToken, params) {
 4. **No Token Refresh:** Users logged out after token expiry (8 hours default)
 
 ### 📐 Code Structure Suggestions
-1. **Add React Router:** Implement proper routing for sections
-   ```javascript
-   <Routes>
-     <Route path="/" element={<Overview />} />
-     <Route path="/organizations" element={<Organizations />} />
-   </Routes>
-   ```
-2. **Separate Form Component:** Extract organization form to `components/forms/OrganizationForm.jsx`
-3. **Custom Hooks:** Create `useOrganizations()`, `useAuth()`, `useDashboardStats()`
-4. **Constants File:** Move `emptyOrganizationForm`, `navItems` to separate files
-5. **TypeScript Migration:** Add type safety with `.tsx` files and PropTypes
+1. **~~Add React Router:~~** ~~Implement proper routing for sections~~ **DONE:** React Router 7 implemented
+2. **~~Separate Form Component:~~** ~~Extract organization form~~ **DONE:** `OrganizationFormPage` created
+3. **Custom Hooks:** Create `useOrganizations()`, `useAuth()` to match `useSettings()` pattern (✅ Partially done: employee and attendance settings hooks created)
+4. **Constants File:** Move `emptyForm`, nav items to separate files
+5. **TypeScript Migration:** Add type safety with `.tsx` files (JSDoc types already started)
 6. **Environment-Specific Config:** Create `config/dev.js`, `config/prod.js`
 
 ### 🐛 Potential Bugs
 1. **~~Tenant Redirect Loop:~~** ~~If subdomain already matches, returns `null`, but logic may cause issues on localhost~~ **FIXED:** Cross-subdomain session transfer implemented
 2. **Edit Form State Leak:** Switching between edit and create may retain old form data
 3. **No Error Boundary:** App crashes if unhandled error occurs in component tree
-4. **useEffect Missing Dependencies:** `loadOrganizations` has comment disabling exhaustive-deps rule
+4. **useEffect Missing Dependencies:** `loadOrganizationsAndStats` has comment disabling exhaustive-deps rule
 
 ### 📝 Code Quality
-- **Good:** Consistent formatting, meaningful variable names, proper prop passing
-- **Needs Work:** 777-line DashboardPage should be split into smaller components; OrgAdminDashboard needs backend integration
-- **Missing:** No comments explaining complex logic (e.g., tenant redirect, session transfer)
+- **Good:** Consistent formatting, meaningful variable names, proper prop passing, component separation
+- **Needs Work:** Migrate organizations data fetching to React Query for consistency; add comprehensive error boundaries
+- **Improved:** Comments explaining complex logic (React Query setup, tenant redirect, session transfer)
 - **Testing:** No unit/integration tests present
 
 ### 🎯 Recommended Next Steps
 1. **Immediate:** Remove `VITE_BOOTSTRAP_ADMIN_KEY` from frontend
-2. **Short-term:** Add confirmation dialogs, success messages, form validation
-3. **Medium-term:** Implement React Router, code splitting, React Query
+2. **Short-term:** Add confirmation dialogs, form validation to OrganizationFormPage, success messages
+3. **Medium-term:** Migrate organizations data to React Query, add debounce to search, implement error boundaries
 4. **Long-term:** Migrate to TypeScript, add comprehensive test suite
 5. **Backend Integration:** Implement ORG_ADMIN API endpoints for employees, attendance, payroll
+6. **Settings Enhancements:** Add shift overlap detection, attendance rules engine, bulk import/export for settings
+7. **Form Improvements:** Add loading skeletons, confirmation dialogs, undo functionality for settings changes

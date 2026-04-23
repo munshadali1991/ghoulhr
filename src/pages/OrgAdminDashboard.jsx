@@ -21,8 +21,10 @@ import AttachMoneyRoundedIcon from '@mui/icons-material/AttachMoneyRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import ApartmentRoundedIcon from '@mui/icons-material/ApartmentRounded';
+import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import { useState } from 'react';
 import { SidebarContent } from '../components/layout/SidebarContent';
+import { SettingsPage } from './SettingsPage';
 
 const DRAWER_WIDTH = 280;
 
@@ -31,6 +33,7 @@ const navItems = [
   { label: 'Employees', icon: <PeopleRoundedIcon /> },
   { label: 'Attendance', icon: <EventNoteRoundedIcon /> },
   { label: 'Payroll', icon: <AttachMoneyRoundedIcon /> },
+  { key: 'settings', label: 'Settings', icon: <SettingsRoundedIcon /> },
   { label: 'Organization', icon: <ApartmentRoundedIcon /> },
 ];
 
@@ -44,6 +47,8 @@ export function OrgAdminDashboard({
   onLogout,
 }) {
   const [activeSection, setActiveSection] = useState('overview');
+  
+  const organizationId = user?.organizationId;
   
   const sidebarNavItems = navItems.map((item) => ({
     ...item,
@@ -393,6 +398,8 @@ export function OrgAdminDashboard({
       >
         {activeSection === 'overview'
           ? renderOverview()
+          : activeSection === 'settings'
+          ? <SettingsPage accessToken={accessToken} organizationId={organizationId} />
           : renderComingSoon(activeSection.charAt(0).toUpperCase() + activeSection.slice(1))}
       </Box>
     </Box>

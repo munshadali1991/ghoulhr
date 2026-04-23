@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { appTheme } from './theme/appTheme';
 import { LoginPage } from './pages/LoginPage';
 import { bootstrapSuperAdminRequest, loginRequest } from './services/authApi';
@@ -18,6 +19,16 @@ import {
   deleteOrganization,
   restoreOrganization,
 } from './services/organizationsApi';
+
+// Create a React Query client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   const [session, setSession] = useState(() => readSession());
@@ -186,101 +197,103 @@ function App() {
   };
 
   return (
-    <ThemeProvider theme={appTheme}>
-      <CssBaseline />
-      <BrowserRouter>
-        {session?.accessToken && isSuperAdmin ? (
-          <DashboardLayout
-            user={user}
-            navItems={
-              [
-                { label: 'Dashboard', path: '/dashboard' },
-                { label: 'Organizations', path: '/organizations' },
-              ]
-            }
-            mobileDrawerOpen={mobileDrawerOpen}
-            onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
-            onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
-            onLogout={handleLogout}
-          >
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider theme={appTheme}>
+        <CssBaseline />
+        <BrowserRouter>
+          {session?.accessToken && isSuperAdmin ? (
+            <DashboardLayout
+              user={user}
+              navItems={
+                [
+                  { label: 'Dashboard', path: '/dashboard' },
+                  { label: 'Organizations', path: '/organizations' },
+                ]
+              }
+              mobileDrawerOpen={mobileDrawerOpen}
+              onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
+              onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
+              onLogout={handleLogout}
+            >
+              <Routes>
+                <Route
+                  path="/dashboard"
+                  element={
+                    <OverviewPage
+                      stats={stats}
+                      activeCount={organizations.filter((o) => o.status === 'ACTIVE').length}
+                      inactiveCount={organizations.filter((o) => o.status === 'INACTIVE').length}
+                    />
+                  }
+                />
+                <Route
+                  path="/organizations"
+                  element={
+                    <OrganizationsPage
+                      organizations={organizations}
+                      deletedOrganizations={deletedOrganizations}
+                      isLoading={orgLoading}
+                      error={orgError}
+                      search={orgSearch}
+                      onSearchChange={(e) => setOrgSearch(e.target.value)}
+                      onDelete={handleOrgDelete}
+                      onRestore={handleOrgRestore}
+                    />
+                  }
+                />
+                <Route
+                  path="/organizations/new"
+                  element={
+                    <OrganizationFormPage
+                      accessToken={session?.accessToken}
+                      onSaved={loadOrganizationsAndStats}
+                    />
+                  }
+                />
+                <Route
+                  path="/organizations/:id/edit"
+                  element={
+                    <OrganizationFormPage
+                      accessToken={session?.accessToken}
+                      onSaved={loadOrganizationsAndStats}
+                    />
+                  }
+                />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </DashboardLayout>
+          ) : session?.accessToken ? (
+            <OrgDashboardPage
+              accessToken={session?.accessToken}
+              user={user}
+              userName={userName}
+              mobileDrawerOpen={mobileDrawerOpen}
+              onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
+              onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
+              onLogout={handleLogout}
+            />
+          ) : (
             <Routes>
               <Route
-                path="/dashboard"
+                path="/login"
                 element={
-                  <OverviewPage
-                    stats={stats}
-                    activeCount={organizations.filter((o) => o.status === 'ACTIVE').length}
-                    inactiveCount={organizations.filter((o) => o.status === 'INACTIVE').length}
+                  <LoginPage
+                    mode={mode}
+                    setMode={setMode}
+                    form={form}
+                    onFieldChange={handleChange}
+                    onSubmit={handleSubmit}
+                    loading={loading}
+                    error={error}
                   />
                 }
               />
-              <Route
-                path="/organizations"
-                element={
-                  <OrganizationsPage
-                    organizations={organizations}
-                    deletedOrganizations={deletedOrganizations}
-                    isLoading={orgLoading}
-                    error={orgError}
-                    search={orgSearch}
-                    onSearchChange={(e) => setOrgSearch(e.target.value)}
-                    onDelete={handleOrgDelete}
-                    onRestore={handleOrgRestore}
-                  />
-                }
-              />
-              <Route
-                path="/organizations/new"
-                element={
-                  <OrganizationFormPage
-                    accessToken={session?.accessToken}
-                    onSaved={loadOrganizationsAndStats}
-                  />
-                }
-              />
-              <Route
-                path="/organizations/:id/edit"
-                element={
-                  <OrganizationFormPage
-                    accessToken={session?.accessToken}
-                    onSaved={loadOrganizationsAndStats}
-                  />
-                }
-              />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
-          </DashboardLayout>
-        ) : session?.accessToken ? (
-          <OrgDashboardPage
-            accessToken={session?.accessToken}
-            user={user}
-            userName={userName}
-            mobileDrawerOpen={mobileDrawerOpen}
-            onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
-            onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
-            onLogout={handleLogout}
-          />
-        ) : (
-          <Routes>
-            <Route
-              path="/login"
-              element={
-                <LoginPage
-                  mode={mode}
-                  setMode={setMode}
-                  form={form}
-                  onFieldChange={handleChange}
-                  onSubmit={handleSubmit}
-                  loading={loading}
-                  error={error}
-                />
-              }
-            />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        )}
-      </BrowserRouter>
-    </ThemeProvider>
+          )}
+        </BrowserRouter>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

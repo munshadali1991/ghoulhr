@@ -7,6 +7,12 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
-    allowedHosts: ['ghoulhr.com']
+    allowedHosts: [
+      'localhost',
+      'buggy.localhost',
+      'cronjob.localhost',
+      'ghoulhr.localhost',
+      '.localhost'
+    ]
   }
 })
