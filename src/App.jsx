@@ -1,15 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CssBaseline, ThemeProvider } from '@mui/material';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { appTheme } from './theme/appTheme';
 import { LoginPage } from './pages/LoginPage';
-import { bootstrapSuperAdminRequest, loginRequest } from './services/authApi';
-import { clearSession, persistSession, readSession } from './utils/session';
+import {
+  bootstrapSuperAdminRequest,
+  loginRequest,
+  employeeLoginRequest,
+  fetchSessionUser,
+  logoutRequest,
+} from './services/authApi';
+import { clearSession, readSession } from './utils/session';
 import { getTenantRedirectUrl } from './utils/tenant';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { OverviewPage } from './pages/OverviewPage';
 import { OrgDashboardPage } from './pages/OrgDashboardPage';
+import { EmployeeDashboard } from './pages/EmployeeDashboard';
 import { OrganizationsPage } from './pages/OrganizationsPage';
 import { OrganizationFormPage } from './pages/OrganizationFormPage';
 import {
@@ -32,7 +39,7 @@ const queryClient = new QueryClient({
 
 function App() {
   const [session, setSession] = useState(() => readSession());
-  const [mode, setMode] = useState('superadmin');
+  const [mode, setMode] = useState('admin');
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -43,7 +50,9 @@ function App() {
 
   const user = session?.user;
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-  const userName = useMemo(() => user?.email?.split('@')[0] || 'User', [user?.email]);
+  // Employee roles from tenant auth system
+  const isEmployee = ['EMPLOYEE', 'MANAGER', 'ORG_ADMIN'].includes(user?.role) && user?.employeeCode;
+  const userName = useMemo(() => user?.name || user?.email?.split('@')[0] || 'User', [user?.email, user?.name]);
   const [organizations, setOrganizations] = useState([]);
   const [deletedOrganizations, setDeletedOrganizations] = useState([]);
   const [stats, setStats] = useState({
@@ -66,24 +75,25 @@ function App() {
     setError('');
 
     try {
-      const authResult = await loginRequest(form.email, form.password);
-
-      if (!authResult?.accessToken) {
-        throw new Error('Login failed. Invalid response from server.');
+      let authResult;
+      
+      // Handle employee/manager login (tenant database)
+      if (mode === 'employee') {
+        // Employee/Manager login - searches across all organizations
+        authResult = await employeeLoginRequest(form.email, form.password);
+      } else {
+        // Admin login (SUPER_ADMIN + ORG_ADMIN) - master database
+        authResult = await loginRequest(form.email, form.password);
       }
 
-      const nextSession = {
-        accessToken: authResult.accessToken,
-        user: authResult.user,
-      };
-      
-      // Save session first
-      persistSession(nextSession);
-      setSession(nextSession);
+      if (!authResult?.user) {
+        throw new Error('Login failed. Invalid response from server.');
+      }
+      setSession({ user: authResult.user });
       
       const shouldRedirectToTenant = authResult?.user?.role !== 'SUPER_ADMIN';
       const redirectUrl = shouldRedirectToTenant
-        ? getTenantRedirectUrl(authResult?.user?.organizationSubdomain, nextSession)
+        ? getTenantRedirectUrl(authResult?.user?.organizationSubdomain)
         : null;
 
       if (redirectUrl) {
@@ -92,21 +102,15 @@ function App() {
         setLoading(false);
       }
     } catch (loginError) {
-      if (mode === 'superadmin' && loginError.status === 401) {
+      // Handle super admin bootstrap fallback only for admin mode
+      if (mode === 'admin' && loginError.status === 401) {
         try {
           const bootstrapResult = await bootstrapSuperAdminRequest(form.email, form.password);
-          const nextSession = {
-            accessToken: bootstrapResult.accessToken,
-            user: bootstrapResult.user,
-          };
-          
-          // Save session first
-          persistSession(nextSession);
-          setSession(nextSession);
+          setSession({ user: bootstrapResult.user });
           
           const shouldRedirectToTenant = bootstrapResult?.user?.role !== 'SUPER_ADMIN';
           const redirectUrl = shouldRedirectToTenant
-            ? getTenantRedirectUrl(bootstrapResult?.user?.organizationSubdomain, nextSession)
+            ? getTenantRedirectUrl(bootstrapResult?.user?.organizationSubdomain)
             : null;
 
           if (redirectUrl) {
@@ -127,13 +131,14 @@ function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutRequest();
     clearSession();
     setSession(null);
   };
 
   const loadOrganizationsAndStats = async () => {
-    if (!session?.accessToken || user?.role !== 'SUPER_ADMIN') {
+    if (!session?.user || user?.role !== 'SUPER_ADMIN') {
       setOrgLoading(false);
       return;
     }
@@ -141,9 +146,9 @@ function App() {
     setOrgLoading(true);
     try {
       const [orgs, deleted, statsResponse] = await Promise.all([
-        listOrganizations(session.accessToken),
-        listDeletedOrganizations(session.accessToken),
-        getSuperAdminDashboardStats(session.accessToken),
+        listOrganizations(),
+        listDeletedOrganizations(),
+        getSuperAdminDashboardStats(),
       ]);
       setOrganizations(Array.isArray(orgs) ? orgs : []);
       setDeletedOrganizations(Array.isArray(deleted) ? deleted : []);
@@ -159,7 +164,7 @@ function App() {
 
   useEffect(() => {
     // Load dashboard data whenever a SUPER_ADMIN logs in or token changes
-    if (session?.accessToken && user?.role === 'SUPER_ADMIN') {
+    if (session?.user && user?.role === 'SUPER_ADMIN') {
       loadOrganizationsAndStats();
     } else {
       setOrganizations([]);
@@ -172,13 +177,12 @@ function App() {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.accessToken, user?.role]);
+  }, [session?.user, user?.role]);
 
   const handleOrgDelete = async (id) => {
-    if (!session?.accessToken) return;
     setOrgError('');
     try {
-      await deleteOrganization(session.accessToken, id);
+      await deleteOrganization(id);
       await loadOrganizationsAndStats();
     } catch (err) {
       setOrgError(err.message);
@@ -186,112 +190,133 @@ function App() {
   };
 
   const handleOrgRestore = async (id) => {
-    if (!session?.accessToken) return;
     setOrgError('');
     try {
-      await restoreOrganization(session.accessToken, id);
+      await restoreOrganization(id);
       await loadOrganizationsAndStats();
     } catch (err) {
       setOrgError(err.message);
     }
   };
 
+  useEffect(() => {
+    let mounted = true;
+    fetchSessionUser()
+      .then((userData) => {
+        if (mounted && userData) {
+          setSession({ user: userData });
+        }
+      })
+      .catch(() => {
+        if (mounted) setSession(null);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={appTheme}>
         <CssBaseline />
-        <BrowserRouter>
-          {session?.accessToken && isSuperAdmin ? (
-            <DashboardLayout
-              user={user}
-              navItems={
-                [
-                  { label: 'Dashboard', path: '/dashboard' },
-                  { label: 'Organizations', path: '/organizations' },
-                ]
-              }
-              mobileDrawerOpen={mobileDrawerOpen}
-              onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
-              onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
-              onLogout={handleLogout}
-            >
-              <Routes>
-                <Route
-                  path="/dashboard"
-                  element={
-                    <OverviewPage
-                      stats={stats}
-                      activeCount={organizations.filter((o) => o.status === 'ACTIVE').length}
-                      inactiveCount={organizations.filter((o) => o.status === 'INACTIVE').length}
-                    />
-                  }
-                />
-                <Route
-                  path="/organizations"
-                  element={
-                    <OrganizationsPage
-                      organizations={organizations}
-                      deletedOrganizations={deletedOrganizations}
-                      isLoading={orgLoading}
-                      error={orgError}
-                      search={orgSearch}
-                      onSearchChange={(e) => setOrgSearch(e.target.value)}
-                      onDelete={handleOrgDelete}
-                      onRestore={handleOrgRestore}
-                    />
-                  }
-                />
-                <Route
-                  path="/organizations/new"
-                  element={
-                    <OrganizationFormPage
-                      accessToken={session?.accessToken}
-                      onSaved={loadOrganizationsAndStats}
-                    />
-                  }
-                />
-                <Route
-                  path="/organizations/:id/edit"
-                  element={
-                    <OrganizationFormPage
-                      accessToken={session?.accessToken}
-                      onSaved={loadOrganizationsAndStats}
-                    />
-                  }
-                />
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-              </Routes>
-            </DashboardLayout>
-          ) : session?.accessToken ? (
-            <OrgDashboardPage
-              accessToken={session?.accessToken}
-              user={user}
-              userName={userName}
-              mobileDrawerOpen={mobileDrawerOpen}
-              onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
-              onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
-              onLogout={handleLogout}
-            />
-          ) : (
+        {session?.user && isSuperAdmin ? (
+          <DashboardLayout
+            user={user}
+            navItems={
+              [
+                { label: 'Dashboard', path: '/dashboard' },
+                { label: 'Organizations', path: '/organizations' },
+              ]
+            }
+            mobileDrawerOpen={mobileDrawerOpen}
+            onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
+            onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
+            onLogout={handleLogout}
+          >
             <Routes>
               <Route
-                path="/login"
+                path="/dashboard"
                 element={
-                  <LoginPage
-                    mode={mode}
-                    setMode={setMode}
-                    form={form}
-                    onFieldChange={handleChange}
-                    onSubmit={handleSubmit}
-                    loading={loading}
-                    error={error}
+                  <OverviewPage
+                    stats={stats}
+                    activeCount={organizations.filter((o) => o.status === 'ACTIVE').length}
+                    inactiveCount={organizations.filter((o) => o.status === 'INACTIVE').length}
                   />
                 }
               />
-              <Route path="*" element={<Navigate to="/login" replace />} />
+              <Route
+                path="/organizations"
+                element={
+                  <OrganizationsPage
+                    organizations={organizations}
+                    deletedOrganizations={deletedOrganizations}
+                    isLoading={orgLoading}
+                    error={orgError}
+                    search={orgSearch}
+                    onSearchChange={(e) => setOrgSearch(e.target.value)}
+                    onDelete={handleOrgDelete}
+                    onRestore={handleOrgRestore}
+                  />
+                }
+              />
+              <Route
+                path="/organizations/new"
+                element={
+                  <OrganizationFormPage
+                    onSaved={loadOrganizationsAndStats}
+                  />
+                }
+              />
+              <Route
+                path="/organizations/:id/edit"
+                element={
+                  <OrganizationFormPage
+                    onSaved={loadOrganizationsAndStats}
+                  />
+                }
+              />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
-          )}
-        </BrowserRouter>
+          </DashboardLayout>
+        ) : session?.user && isEmployee ? (
+          // Employee Dashboard
+          <EmployeeDashboard
+            user={user}
+            userName={userName}
+            mobileDrawerOpen={mobileDrawerOpen}
+            onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
+            onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
+            onLogout={handleLogout}
+          />
+        ) : session?.user ? (
+          // Org Admin Dashboard (non-employee system users)
+          <OrgDashboardPage
+            user={user}
+            userName={userName}
+            mobileDrawerOpen={mobileDrawerOpen}
+            onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
+            onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
+            onLogout={handleLogout}
+          />
+        ) : (
+          <Routes>
+            <Route
+              path="/login"
+              element={
+                <LoginPage
+                  mode={mode}
+                  setMode={setMode}
+                  form={form}
+                  onFieldChange={handleChange}
+                  onSubmit={handleSubmit}
+                  loading={loading}
+                  error={error}
+                />
+              }
+            />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        )}
       </ThemeProvider>
     </QueryClientProvider>
   );

@@ -23,30 +23,41 @@ import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import ApartmentRoundedIcon from '@mui/icons-material/ApartmentRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { SidebarContent } from '../components/layout/SidebarContent';
 import { SettingsPage } from './SettingsPage';
+import { EmployeesPage } from './EmployeesPage';
 
 const DRAWER_WIDTH = 280;
 
 const navItems = [
-  { key: 'overview', label: 'Dashboard', icon: <DashboardRoundedIcon />, active: true },
-  { label: 'Employees', icon: <PeopleRoundedIcon /> },
-  { label: 'Attendance', icon: <EventNoteRoundedIcon /> },
-  { label: 'Payroll', icon: <AttachMoneyRoundedIcon /> },
-  { key: 'settings', label: 'Settings', icon: <SettingsRoundedIcon /> },
-  { label: 'Organization', icon: <ApartmentRoundedIcon /> },
+  { key: 'overview', label: 'Dashboard', icon: <DashboardRoundedIcon />, path: '/dashboard' },
+  { key: 'employees', label: 'Employees', icon: <PeopleRoundedIcon /> },
+  { key: 'attendance', label: 'Attendance', icon: <EventNoteRoundedIcon /> },
+  { key: 'payroll', label: 'Payroll', icon: <AttachMoneyRoundedIcon /> },
+  { key: 'settings', label: 'Settings', icon: <SettingsRoundedIcon />, path: '/settings' },
+  { key: 'organization', label: 'Organization', icon: <ApartmentRoundedIcon /> },
 ];
 
 export function OrgAdminDashboard({
-  accessToken,
   user,
   userName,
   mobileDrawerOpen,
   onOpenMobileDrawer,
   onCloseMobileDrawer,
   onLogout,
+  initialSection = 'overview',
 }) {
-  const [activeSection, setActiveSection] = useState('overview');
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Determine active section from URL path
+  const getActiveSectionFromPath = () => {
+    if (location.pathname === '/settings') return 'settings';
+    return 'overview';
+  };
+  
+  const [activeSection, setActiveSection] = useState(() => getActiveSectionFromPath());
   
   const organizationId = user?.organizationId;
   
@@ -55,12 +66,28 @@ export function OrgAdminDashboard({
     active: activeSection === (item.key ?? item.label.toLowerCase()),
   }));
 
+  const handleNavItemClick = (item) => {
+    const section = item.key ?? item.label.toLowerCase();
+    setActiveSection(section);
+    
+    // Navigate using React Router if path is defined
+    if (item.path) {
+      navigate(item.path);
+    }
+    
+    onCloseMobileDrawer?.();
+  };
+
   const sidebar = (
     <SidebarContent
       user={user}
       navItems={sidebarNavItems}
-      onItemClick={(item) => setActiveSection(item.key ?? item.label.toLowerCase())}
+      onItemClick={handleNavItemClick}
     />
+  );
+
+  const renderEmployees = () => (
+    <EmployeesPage organizationId={organizationId} />
   );
 
   const renderOverview = () => (
@@ -398,8 +425,10 @@ export function OrgAdminDashboard({
       >
         {activeSection === 'overview'
           ? renderOverview()
+          : activeSection === 'employees'
+          ? renderEmployees()
           : activeSection === 'settings'
-          ? <SettingsPage accessToken={accessToken} organizationId={organizationId} />
+          ? <SettingsPage organizationId={organizationId} />
           : renderComingSoon(activeSection.charAt(0).toUpperCase() + activeSection.slice(1))}
       </Box>
     </Box>

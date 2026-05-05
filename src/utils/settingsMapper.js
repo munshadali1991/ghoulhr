@@ -90,7 +90,16 @@ export function mapEmployeeSettingsToForm(settingsData) {
   Object.entries(settingsData).forEach(([backendKey, value]) => {
     const formKey = keyMapping[backendKey];
     if (formKey) {
-      formData[formKey] = value;
+      // Parse JSON strings for complex values (arrays, objects)
+      if (typeof value === 'string') {
+        try {
+          formData[formKey] = JSON.parse(value);
+        } catch {
+          formData[formKey] = value;
+        }
+      } else {
+        formData[formKey] = value;
+      }
     }
   });
 
@@ -107,6 +116,7 @@ export function mapFormToEmployeeSettings(formData) {
 
   Object.entries(formData).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
+      // Arrays and objects will be automatically serialized by JSON.stringify in the API call
       employeeData[key] = value;
     }
   });

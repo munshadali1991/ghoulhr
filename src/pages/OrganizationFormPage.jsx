@@ -73,7 +73,7 @@ const emptyForm = {
   accountNumber: '',
 };
 
-export function OrganizationFormPage({ accessToken, onSaved }) {
+export function OrganizationFormPage({ onSaved }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id);
@@ -86,7 +86,7 @@ export function OrganizationFormPage({ accessToken, onSaved }) {
 
   useEffect(() => {
     const load = async () => {
-      if (!id || !accessToken) {
+      if (!id) {
         setLoadingInitial(false);
         return;
       }
@@ -99,7 +99,7 @@ export function OrganizationFormPage({ accessToken, onSaved }) {
 
       setError('');
       try {
-        const org = await getOrganizationById(accessToken, id);
+        const org = await getOrganizationById(id);
         setForm((prev) => ({
           ...prev,
           ...org,
@@ -114,7 +114,7 @@ export function OrganizationFormPage({ accessToken, onSaved }) {
     if (isEdit) {
       load();
     }
-  }, [id, accessToken, isEdit]);
+  }, [id, isEdit]);
 
   const handleChange = (field) => (event) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));
@@ -122,7 +122,6 @@ export function OrganizationFormPage({ accessToken, onSaved }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!accessToken) return;
     setLoading(true);
     setError('');
     try {
@@ -149,9 +148,9 @@ export function OrganizationFormPage({ accessToken, onSaved }) {
       };
 
       if (isEdit && id) {
-        await updateOrganization(accessToken, id, payload);
+        await updateOrganization(id, payload);
       } else {
-        await createOrganization(accessToken, payload);
+        await createOrganization(payload);
       }
 
       await onSaved?.();

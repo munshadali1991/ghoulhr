@@ -1,4 +1,4 @@
-export function getTenantRedirectUrl(organizationSubdomain, sessionData = null) {
+export function getTenantRedirectUrl(organizationSubdomain) {
   if (!organizationSubdomain || typeof window === 'undefined') {
     return null;
   }
@@ -11,7 +11,7 @@ export function getTenantRedirectUrl(organizationSubdomain, sessionData = null) 
 
   const portPart = port ? `:${port}` : '';
   const isLocalHost = hostname === 'localhost' || hostname.endsWith('.localhost');
-  
+
   let targetHost;
   if (isLocalHost) {
     targetHost = `${organizationSubdomain}.localhost`;
@@ -30,16 +30,5 @@ export function getTenantRedirectUrl(organizationSubdomain, sessionData = null) 
     }
   }
 
-  // If session data is provided, encode it in URL for cross-subdomain transfer
-  let url = `${protocol}//${targetHost}${portPart}`;
-  if (sessionData) {
-    try {
-      const encodedSession = btoa(JSON.stringify(sessionData));
-      url += `?session=${encodedSession}`;
-    } catch (error) {
-      console.error('Failed to encode session data:', error);
-    }
-  }
-  
-  return url;
+  return `${protocol}//${targetHost}${portPart}`;
 }

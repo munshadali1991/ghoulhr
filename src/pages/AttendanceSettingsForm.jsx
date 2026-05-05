@@ -1,9 +1,9 @@
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { useAttendanceSettings } from '../hooks/useAttendanceSettings';
+import { SettingsSection } from '../components/settings/SettingsSection';
+import { SettingsField } from '../components/settings/SettingsField';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   TextField,
   Button,
@@ -21,11 +21,11 @@ import {
   FormControlLabel,
   Paper,
   IconButton,
+  Checkbox,
+  Skeleton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import SaveIcon from '@mui/icons-material/Save';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -34,7 +34,7 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LanguageIcon from '@mui/icons-material/Language';
 import SecurityIcon from '@mui/icons-material/Security';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // Constants for weekdays
 const WEEKDAYS = [
@@ -54,72 +54,6 @@ const TRACKING_MODES = [
   { value: 'geo', label: 'Geo' },
   { value: 'ip', label: 'IP-based' },
 ];
-
-// Validation function
-const validateForm = (data) => {
-  const errors = {};
-
-  // Validate working days
-  if (!data.working_days || data.working_days.length === 0) {
-    errors.working_days = 'At least one working day must be selected';
-  }
-
-  // Validate shifts
-  if (!data.shifts || data.shifts.length === 0) {
-    errors.shifts = 'At least one shift must be added';
-  } else {
-    const shiftErrors = [];
-    data.shifts.forEach((shift, index) => {
-      if (!shift.name || shift.name.trim() === '') {
-        shiftErrors.push(`Shift ${index + 1}: Name is required`);
-      }
-      if (!shift.start_time) {
-        shiftErrors.push(`Shift ${index + 1}: Start time is required`);
-      }
-      if (!shift.end_time) {
-        shiftErrors.push(`Shift ${index + 1}: End time is required`);
-      }
-      if (shift.start_time && shift.end_time) {
-        if (shift.start_time >= shift.end_time) {
-          shiftErrors.push(`Shift ${index + 1}: End time must be after start time`);
-        }
-      }
-      if (shift.break_minutes !== undefined && shift.break_minutes !== null) {
-        if (shift.break_minutes < 0) {
-          shiftErrors.push(`Shift ${index + 1}: Break minutes must be >= 0`);
-        }
-      }
-    });
-    if (shiftErrors.length > 0) {
-      errors.shifts = shiftErrors;
-    }
-  }
-
-  // Validate grace period
-  if (data.grace_period_minutes !== undefined && data.grace_period_minutes !== null) {
-    if (data.grace_period_minutes < 0) {
-      errors.grace_period_minutes = 'Grace period must be >= 0';
-    }
-  }
-
-  // Validate half-day threshold
-  if (data.half_day_threshold_minutes !== undefined && data.half_day_threshold_minutes !== null) {
-    if (data.half_day_threshold_minutes < 0) {
-      errors.half_day_threshold_minutes = 'Half-day threshold must be >= 0';
-    }
-  }
-
-  // Validate IP addresses
-  if (data.allowed_ip_addresses && data.allowed_ip_addresses.length > 0) {
-    const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:\/(?:3[0-2]|[12]?[0-9]))?$/;
-    const invalidIps = data.allowed_ip_addresses.filter((ip) => !ipRegex.test(ip));
-    if (invalidIps.length > 0) {
-      errors.allowed_ip_addresses = `Invalid IP addresses: ${invalidIps.join(', ')}`;
-    }
-  }
-
-  return errors;
-};
 
 // IP Address Input with Tags component
 function IpAddressInput({ value = [], onChange }) {
@@ -173,17 +107,14 @@ function IpAddressInput({ value = [], onChange }) {
   );
 }
 
-export function AttendanceSettingsForm({ accessToken, organizationId }) {
-  // Debug logging
-  console.log('AttendanceSettingsForm props:', { accessToken: accessToken ? 'EXISTS' : 'MISSING', organizationId });
-  
+export function AttendanceSettingsForm({ organizationId }) {
   const { settings, isLoading, error, updateSettings, isUpdating } = useAttendanceSettings(
-    accessToken,
     organizationId
   );
 
   const [successMessage, setSuccessMessage] = useState('');
   const [formError, setFormError] = useState('');
+  const hasInitialized = useRef(false);
 
   const {
     register,
@@ -225,7 +156,8 @@ export function AttendanceSettingsForm({ accessToken, organizationId }) {
 
   // Reset form when settings are loaded
   useEffect(() => {
-    if (settings && Object.keys(settings).length > 0) {
+    if (settings && Object.keys(settings).length > 0 && !hasInitialized.current) {
+      hasInitialized.current = true;
       reset({
         working_days: settings.working_days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
         shifts: settings.shifts || [
@@ -253,17 +185,18 @@ export function AttendanceSettingsForm({ accessToken, organizationId }) {
       setSuccessMessage('');
       setFormError('');
 
-      // Validate form data
-      const validationErrors = validateForm(formData);
-      if (Object.keys(validationErrors).length > 0) {
-        const errorMessages = Array.isArray(validationErrors.shifts)
-          ? validationErrors.shifts
-          : Object.values(validationErrors);
-        setFormError(errorMessages.join(', '));
+      // Validate working days
+      if (!formData.working_days || formData.working_days.length === 0) {
+        setFormError('At least one working day must be selected');
         return;
       }
 
-      // Call the update mutation
+      // Validate shifts
+      if (!formData.shifts || formData.shifts.length === 0) {
+        setFormError('At least one shift must be added');
+        return;
+      }
+
       await updateSettings(formData);
 
       setSuccessMessage('Attendance settings updated successfully!');
@@ -311,8 +244,10 @@ export function AttendanceSettingsForm({ accessToken, organizationId }) {
   // Show loading state
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-        <CircularProgress />
+      <Box>
+        <Skeleton variant="rectangular" height={150} sx={{ borderRadius: 2, mb: 3 }} />
+        <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2, mb: 3 }} />
+        <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
       </Box>
     );
   }
@@ -341,572 +276,347 @@ export function AttendanceSettingsForm({ accessToken, organizationId }) {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Grid container spacing={3}>
-          {/* Working Days Card */}
-          <Grid item xs={12}>
-            <Card
-              elevation={0}
-              sx={{
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              <Box
-                sx={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  p: 2.5,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                }}
-              >
-                <EventAvailableIcon sx={{ color: 'white', fontSize: 28 }} />
-                <Typography variant="h6" fontWeight={600} sx={{ color: 'white' }}>
-                  Working Days
-                </Typography>
-              </Box>
-
-              <CardContent sx={{ p: 4 }}>
-                <Paper elevation={0} sx={{ p: 2.5, bgcolor: 'background.default', borderRadius: 2 }}>
-                  <Controller
-                    name="working_days"
-                    control={control}
-                    rules={{
-                      validate: (value) => {
-                        if (!value || value.length === 0) {
-                          return 'At least one working day must be selected';
-                        }
-                        return true;
-                      },
-                    }}
-                    render={({ field, fieldState }) => (
-                      <FormControl fullWidth error={!!fieldState.error}>
-                        <InputLabel>Select working days</InputLabel>
-                        <Select
-                          multiple
-                          value={field.value || []}
-                          onChange={(e) => field.onChange(e.target.value)}
-                          label="Select working days"
-                          renderValue={(selected) => (
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                              {selected.map((value) => (
-                                <Chip
-                                  key={value}
-                                  label={WEEKDAYS.find((opt) => opt.value === value)?.label || value}
-                                  size="small"
-                                />
-                              ))}
-                            </Box>
-                          )}
-                          sx={{ borderRadius: 2, minHeight: 56 }}
-                        >
-                          {WEEKDAYS.map((option) => (
-                            <MenuItem key={option.value} value={option.value}>
-                              {option.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                        {fieldState.error && <FormHelperText>{fieldState.error.message}</FormHelperText>}
-                        {!fieldState.error && (
-                          <FormHelperText>Select the days your organization operates</FormHelperText>
-                        )}
-                      </FormControl>
-                    )}
-                  />
-                </Paper>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Shift Management Card */}
-          <Grid item xs={12}>
-            <Card
-              elevation={0}
-              sx={{
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              <Box
-                sx={{
-                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                  p: 2.5,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                }}
-              >
-                <AccessTimeIcon sx={{ color: 'white', fontSize: 28 }} />
-                <Typography variant="h6" fontWeight={600} sx={{ color: 'white' }}>
-                  Shift Management
-                </Typography>
-              </Box>
-
-              <CardContent sx={{ p: 4 }}>
-                <Grid container spacing={3}>
-                  {shiftFields.map((field, index) => (
-                    <Grid item xs={12} key={field.id}>
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: 3,
-                          bgcolor: 'background.default',
-                          borderRadius: 2,
-                          border: '1px solid',
-                          borderColor: 'divider',
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                          <Typography variant="subtitle1" fontWeight={600}>
-                            Shift {index + 1}
-                          </Typography>
-                          {shiftFields.length > 1 && (
-                            <IconButton
-                              onClick={() => removeShift(index)}
-                              color="error"
-                              size="small"
-                              sx={{
-                                border: '1px solid',
-                                borderColor: 'error.light',
-                                '&:hover': {
-                                  bgcolor: 'error.lighter',
-                                },
-                              }}
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          )}
-                        </Box>
-
-                        <Grid container spacing={2}>
-                          <Grid item xs={12} md={4}>
-                            <TextField
-                              fullWidth
-                              label="Shift Name"
-                              {...register(`shifts.${index}.name`, {
-                                required: 'Shift name is required',
-                              })}
-                              error={!!formErrors.shifts?.[index]?.name}
-                              helperText={formErrors.shifts?.[index]?.name?.message}
-                              size="small"
-                              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                            />
-                          </Grid>
-                          <Grid item xs={12} md={2.5}>
-                            <TextField
-                              fullWidth
-                              label="Start Time"
-                              type="time"
-                              {...register(`shifts.${index}.start_time`, {
-                                required: 'Start time is required',
-                              })}
-                              error={!!formErrors.shifts?.[index]?.start_time}
-                              helperText={formErrors.shifts?.[index]?.start_time?.message}
-                              size="small"
-                              InputLabelProps={{ shrink: true }}
-                              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                            />
-                          </Grid>
-                          <Grid item xs={12} md={2.5}>
-                            <TextField
-                              fullWidth
-                              label="End Time"
-                              type="time"
-                              {...register(`shifts.${index}.end_time`, {
-                                required: 'End time is required',
-                              })}
-                              error={!!formErrors.shifts?.[index]?.end_time}
-                              helperText={formErrors.shifts?.[index]?.end_time?.message}
-                              size="small"
-                              InputLabelProps={{ shrink: true }}
-                              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                            />
-                          </Grid>
-                          <Grid item xs={12} md={3}>
-                            <TextField
-                              fullWidth
-                              label="Break (minutes)"
-                              type="number"
-                              {...register(`shifts.${index}.break_minutes`, {
-                                valueAsNumber: true,
-                                min: { value: 0, message: 'Must be >= 0' },
-                              })}
-                              error={!!formErrors.shifts?.[index]?.break_minutes}
-                              helperText={formErrors.shifts?.[index]?.break_minutes?.message}
-                              size="small"
-                              InputProps={{
-                                endAdornment: <InputAdornment position="end">min</InputAdornment>,
-                                inputProps: { min: 0, step: 1 },
-                              }}
-                              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                            />
-                          </Grid>
-                        </Grid>
-                      </Paper>
-                    </Grid>
-                  ))}
-
-                  <Grid item xs={12}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<AddIcon />}
-                      onClick={handleAddShift}
-                      fullWidth
-                      sx={{ borderRadius: 2, py: 1.5 }}
-                    >
-                      Add New Shift
-                    </Button>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Time Rules Card */}
-          <Grid item xs={12}>
-            <Card
-              elevation={0}
-              sx={{
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              <Box
-                sx={{
-                  background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                  p: 2.5,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                }}
-              >
-                <TimerIcon sx={{ color: 'white', fontSize: 28 }} />
-                <Typography variant="h6" fontWeight={600} sx={{ color: 'white' }}>
-                  Time Rules
-                </Typography>
-              </Box>
-
-              <CardContent sx={{ p: 4 }}>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <Paper elevation={0} sx={{ p: 2.5, bgcolor: 'background.default', borderRadius: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <TimerIcon color="primary" />
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          Grace Period
-                        </Typography>
-                      </Box>
-                      <TextField
-                        fullWidth
-                        type="number"
-                        label="Minutes"
-                        {...register('grace_period_minutes', {
-                          valueAsNumber: true,
-                          min: { value: 0, message: 'Must be >= 0' },
-                        })}
-                        error={!!formErrors.grace_period_minutes}
-                        helperText={formErrors.grace_period_minutes?.message || 'Late check-in grace period'}
-                        size="medium"
-                        InputProps={{
-                          endAdornment: <InputAdornment position="end">min</InputAdornment>,
-                          inputProps: { min: 0, step: 1 },
-                        }}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                      />
-                    </Paper>
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <Paper elevation={0} sx={{ p: 2.5, bgcolor: 'background.default', borderRadius: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <TimerIcon color="primary" />
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          Half-Day Threshold
-                        </Typography>
-                      </Box>
-                      <TextField
-                        fullWidth
-                        type="number"
-                        label="Minutes"
-                        {...register('half_day_threshold_minutes', {
-                          valueAsNumber: true,
-                          min: { value: 0, message: 'Must be >= 0' },
-                        })}
-                        error={!!formErrors.half_day_threshold_minutes}
-                        helperText={formErrors.half_day_threshold_minutes?.message || 'Minutes before marking half-day'}
-                        size="medium"
-                        InputProps={{
-                          endAdornment: <InputAdornment position="end">min</InputAdornment>,
-                          inputProps: { min: 0, step: 1 },
-                        }}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                      />
-                    </Paper>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Overtime Card */}
-          <Grid item xs={12}>
-            <Card
-              elevation={0}
-              sx={{
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              <Box
-                sx={{
-                  background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                  p: 2.5,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                }}
-              >
-                <EmojiEventsIcon sx={{ color: 'white', fontSize: 28 }} />
-                <Typography variant="h6" fontWeight={600} sx={{ color: 'white' }}>
-                  Overtime Settings
-                </Typography>
-              </Box>
-
-              <CardContent sx={{ p: 4 }}>
-                <Paper elevation={0} sx={{ p: 2.5, bgcolor: 'background.default', borderRadius: 2 }}>
-                  <Controller
-                    name="overtime_enabled"
-                    control={control}
-                    render={({ field }) => (
-                      <FormControlLabel
-                        control={<Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} color="primary" />}
-                        label={field.value ? 'Overtime Enabled' : 'Overtime Disabled'}
-                        sx={{ mb: 2 }}
-                      />
-                    )}
-                  />
-
-                  {overtimeEnabled && (
-                    <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Configure overtime rules (optional)
-                      </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} md={6}>
-                          <TextField
-                            fullWidth
-                            label="Max Hours Per Day"
-                            type="number"
-                            {...register('overtime_rules.max_hours_per_day', { valueAsNumber: true })}
-                            size="small"
-                            InputProps={{ inputProps: { min: 0, step: 0.5 } }}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                          <TextField
-                            fullWidth
-                            label="Overtime Multiplier"
-                            type="number"
-                            {...register('overtime_rules.multiplier', { valueAsNumber: true })}
-                            size="small"
-                            InputProps={{ inputProps: { min: 1, step: 0.1 } }}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                          />
-                        </Grid>
-                      </Grid>
-                    </Box>
-                  )}
-                </Paper>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Attendance Mode Card */}
-          <Grid item xs={12}>
-            <Card
-              elevation={0}
-              sx={{
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              <Box
-                sx={{
-                  background: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-                  p: 2.5,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                }}
-              >
-                <LanguageIcon sx={{ color: 'white', fontSize: 28 }} />
-                <Typography variant="h6" fontWeight={600} sx={{ color: 'white' }}>
-                  Attendance Mode
-                </Typography>
-              </Box>
-
-              <CardContent sx={{ p: 4 }}>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <Paper elevation={0} sx={{ p: 2.5, bgcolor: 'background.default', borderRadius: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <LanguageIcon color="primary" />
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          Tracking Mode
-                        </Typography>
-                      </Box>
-                      <Controller
-                        name="tracking_mode"
-                        control={control}
-                        render={({ field }) => (
-                          <TextField
-                            fullWidth
-                            select
-                            value={field.value}
-                            onChange={(e) => field.onChange(e.target.value)}
-                            size="medium"
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                          >
-                            {TRACKING_MODES.map((mode) => (
-                              <MenuItem key={mode.value} value={mode.value}>
-                                {mode.label}
-                              </MenuItem>
-                            ))}
-                          </TextField>
-                        )}
-                      />
-                    </Paper>
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <Paper elevation={0} sx={{ p: 2.5, bgcolor: 'background.default', borderRadius: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <GpsFixedIcon color="primary" />
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          Geo-Fencing
-                        </Typography>
-                      </Box>
-                      <Controller
-                        name="geo_fencing_enabled"
-                        control={control}
-                        render={({ field }) => (
-                          <FormControlLabel
-                            control={<Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} color="primary" />}
-                            label={field.value ? 'Enabled' : 'Disabled'}
-                          />
-                        )}
-                      />
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                        Enable location-based attendance tracking
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* IP Addresses Card */}
-          {trackingMode === 'ip' && (
-            <Grid item xs={12}>
-              <Card
-                elevation={0}
-                sx={{
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 2,
-                  overflow: 'hidden',
-                }}
-              >
-                <Box
-                  sx={{
-                    background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-                    p: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                  }}
-                >
-                  <SecurityIcon sx={{ color: 'white', fontSize: 28 }} />
-                  <Typography variant="h6" fontWeight={600} sx={{ color: 'white' }}>
-                    Allowed IP Addresses
-                  </Typography>
-                </Box>
-
-                <CardContent sx={{ p: 4 }}>
-                  <Paper elevation={0} sx={{ p: 2.5, bgcolor: 'background.default', borderRadius: 2 }}>
-                    <Controller
-                      name="allowed_ip_addresses"
-                      control={control}
-                      render={({ field }) => <IpAddressInput value={field.value || []} onChange={field.onChange} />}
+        {/* Working Days */}
+        <SettingsSection
+          icon={<EventAvailableIcon color="primary" />}
+          title="Working Days"
+          description="Select the days your organization operates"
+        >
+          <Controller
+            name="working_days"
+            control={control}
+            rules={{
+              validate: (value) => {
+                if (!value || value.length === 0) {
+                  return 'At least one working day must be selected';
+                }
+                return true;
+              },
+            }}
+            render={({ field, fieldState }) => (
+              <Box>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {WEEKDAYS.map((day) => (
+                    <Chip
+                      key={day.value}
+                      label={day.label}
+                      onClick={() => {
+                        const currentDays = field.value || [];
+                        const newDays = currentDays.includes(day.value)
+                          ? currentDays.filter((d) => d !== day.value)
+                          : [...currentDays, day.value];
+                        field.onChange(newDays);
+                      }}
+                      color={field.value?.includes(day.value) ? 'primary' : 'default'}
+                      variant={field.value?.includes(day.value) ? 'filled' : 'outlined'}
+                      sx={{ minWidth: 100 }}
                     />
-                  </Paper>
-                </CardContent>
-              </Card>
-            </Grid>
-          )}
-
-          {/* Action Buttons */}
-          <Grid item xs={12}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 3,
-                bgcolor: 'background.default',
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 2,
-              }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  {isDirty ? 'Unsaved changes detected' : 'No unsaved changes'}
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Button
-                    variant="outlined"
-                    onClick={handleReset}
-                    disabled={isUpdating || !isDirty}
-                    startIcon={<RestartAltIcon />}
-                    size="large"
-                  >
-                    Reset Changes
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    startIcon={<SaveIcon />}
-                    disabled={isUpdating || !isDirty}
-                    size="large"
-                    sx={{
-                      px: 4,
-                      py: 1.2,
-                      fontWeight: 600,
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      '&:hover': {
-                        boxShadow: 4,
-                      },
-                    }}
-                  >
-                    {isUpdating ? <CircularProgress size={24} color="inherit" /> : 'Save Settings'}
-                  </Button>
+                  ))}
                 </Box>
+                {fieldState.error && (
+                  <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1 }}>
+                    {fieldState.error.message}
+                  </Typography>
+                )}
               </Box>
-            </Paper>
+            )}
+          />
+        </SettingsSection>
+
+        {/* Shift Management */}
+        <SettingsSection
+          icon={<AccessTimeIcon color="primary" />}
+          title="Shift Management"
+          description="Configure work shifts with start/end times and breaks"
+        >
+          <Grid container spacing={2}>
+            {shiftFields.map((field, index) => (
+              <Grid item xs={12} key={field.id}>
+                <Paper sx={{ p: 2, borderRadius: 2, bgcolor: 'background.default' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      Shift {index + 1}
+                    </Typography>
+                    {shiftFields.length > 1 && (
+                      <IconButton
+                        onClick={() => removeShift(index)}
+                        color="error"
+                        size="small"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    )}
+                  </Box>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={4}>
+                      <TextField
+                        fullWidth
+                        label="Shift Name"
+                        {...register(`shifts.${index}.name`, {
+                          required: 'Shift name is required',
+                        })}
+                        error={!!formErrors.shifts?.[index]?.name}
+                        helperText={formErrors.shifts?.[index]?.name?.message}
+                        size="small"
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={2.5}>
+                      <TextField
+                        fullWidth
+                        label="Start Time"
+                        type="time"
+                        {...register(`shifts.${index}.start_time`, {
+                          required: 'Start time is required',
+                        })}
+                        error={!!formErrors.shifts?.[index]?.start_time}
+                        helperText={formErrors.shifts?.[index]?.start_time?.message}
+                        size="small"
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={2.5}>
+                      <TextField
+                        fullWidth
+                        label="End Time"
+                        type="time"
+                        {...register(`shifts.${index}.end_time`, {
+                          required: 'End time is required',
+                        })}
+                        error={!!formErrors.shifts?.[index]?.end_time}
+                        helperText={formErrors.shifts?.[index]?.end_time?.message}
+                        size="small"
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={3}>
+                      <TextField
+                        fullWidth
+                        label="Break (minutes)"
+                        type="number"
+                        {...register(`shifts.${index}.break_minutes`, {
+                          valueAsNumber: true,
+                          min: { value: 0, message: 'Must be >= 0' },
+                        })}
+                        error={!!formErrors.shifts?.[index]?.break_minutes}
+                        helperText={formErrors.shifts?.[index]?.break_minutes?.message}
+                        size="small"
+                        InputProps={{
+                          endAdornment: <InputAdornment position="end">min</InputAdornment>,
+                          inputProps: { min: 0, step: 1 },
+                        }}
+                      />
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+            ))}
+
+            <Grid item xs={12}>
+              <Button
+                variant="outlined"
+                startIcon={<AddIcon />}
+                onClick={handleAddShift}
+                fullWidth
+              >
+                Add New Shift
+              </Button>
+            </Grid>
           </Grid>
-        </Grid>
+        </SettingsSection>
+
+        {/* Time Rules */}
+        <SettingsSection
+          icon={<TimerIcon color="primary" />}
+          title="Time Rules"
+          description="Configure grace periods and attendance thresholds"
+        >
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <SettingsField
+                label="Grace Period"
+                error={formErrors.grace_period_minutes?.message}
+                description="Late check-in grace period in minutes"
+              >
+                <TextField
+                  fullWidth
+                  type="number"
+                  {...register('grace_period_minutes', {
+                    valueAsNumber: true,
+                    min: { value: 0, message: 'Must be >= 0' },
+                  })}
+                  error={!!formErrors.grace_period_minutes}
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">min</InputAdornment>,
+                    inputProps: { min: 0, step: 1 },
+                  }}
+                />
+              </SettingsField>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <SettingsField
+                label="Half-Day Threshold"
+                error={formErrors.half_day_threshold_minutes?.message}
+                description="Minutes worked before marking as half-day"
+              >
+                <TextField
+                  fullWidth
+                  type="number"
+                  {...register('half_day_threshold_minutes', {
+                    valueAsNumber: true,
+                    min: { value: 0, message: 'Must be >= 0' },
+                  })}
+                  error={!!formErrors.half_day_threshold_minutes}
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">min</InputAdornment>,
+                    inputProps: { min: 0, step: 1 },
+                  }}
+                />
+              </SettingsField>
+            </Grid>
+          </Grid>
+        </SettingsSection>
+
+        {/* Overtime Settings */}
+        <SettingsSection
+          icon={<EmojiEventsIcon color="primary" />}
+          title="Overtime Settings"
+          description="Configure overtime rules and policies"
+        >
+          <Controller
+            name="overtime_enabled"
+            control={control}
+            render={({ field }) => (
+              <FormControlLabel
+                control={<Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} color="primary" />}
+                label={field.value ? 'Overtime Enabled' : 'Overtime Disabled'}
+                sx={{ mb: 2 }}
+              />
+            )}
+          />
+
+          {overtimeEnabled && (
+            <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Max Hours Per Day"
+                    type="number"
+                    {...register('overtime_rules.max_hours_per_day', { valueAsNumber: true })}
+                    size="small"
+                    InputProps={{ inputProps: { min: 0, step: 0.5 } }}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Overtime Multiplier"
+                    type="number"
+                    {...register('overtime_rules.multiplier', { valueAsNumber: true })}
+                    size="small"
+                    InputProps={{ inputProps: { min: 1, step: 0.1 } }}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+        </SettingsSection>
+
+        {/* Attendance Mode */}
+        <SettingsSection
+          icon={<LanguageIcon color="primary" />}
+          title="Attendance Mode"
+          description="Choose how employees check in and out"
+        >
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <SettingsField
+                label="Tracking Mode"
+                description="Method used for attendance tracking"
+              >
+                <Controller
+                  name="tracking_mode"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      fullWidth
+                      select
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      size="medium"
+                    >
+                      {TRACKING_MODES.map((mode) => (
+                        <MenuItem key={mode.value} value={mode.value}>
+                          {mode.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
+              </SettingsField>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <SettingsField
+                label="Geo-Fencing"
+                description="Enable location-based attendance tracking"
+              >
+                <Controller
+                  name="geo_fencing_enabled"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={<Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} color="primary" />}
+                      label={field.value ? 'Enabled' : 'Disabled'}
+                    />
+                  )}
+                />
+              </SettingsField>
+            </Grid>
+          </Grid>
+        </SettingsSection>
+
+        {/* IP Addresses (Conditional) */}
+        {trackingMode === 'ip' && (
+          <SettingsSection
+            icon={<SecurityIcon color="primary" />}
+            title="Allowed IP Addresses"
+            description="Restrict attendance check-in to specific IP addresses"
+          >
+            <Controller
+              name="allowed_ip_addresses"
+              control={control}
+              render={({ field }) => <IpAddressInput value={field.value || []} onChange={field.onChange} />}
+            />
+          </SettingsSection>
+        )}
+
+        {/* Action Buttons */}
+        <Paper sx={{ p: 3, borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              {isDirty ? 'Unsaved changes detected' : 'No unsaved changes'}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                onClick={handleReset}
+                disabled={isUpdating || !isDirty}
+              >
+                Reset
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={isUpdating || !isDirty}
+              >
+                {isUpdating ? <CircularProgress size={24} color="inherit" /> : 'Save Changes'}
+              </Button>
+            </Box>
+          </Box>
+        </Paper>
       </form>
     </Box>
   );

@@ -24,6 +24,8 @@ import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
 import AutoGraphRoundedIcon from '@mui/icons-material/AutoGraphRounded';
 import SecurityRoundedIcon from '@mui/icons-material/SecurityRounded';
 import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import BadgeIcon from '@mui/icons-material/Badge';
 
 export function LoginPage({
   mode,
@@ -118,7 +120,10 @@ export function LoginPage({
                   Welcome back
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 2.5 }}>
-                  Sign in to continue to your HR control center.
+                  {mode === 'admin' 
+                    ? 'Sign in with your admin credentials to continue.'
+                    : 'Sign in with your employee credentials to continue.'
+                  }
                 </Typography>
 
                 <Tabs
@@ -140,9 +145,21 @@ export function LoginPage({
                     },
                   }}
                 >
-                  <Tab label="Super Admin" value="superadmin" />
-                  <Tab label="Employee/Admin" value="employee" />
+                  <Tab label="Admin Login" value="admin" icon={<AdminPanelSettingsIcon />} iconPosition="start" />
+                  <Tab label="Employee Login" value="employee" icon={<BadgeIcon />} iconPosition="start" />
                 </Tabs>
+
+                {mode === 'admin' && (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    For Super Admin & Organization Admin accounts
+                  </Alert>
+                )}
+
+                {mode === 'employee' && (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    For Employees & Managers
+                  </Alert>
+                )}
 
                 <Box component="form" onSubmit={onSubmit}>
                   <Stack spacing={2}>
