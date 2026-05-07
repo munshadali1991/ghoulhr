@@ -83,6 +83,8 @@ export function mapEmployeeSettingsToForm(settingsData) {
     'employee.auto_generate_id': 'auto_generate_id',
     'employee.required_fields': 'required_fields',
     'employee.default_probation_period': 'default_probation_period',
+    'employee.departments': 'departments',
+    'employee.designations': 'designations',
   };
 
   const formData = {};

@@ -23,7 +23,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { checkEmployeeDuplicate, submitHrOnboarding } from '../../services/employeesApi';
+import { checkEmployeeDuplicate, submitHrOnboarding, updateHrOnboarding } from '../../services/employeesApi';
 import { STEP_LABELS } from './constants';
 import {
   buildHrOnboardingPayload,
@@ -35,11 +35,13 @@ import { useBeforeUnloadDirty } from './hooks/useBeforeUnloadDirty';
 import { useOnboardingDraft } from './hooks/useOnboardingDraft';
 import { StepBasicInfo } from './steps/StepBasicInfo';
 import { StepEmployment } from './steps/StepEmployment';
+import { StepExperience } from './steps/StepExperience';
 import { StepPayrollBank } from './steps/StepPayrollBank';
 import { StepCompliance } from './steps/StepCompliance';
 import { StepEmergency } from './steps/StepEmergency';
 import { StepDocuments } from './steps/StepDocuments';
 import { StepAccess } from './steps/StepAccess';
+import { useEmployeeSettings } from '../../hooks/useEmployeeSettings';
 
 function applyZodIssues(setError, issues) {
   issues.forEach((issue) => {
@@ -53,20 +55,30 @@ export function EmployeeOnboardingWizard({
   employees,
   onCancel,
   onSuccess,
+  employeeId,
+  initialValues,
 }) {
+  const isEditMode = Boolean(employeeId);
   const theme = useTheme();
   const isNarrow = useMediaQuery(theme.breakpoints.down('md'));
   const [activeStep, setActiveStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [duplicateResult, setDuplicateResult] = useState(null);
+  const { settings: employeeSettings } = useEmployeeSettings(organizationId);
 
   const methods = useForm({
-    defaultValues: getDefaultOnboardingValues(),
+    defaultValues: initialValues || getDefaultOnboardingValues(),
     mode: 'onTouched',
   });
 
   const { getValues, reset, setError, clearErrors, formState, control } = methods;
+
+  useEffect(() => {
+    if (initialValues) {
+      reset(initialValues);
+    }
+  }, [initialValues, reset]);
 
   const { saveDraftNow, resumeDraft, clearDraft } = useOnboardingDraft(organizationId, getValues, reset);
 
@@ -75,18 +87,20 @@ export function EmployeeOnboardingWizard({
   useBeforeUnloadDirty(formState.isDirty);
 
   useEffect(() => {
+    if (isEditMode) return;
     if (!resumeDraft()) return;
     setSnackbar({ open: true, message: 'Draft restored from this device.', severity: 'info' });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only on mount
-  }, []);
+  }, [isEditMode]);
 
   useEffect(() => {
+    if (isEditMode) return;
     if (!formState.isDirty) return;
     const id = setTimeout(() => saveDraftNow(), 1000);
     return () => clearTimeout(id);
-  }, [watchedForm, formState.isDirty, saveDraftNow]);
+  }, [isEditMode, watchedForm, formState.isDirty, saveDraftNow]);
 
-  const watchedBasic = methods.watch(['basic.personalEmail', 'basic.officialEmail', 'basic.mobileNumber']);
+  const watchedBasic = methods.watch(['basic.personalEmail', 'employment.officialEmail', 'basic.mobileNumber']);
   useEffect(() => {
     const t = setTimeout(async () => {
       const [pe, oe, mob] = watchedBasic;
@@ -155,8 +169,10 @@ export function EmployeeOnboardingWizard({
           message: `This request is about ${(approxJsonBytes / (1024 * 1024)).toFixed(1)} MB. If submit fails with 413, remove some documents or shrink files.`,
         });
       }
-      const result = await submitHrOnboarding(payload);
-      clearDraft();
+      const result = employeeId
+        ? await updateHrOnboarding(employeeId, payload)
+        : await submitHrOnboarding(payload);
+      if (!employeeId) clearDraft();
       onSuccess(result);
     } catch (e) {
       const msg = e.message || 'Failed to create employee';
@@ -167,6 +183,7 @@ export function EmployeeOnboardingWizard({
   };
 
   const handleSaveDraft = () => {
+    if (isEditMode) return;
     if (saveDraftNow()) {
       setSnackbar({ open: true, message: 'Draft saved on this device.', severity: 'success' });
     }
@@ -177,16 +194,18 @@ export function EmployeeOnboardingWizard({
       case 0:
         return <StepBasicInfo duplicateResult={duplicateResult} />;
       case 1:
-        return <StepEmployment managerOptions={managerOptions} />;
+        return <StepEmployment managerOptions={managerOptions} employeeSettings={employeeSettings} />;
       case 2:
-        return <StepPayrollBank />;
+        return <StepExperience />;
       case 3:
-        return <StepCompliance />;
+        return <StepPayrollBank />;
       case 4:
-        return <StepEmergency />;
+        return <StepCompliance />;
       case 5:
-        return <StepDocuments />;
+        return <StepEmergency />;
       case 6:
+        return <StepDocuments />;
+      case 7:
         return <StepAccess />;
       default:
         return null;
@@ -237,14 +256,14 @@ export function EmployeeOnboardingWizard({
                 variant="outlined"
                 startIcon={<SaveRoundedIcon />}
                 onClick={handleSaveDraft}
-                disabled={submitting}
+                disabled={submitting || isEditMode}
               >
                 Save draft
               </Button>
             </Stack>
             <Box textAlign={{ xs: 'left', sm: 'right' }}>
               <Typography variant="h5" fontWeight={700}>
-                HR onboarding
+                {employeeId ? 'Edit employee' : 'HR onboarding'}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Step {activeStep + 1} of {STEP_LABELS.length} — {STEP_LABELS[activeStep]}
@@ -346,7 +365,7 @@ export function EmployeeOnboardingWizard({
                       fontWeight: 600,
                     }}
                   >
-                    {submitting ? 'Submitting…' : 'Complete onboarding'}
+                    {submitting ? 'Submitting…' : employeeId ? 'Save changes' : 'Complete onboarding'}
                   </Button>
                 )}
               </Stack>

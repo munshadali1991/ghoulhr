@@ -88,6 +88,7 @@ export const DOCUMENT_TYPE_OPTIONS = [
   { value: 'OFFER_LETTER', label: 'Offer letter' },
   { value: 'APPOINTMENT_LETTER', label: 'Appointment letter' },
   { value: 'RESUME', label: 'Resume' },
+  { value: 'EXPERIENCE_PROOF', label: 'Experience proof' },
   { value: 'PAN_CARD', label: 'PAN card' },
   { value: 'AADHAAR_CARD', label: 'Aadhaar card' },
   { value: 'PASSPORT_PHOTO', label: 'Passport photo' },
@@ -103,6 +104,7 @@ export function documentTypeLabel(value) {
 export const STEP_LABELS = [
   'Basic info',
   'Employment',
+  'Experience',
   'Payroll & bank',
   'Compliance',
   'Emergency contact',

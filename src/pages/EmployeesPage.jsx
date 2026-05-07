@@ -34,8 +34,9 @@ import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import PersonAddRoundedIcon from '@mui/icons-material/PersonAddRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
-import { listEmployees } from '../services/employeesApi';
+import { getEmployeeById, listEmployees } from '../services/employeesApi';
 import { EmployeeOnboardingWizard } from '../features/employee-onboarding/EmployeeOnboardingWizard';
+import { mapEmployeeToOnboardingValues } from '../features/employee-onboarding/onboardingSchema';
 
 export function EmployeesPage({ organizationId }) {
   const [employees, setEmployees] = useState([]);
@@ -46,6 +47,9 @@ export function EmployeesPage({ organizationId }) {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [newEmployeeCredentials, setNewEmployeeCredentials] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showEditWizard, setShowEditWizard] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+  const [editInitialValues, setEditInitialValues] = useState(null);
 
   // Fetch employees on component mount
   useEffect(() => {
@@ -82,6 +86,33 @@ export function EmployeesPage({ organizationId }) {
     setSnackbar({
       open: true,
       message: 'Employee created successfully!',
+      severity: 'success',
+    });
+  };
+
+  const openEditWizard = async (employee) => {
+    try {
+      const fullEmployee = await getEmployeeById(employee.id);
+      setSelectedEmployeeId(employee.id);
+      setEditInitialValues(mapEmployeeToOnboardingValues(fullEmployee));
+      setShowEditWizard(true);
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error.message || 'Failed to open employee details',
+        severity: 'error',
+      });
+    }
+  };
+
+  const handleEditSuccess = async () => {
+    setShowEditWizard(false);
+    setSelectedEmployeeId('');
+    setEditInitialValues(null);
+    await fetchEmployees();
+    setSnackbar({
+      open: true,
+      message: 'Employee updated successfully',
       severity: 'success',
     });
   };
@@ -142,6 +173,23 @@ export function EmployeesPage({ organizationId }) {
         employees={employees}
         onCancel={() => setShowAddWizard(false)}
         onSuccess={handleWizardSuccess}
+      />
+    );
+  }
+
+  if (showEditWizard && selectedEmployeeId && editInitialValues) {
+    return (
+      <EmployeeOnboardingWizard
+        organizationId={organizationId}
+        employees={employees}
+        employeeId={selectedEmployeeId}
+        initialValues={editInitialValues}
+        onCancel={() => {
+          setShowEditWizard(false);
+          setSelectedEmployeeId('');
+          setEditInitialValues(null);
+        }}
+        onSuccess={handleEditSuccess}
       />
     );
   }
@@ -257,7 +305,12 @@ export function EmployeesPage({ organizationId }) {
                 </TableRow>
               ) : (
                 filteredEmployees.map((employee) => (
-                  <TableRow key={employee.id} hover>
+                  <TableRow
+                    key={employee.id}
+                    hover
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => openEditWizard(employee)}
+                  >
                     <TableCell>
                       <Typography variant="body2" fontWeight={600}>
                         {employee.employeeCode}

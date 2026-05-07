@@ -15,7 +15,6 @@ export const basicStepSchema = z.object({
       message: 'Invalid date of birth',
     }),
   personalEmail: z.string().min(1, 'Required').email('Invalid email'),
-  officialEmail: z.union([z.string().email(), z.literal('')]).optional(),
   mobileNumber: z.string().min(10, 'Enter a valid mobile number').max(24),
   alternateMobile: optStr,
   profilePhotoUrl: optStr,
@@ -28,19 +27,16 @@ export const employmentStepSchema = z.object({
     .refine((s) => !Number.isNaN(new Date(s).getTime()), { message: 'Enter a valid date of joining' }),
   employmentType: optStr,
   employmentStatus: optStr,
+  officialEmail: z.union([z.string().email(), z.literal('')]).optional(),
   department: z.string().min(1, 'Department is required'),
   designation: z.string().min(1, 'Designation is required'),
   reportingManagerId: optStr,
   hrManagerId: optStr,
-  workLocation: optStr,
   workMode: optStr,
   shift: optStr,
   probationPeriodDays: z.union([z.string(), z.number()]).optional(),
   noticePeriodDays: z.union([z.string(), z.number()]).optional(),
   businessUnit: optStr,
-  team: optStr,
-  gradeBand: optStr,
-  costCenter: optStr,
 });
 
 export const payrollStepSchema = z.object({
@@ -52,6 +48,18 @@ export const payrollStepSchema = z.object({
   pfApplicable: z.boolean().optional(),
   esicApplicable: z.boolean().optional(),
   taxRegime: optStr,
+});
+
+export const experienceEntrySchema = z.object({
+  previousCompanyName: optStr,
+  previousDesignation: optStr,
+  totalExperienceYears: optStr,
+  lastDrawnCtc: optStr,
+  experienceSummary: optStr,
+});
+
+export const experienceStepSchema = z.object({
+  experiences: z.array(experienceEntrySchema).min(1),
 });
 
 export const bankStepSchema = z.object({
@@ -148,18 +156,20 @@ export function validateOnboardingStep(stepIndex, values) {
     case 1:
       return employmentStepSchema.safeParse(values.employment);
     case 2:
+      return experienceStepSchema.safeParse(values.experience);
+    case 3:
       return z
         .object({ payroll: payrollStepSchema, bank: bankStepSchema })
         .safeParse({ payroll: values.payroll, bank: values.bank });
-    case 3:
-      return complianceStepSchema.safeParse(values.compliance);
     case 4:
+      return complianceStepSchema.safeParse(values.compliance);
+    case 5:
       return z
         .object({ emergency: emergencyStepSchema })
         .safeParse({ emergency: values.emergency ?? {} });
-    case 5:
-      return z.object({ documents: z.array(documentRowSchema) }).safeParse({ documents: values.documents || [] });
     case 6:
+      return z.object({ documents: z.array(documentRowSchema) }).safeParse({ documents: values.documents || [] });
+    case 7:
       return accessStepSchema.safeParse(values.access);
     default:
       return { success: true };
@@ -170,6 +180,7 @@ export const fullOnboardingSchema = z
   .object({
     basic: basicStepSchema,
     employment: employmentStepSchema,
+    experience: experienceStepSchema,
     payroll: payrollStepSchema,
     bank: bankStepSchema,
     compliance: complianceStepSchema,
@@ -214,7 +225,6 @@ export function getDefaultOnboardingValues() {
       gender: '',
       dateOfBirth: '',
       personalEmail: '',
-      officialEmail: '',
       mobileNumber: '',
       alternateMobile: '',
       profilePhotoUrl: '',
@@ -223,19 +233,16 @@ export function getDefaultOnboardingValues() {
       dateOfJoining: '',
       employmentType: 'FULL_TIME',
       employmentStatus: 'PROBATION',
+      officialEmail: '',
       department: '',
       designation: '',
       reportingManagerId: '',
       hrManagerId: '',
-      workLocation: '',
       workMode: 'HYBRID',
       shift: '',
       probationPeriodDays: '',
       noticePeriodDays: '',
       businessUnit: '',
-      team: '',
-      gradeBand: '',
-      costCenter: '',
     },
     payroll: {
       ctc: '',
@@ -246,6 +253,17 @@ export function getDefaultOnboardingValues() {
       pfApplicable: true,
       esicApplicable: false,
       taxRegime: 'NEW',
+    },
+    experience: {
+      experiences: [
+        {
+          previousCompanyName: '',
+          previousDesignation: '',
+          totalExperienceYears: '',
+          lastDrawnCtc: '',
+          experienceSummary: '',
+        },
+      ],
     },
     bank: {
       accountHolderName: '',
@@ -305,6 +323,16 @@ function emergencyRelationshipLabel(value) {
   return o?.label ?? value;
 }
 
+function isFilledExperience(exp) {
+  return (
+    exp?.previousCompanyName?.trim() ||
+    exp?.previousDesignation?.trim() ||
+    exp?.totalExperienceYears?.toString().trim() ||
+    exp?.lastDrawnCtc?.toString().trim() ||
+    exp?.experienceSummary?.trim()
+  );
+}
+
 /**
  * Maps React Hook Form values → POST /employees/hr-onboarding body
  * @param {ReturnType<typeof getDefaultOnboardingValues>} v
@@ -336,6 +364,21 @@ export function buildHrOnboardingPayload(v) {
   const ecRelRaw = v.emergency?.relationship?.trim() ?? '';
   const ecRel = emergencyRelationshipLabel(ecRelRaw) ?? ecRelRaw;
   const ecAll = ecName && ecPhone && ecRel;
+  const filledExperiences = (v.experience?.experiences || []).filter((exp) => isFilledExperience(exp));
+  const primaryExperience = filledExperiences[0] || {};
+  const compiledExperienceSummary =
+    filledExperiences.length > 1
+      ? filledExperiences
+          .map((exp, index) => {
+            const company = exp.previousCompanyName?.trim() || 'N/A';
+            const designation = exp.previousDesignation?.trim() || 'N/A';
+            const years = exp.totalExperienceYears?.toString().trim() || 'N/A';
+            const ctc = exp.lastDrawnCtc?.toString().trim() || 'N/A';
+            const notes = exp.experienceSummary?.trim() || '';
+            return `Experience ${index + 1}: ${company} | ${designation} | Years: ${years} | CTC: ${ctc}${notes ? ` | Notes: ${notes}` : ''}`;
+          })
+          .join('\n')
+      : primaryExperience.experienceSummary?.trim() || undefined;
 
   return {
     basic: {
@@ -345,7 +388,7 @@ export function buildHrOnboardingPayload(v) {
       gender: v.basic.gender || undefined,
       dateOfBirth: toDateOrUndefined(v.basic.dateOfBirth),
       personalEmail: v.basic.personalEmail.trim(),
-      officialEmail: v.basic.officialEmail?.trim() || undefined,
+      officialEmail: v.employment.officialEmail?.trim() || undefined,
       mobileNumber: v.basic.mobileNumber.trim(),
       alternateMobile: v.basic.alternateMobile?.trim() || undefined,
       profilePhotoUrl: v.basic.profilePhotoUrl?.trim() || undefined,
@@ -358,15 +401,18 @@ export function buildHrOnboardingPayload(v) {
       designation: v.employment.designation.trim(),
       reportingManagerId: v.employment.reportingManagerId || undefined,
       hrManagerId: v.employment.hrManagerId || undefined,
-      workLocation: v.employment.workLocation || undefined,
       workMode: v.employment.workMode || undefined,
       shift: v.employment.shift || undefined,
       probationPeriodDays: intOrUndef(v.employment.probationPeriodDays),
       noticePeriodDays: intOrUndef(v.employment.noticePeriodDays),
       businessUnit: v.employment.businessUnit || undefined,
-      team: v.employment.team || undefined,
-      gradeBand: v.employment.gradeBand || undefined,
-      costCenter: v.employment.costCenter || undefined,
+    },
+    experience: {
+      previousCompanyName: primaryExperience.previousCompanyName?.trim() || undefined,
+      previousDesignation: primaryExperience.previousDesignation?.trim() || undefined,
+      totalExperienceYears: numOrUndef(primaryExperience.totalExperienceYears),
+      lastDrawnCtc: numOrUndef(primaryExperience.lastDrawnCtc),
+      experienceSummary: compiledExperienceSummary,
     },
     payroll: {
       ctc: numOrUndef(v.payroll.ctc),
@@ -412,6 +458,104 @@ export function buildHrOnboardingPayload(v) {
       welcomeEmailEnabled: v.access.welcomeEmailEnabled,
       mfaEnabled: v.access.mfaEnabled,
       temporaryPassword: v.access.temporaryPassword?.trim() || undefined,
+    },
+  };
+}
+
+export function mapEmployeeToOnboardingValues(employee) {
+  const base = getDefaultOnboardingValues();
+  if (!employee) return base;
+
+  const employmentDetail = employee.employmentDetail || {};
+  const salaryDetail = employee.salaryDetail || {};
+  const bankDetail = employee.bankDetail || {};
+  const accessControl = employee.accessControl || {};
+  const emergencyContact = employee.emergencyContactDetail || {};
+
+  return {
+    ...base,
+    basic: {
+      ...base.basic,
+      firstName: employee.firstName || '',
+      middleName: employee.middleName || '',
+      lastName: employee.lastName || '',
+      gender: employee.gender || '',
+      dateOfBirth: employee.dateOfBirth ? String(employee.dateOfBirth).slice(0, 10) : '',
+      personalEmail: employee.personalEmail || employee.email || '',
+      mobileNumber: employee.phoneNumber || '',
+      alternateMobile: employee.alternateMobile || '',
+      profilePhotoUrl: employee.profilePhotoUrl || '',
+    },
+    employment: {
+      ...base.employment,
+      dateOfJoining: employee.dateOfJoining ? String(employee.dateOfJoining).slice(0, 10) : '',
+      officialEmail: employee.officialEmail || employee.email || '',
+      employmentType: employmentDetail.employmentType || base.employment.employmentType,
+      employmentStatus: employmentDetail.employmentStatus || base.employment.employmentStatus,
+      department: employee.department || '',
+      designation: employee.designation || '',
+      reportingManagerId: employmentDetail.reportingManagerId || '',
+      hrManagerId: employmentDetail.hrManagerId || '',
+      workMode: employmentDetail.workMode || base.employment.workMode,
+      shift: employmentDetail.shift || '',
+      probationPeriodDays:
+        employmentDetail.probationPeriodDays != null ? String(employmentDetail.probationPeriodDays) : '',
+      noticePeriodDays:
+        employmentDetail.noticePeriodDays != null ? String(employmentDetail.noticePeriodDays) : '',
+      businessUnit: employmentDetail.businessUnit || '',
+    },
+    experience: {
+      experiences: [
+        {
+          previousCompanyName: employmentDetail.previousCompanyName || '',
+          previousDesignation: employmentDetail.previousDesignation || '',
+          totalExperienceYears: employmentDetail.totalExperienceYears || '',
+          lastDrawnCtc: employmentDetail.lastDrawnCtc || '',
+          experienceSummary: employmentDetail.experienceSummary || '',
+        },
+      ],
+    },
+    payroll: {
+      ...base.payroll,
+      ctc: salaryDetail.ctc || '',
+      salaryStructure: salaryDetail.salaryStructure || '',
+      basicSalary: salaryDetail.basicSalary || '',
+      hra: salaryDetail.hra || '',
+      allowancesJson: salaryDetail.allowancesJson ? JSON.stringify(salaryDetail.allowancesJson) : '',
+      pfApplicable: salaryDetail.pfApplicable ?? base.payroll.pfApplicable,
+      esicApplicable: salaryDetail.esicApplicable ?? base.payroll.esicApplicable,
+      taxRegime: salaryDetail.taxRegime || base.payroll.taxRegime,
+    },
+    bank: {
+      ...base.bank,
+      accountHolderName: bankDetail.accountHolderName || '',
+      bankName: bankDetail.bankName || '',
+      ifscCode: bankDetail.ifscCode || '',
+      branchName: bankDetail.branchName || '',
+      verificationStatus: bankDetail.verificationStatus || base.bank.verificationStatus,
+    },
+    compliance: {
+      ...base.compliance,
+      panNumber: '',
+      aadhaarNumber: '',
+      uanNumber: employee.uanNumber || '',
+      esicNumber: employee.esiNumber || '',
+      pfNumber: employee.pfNumber || '',
+      passportNumber: employee.passportNumber || '',
+      passportExpiry: employee.passportExpiry ? String(employee.passportExpiry).slice(0, 10) : '',
+    },
+    emergency: {
+      contactName: emergencyContact.contactName || '',
+      contactPhone: emergencyContact.contactPhone || '',
+      relationship: emergencyContact.relationship || '',
+    },
+    access: {
+      ...base.access,
+      portalRoleLabel: accessControl.portalRoleLabel || 'EMPLOYEE',
+      hrmsAccessEnabled: accessControl.hrmsAccessEnabled ?? true,
+      welcomeEmailEnabled: accessControl.welcomeEmailEnabled ?? false,
+      mfaEnabled: accessControl.mfaEnabled ?? false,
+      temporaryPassword: '',
     },
   };
 }

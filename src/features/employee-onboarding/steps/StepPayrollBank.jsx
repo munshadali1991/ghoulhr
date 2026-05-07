@@ -28,7 +28,7 @@ export function StepPayrollBank() {
     <Stack spacing={2.5}>
       <Box>
         <Typography variant="overline" color="primary" fontWeight={700}>
-          Step 3
+          Step 4
         </Typography>
         <Typography variant="h6" fontWeight={700}>
           Payroll & bank

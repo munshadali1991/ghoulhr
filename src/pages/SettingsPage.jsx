@@ -229,6 +229,7 @@ export function SettingsPage({ organizationId }) {
         <Tabs value={activeTab} onChange={handleTabChange} aria-label="settings tabs">
           <Tab label="Organization" />
           <Tab label="Employees" />
+          <Tab label="Dept & Designation" />
           <Tab label="Attendance" />
         </Tabs>
       </Box>
@@ -251,10 +252,20 @@ export function SettingsPage({ organizationId }) {
       {activeTab === 1 && (
         <EmployeeSettingsForm
           organizationId={organizationId}
+          showCoreSettings
+          showMasterData={false}
         />
       )}
 
       {activeTab === 2 && (
+        <EmployeeSettingsForm
+          organizationId={organizationId}
+          showCoreSettings={false}
+          showMasterData
+        />
+      )}
+
+      {activeTab === 3 && (
         <AttendanceSettingsForm
           organizationId={organizationId}
         />

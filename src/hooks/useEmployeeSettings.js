@@ -36,6 +36,14 @@ function parseEmployeeSettings(data) {
   if (parsed.default_probation_period !== undefined) {
     parsed.default_probation_period = Number(parsed.default_probation_period);
   }
+
+  if (parsed.departments && !Array.isArray(parsed.departments)) {
+    parsed.departments = [];
+  }
+
+  if (parsed.designations && !Array.isArray(parsed.designations)) {
+    parsed.designations = [];
+  }
   
   return parsed;
 }

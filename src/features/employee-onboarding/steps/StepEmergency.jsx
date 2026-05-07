@@ -12,7 +12,7 @@ export function StepEmergency() {
     <Stack spacing={2.5}>
       <Box>
         <Typography variant="overline" color="primary" fontWeight={700}>
-          Step 5
+          Step 6
         </Typography>
         <Typography variant="h6" fontWeight={700}>
           Emergency contact

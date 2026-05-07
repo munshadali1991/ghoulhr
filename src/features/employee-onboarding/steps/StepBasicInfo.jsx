@@ -26,7 +26,7 @@ export function StepBasicInfo({ duplicateResult }) {
           Basic information
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Legal name, contact channels, and profile photo. Official email is used for login when provided.
+          Legal name, contact channels, and profile photo.
         </Typography>
       </Box>
 
@@ -128,23 +128,6 @@ export function StepBasicInfo({ duplicateResult }) {
                 label="Personal email"
                 error={!!errors.basic?.personalEmail}
                 helperText={errors.basic?.personalEmail?.message}
-              />
-            )}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Controller
-            name="basic.officialEmail"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                fullWidth
-                type="email"
-                label="Official email (login)"
-                placeholder="Leave blank to use personal email for login"
-                error={!!errors.basic?.officialEmail}
-                helperText={errors.basic?.officialEmail?.message}
               />
             )}
           />

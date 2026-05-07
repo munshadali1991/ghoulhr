@@ -93,7 +93,7 @@ export function StepDocuments() {
     <Stack spacing={2.5}>
       <Box>
         <Typography variant="overline" color="primary" fontWeight={700}>
-          Step 6
+          Step 7
         </Typography>
         <Typography variant="h6" fontWeight={700}>
           Initial documents
