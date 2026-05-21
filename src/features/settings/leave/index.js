@@ -1,0 +1,1 @@
+export { LeaveConfigSettingsPage } from './LeaveConfigSettingsPage';

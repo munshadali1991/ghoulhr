@@ -4,11 +4,12 @@
 
 The GhoulHR frontend is a React 19 + Vite 7 SPA for multi-tenant HR workflows.
 
-It currently supports:
-- role-based login (`admin` and `employee` modes)
-- super admin organization management
-- org admin dashboard with employee management + settings
-- employee dashboard experience
+It supports:
+
+- Role-based login (`admin` and `employee` modes)
+- Super admin organization management
+- Org admin dashboard with employee management and settings
+- Employee dashboard experience
 - HR onboarding wizard (multi-step, draft-save, validation)
 
 ## Stack
@@ -21,132 +22,124 @@ It currently supports:
 - TanStack React Query 5
 - Zod 4
 
-## Current Architecture
+## Source layout
 
-### Entry and Providers
+```text
+src/
+├── main.jsx                 # Entry: BrowserRouter + App
+├── index.css
+├── app/                     # Application shell
+│   ├── App.jsx
+│   ├── queryClient.js
+│   ├── constants.js
+│   ├── config/appConfig.js
+│   ├── providers/           # AppProviders, AuthProvider
+│   └── routes/              # AppRoutes, PublicRoutes, SuperAdminRoutes, OrgAdminRoutes
+├── shared/                  # Cross-feature reusables
+│   ├── api/httpClient.js
+│   ├── components/ui|feedback|forms|layout|settings/
+│   ├── hooks/               # useAppSnackbar, useMobileDrawer
+│   ├── theme/
+│   └── utils/               # session, tenant, timestamps, shiftTime, uuid
+├── features/
+│   ├── auth/
+│   ├── super-admin/
+│   ├── org-admin/           # config/orgAdminNav.jsx, layouts, pages
+│   ├── employees/           # list + onboarding/
+│   ├── employee-portal/
+│   └── settings/            # HR settings umbrella
+│       ├── shell/           # SettingsPage, nav, DraftStatusBar
+│       ├── shared/          # CRUD primitives (RecordFormLayout, CrudDataTable, …)
+│       ├── api/settingsApi.js
+│       ├── organization/
+│       ├── employees/
+│       ├── org-structure/
+│       ├── locations/
+│       ├── leave/
+│       └── attendance/
+└── assets/
+```
+
+Path alias: `@/` → `src/` (see `vite.config.js`).
+
+## Entry and providers
 
 - `src/main.jsx` mounts `App` inside `BrowserRouter`.
-- `src/App.jsx` wraps the app in:
-  - `QueryClientProvider`
-  - `ThemeProvider`
-  - `CssBaseline`
+- `src/app/App.jsx` wraps the app in `AppProviders` → `AuthProvider` → `AppRoutes`.
 
-### Authentication Model (Current)
+## Authentication
 
-Auth is now cookie-based (HttpOnly), not client token storage.
+Auth is cookie-based (HttpOnly), not client token storage.
 
-- `src/services/authApi.js`
-  - `loginRequest()`
-  - `employeeLoginRequest()`
-  - `bootstrapSuperAdminRequest()`
-  - `fetchSessionUser()` via `/auth/session`
-  - refresh fallback via `/auth/refresh`
-  - `logoutRequest()`
-- `src/services/httpClient.js`
-  - all API calls use `credentials: 'include'`
-  - automatic one-time refresh/retry on 401 (except public auth paths)
-- `src/utils/session.js`
-  - legacy local storage session removed
-  - `readSession()` clears old URL/localStorage session artifacts
+- `features/auth/api/authApi.js` — login, session, refresh, logout
+- `shared/api/httpClient.js` — `credentials: 'include'`, one-time refresh on 401
+- `shared/utils/session.js` — clears legacy localStorage session artifacts
+- `features/auth/utils/userRoles.js` — role helpers used by `AuthProvider`
 
-### Role Routing in `App.jsx`
+## Routing (`app/routes/AppRoutes.jsx`)
 
-Rendered dashboard is role-derived from server session user:
+Rendered dashboard is role-derived from the server session user:
 
-- `SUPER_ADMIN` -> `DashboardLayout` with routed pages:
-  - `/dashboard` -> `OverviewPage`
-  - `/organizations` -> `OrganizationsPage`
-  - `/organizations/new` -> `OrganizationFormPage`
-  - `/organizations/:id/edit` -> `OrganizationFormPage`
-- employee-style users (`EMPLOYEE`, `MANAGER`, or `ORG_ADMIN` with `employeeCode`) -> `EmployeeDashboard`
-- other authenticated users (typically org admin system users) -> `OrgDashboardPage` -> `OrgAdminDashboard`
-- unauthenticated -> login route only (`/login`)
+| Role / condition | UI |
+|------------------|-----|
+| `SUPER_ADMIN` | `SuperAdminRoutes` → `DashboardLayout` + overview / organizations |
+| Employee tenant user | `EmployeeDashboard` |
+| Other authenticated (org admin) | `OrgAdminRoutes` → `OrgAdminLayout` + nested routes |
+| Unauthenticated | `PublicRoutes` → `/login` |
 
-## Key Modules
+### Super admin routes
 
-### Super Admin
+- `/dashboard` → `OverviewPage`
+- `/organizations` → `OrganizationsPage`
+- `/organizations/new`, `/organizations/:id/edit` → `OrganizationFormPage`
 
-- `src/pages/OverviewPage.jsx`: aggregate stats + growth view.
-- `src/pages/OrganizationsPage.jsx`: active + deleted organizations, search, delete/restore.
-- `src/pages/OrganizationFormPage.jsx`: create/edit organization.
-- Data is loaded in `App.jsx` using `Promise.all` and stored in component state.
+### Org admin routes (`OrgAdminRoutes.jsx`)
 
-### Org Admin
+`OrgAdminLayout` renders an `<Outlet>` for child routes. Navigation is driven by `features/org-admin/config/orgAdminNav.jsx` (single source of truth for sidebar items).
 
-- `src/pages/OrgAdminDashboard.jsx`
-  - overview cards and quick actions
-  - internal section switch for:
-    - overview
-    - employees -> `EmployeesPage`
-    - settings -> `SettingsPage`
-    - attendance/payroll/organization placeholders
-  - only `overview` and `settings` are URL-backed (`/dashboard`, `/settings`); others are in-component section state.
+| Path | Page |
+|------|------|
+| `/dashboard` | `OrgAdminHome` (overview) |
+| `/employees` | `EmployeesPage` |
+| `/settings/*` | `SettingsPage` (tab slug from URL) |
+| `/attendance` | `ModulePlaceholderPage` |
+| `/payroll` | `ModulePlaceholderPage` |
+| `/tracking` | `ModulePlaceholderPage` |
+| `*` | redirect → `/dashboard` |
 
-### Employee Management + Onboarding
+**Adding a new org-admin module:** add an entry in `orgAdminNav.jsx`, add a `<Route>` in `OrgAdminRoutes.jsx`, and implement the feature under `features/<module>/`. No layout section state is required.
 
-- `src/pages/EmployeesPage.jsx`
-  - employee list + search
-  - "Add Employee" launches `EmployeeOnboardingWizard`
-  - success dialog surfaces generated credentials
-- `src/features/employee-onboarding/EmployeeOnboardingWizard.jsx`
-  - 7-step workflow
-  - step validation + full-form validation using Zod
-  - duplicate checks via `/employees/check-duplicate`
-  - local draft save/restore hooks
-  - final submit to `/employees/hr-onboarding`
+Settings submenu children come from `features/settings/shell/settingsNav.js`; the settings nav item uses `expandPathPrefix: '/settings'` so the submenu opens automatically on settings URLs.
 
-### Settings
+## Settings domain
 
-- `src/pages/SettingsPage.jsx`
-  - tabs: Organization, Employees, Attendance
-  - draft/publish/discard UX for org settings
-- hooks:
-  - `src/hooks/useSettings.js`
-  - `src/hooks/useEmployeeSettings.js`
-  - `src/hooks/useAttendanceSettings.js`
-- services:
-  - `src/services/settingsApi.js`
-  - sends `x-org-id` header for tenant-scoped settings endpoints
+- Shell: `features/settings/shell/SettingsPage.jsx` + `settingsNav.js`
+- Shared settings UI (cross-tab): `shared/components/settings/` (`SettingsField`, `SettingsSection`, layout tokens in `settingsLayout.js`)
+- Settings CRUD primitives: `features/settings/shared/` (`RecordFormLayout`, `CrudDataTable`, `ConfirmDeleteDialog`, `EmptyState`)
+- Orchestration-only shell UI: `DraftStatusBar.jsx`
+- API: `features/settings/api/settingsApi.js` (sends `x-org-id` for tenant-scoped endpoints)
+- Tabs under `features/settings/{organization,employees,org-structure,locations,leave,attendance}/`
 
-## Services Layer
+Each settings tab exposes a small public API via `index.js`. Cross-tab hooks (e.g. `useLocationConfigurations`) must be imported from sibling tab barrels such as `@/features/settings/locations`, not deep hook paths.
 
-### Shared HTTP Client
+Attendance time helpers live in `shared/utils/shiftTime.js` (used by shared form controls and attendance settings).
 
-- `src/services/httpClient.js` is the common request layer for most authenticated APIs.
-- Handles:
-  - JSON parsing
-  - normalized error message extraction
-  - 401 refresh + retry once
+## Employees
 
-### Main API Files
+- `features/employees/pages/EmployeesPage.jsx` — list, search, onboarding entry
+- `features/employees/onboarding/EmployeeOnboardingWizard.jsx` — 7-step HR onboarding
+- `features/employees/api/employeesApi.js`
 
-- `src/services/authApi.js`: auth/session lifecycle
-- `src/services/organizationsApi.js`: super admin org CRUD + stats
-- `src/services/employeesApi.js`: employee list/create/reset + HR onboarding + duplicate checks
-- `src/services/settingsApi.js`: profile/employee/attendance settings
-- `src/services/orgAdminApi.js`: present but not the primary path used by current dashboard UI
+## Multi-tenant behavior
 
-## Multi-Tenant Behavior
+- `app/config/appConfig.js` — API base URL from subdomain when possible
+- `shared/utils/tenant.js` — tenant redirect after login
+- Non–super-admin users may be redirected to the tenant subdomain when needed
 
-- `src/config/appConfig.js`
-  - computes API base URL from current subdomain where possible
-  - local subdomains route to `http://{subdomain}.localhost:8080`
-- `src/utils/tenant.js`
-  - computes redirect URL for tenant subdomain after login
-- `App.jsx`
-  - non-super-admin users are redirected to tenant subdomain when needed
+## Environment variables
 
-## Important Current-State Notes
-
-- No longer using bearer token from local storage for API calls.
-- Session bootstrap still depends on `VITE_BOOTSTRAP_ADMIN_KEY` in frontend env for fallback flow.
-- `src/router/AppRouter.tsx` exists but `App.jsx` is the active routing implementation.
-- `src/pages/DashboardPage.jsx` appears legacy and is not used in current main routing path.
-
-## Environment Variables
-
-- `VITE_API_BASE_URL` (fallback when subdomain-based URL cannot be derived)
-- `VITE_BOOTSTRAP_ADMIN_KEY` (used by bootstrap login endpoint)
+- `VITE_API_BASE_URL` — fallback when subdomain-based URL cannot be derived
+- `VITE_BOOTSTRAP_ADMIN_KEY` — bootstrap login endpoint (if used)
 
 ## Scripts
 
@@ -157,8 +150,44 @@ From `frontend/ghoulhr/package.json`:
 - `npm run preview`
 - `npm run lint`
 
-## Suggested Follow-ups
+## Feature module convention
 
-- move org admin section navigation fully to route-based navigation (employees/settings/attendance/payroll)
-- consider migrating super admin org data loading to React Query for consistency
-- remove bootstrap key dependency from client if backend flow can fully own bootstrap security
+Each feature under `features/` should expose a small public API via `index.js` and keep internals colocated:
+
+```text
+{feature}/
+  index.js
+  pages/ | layouts/
+  components/
+  hooks/
+  api/
+  utils/
+  constants.js
+```
+
+## Import boundary rules (ESLint)
+
+`eslint.config.js` enforces `import/no-restricted-paths` zones:
+
+| Zone | Rule |
+|------|------|
+| `src/shared/**` | Must not import from `src/features/**` |
+| `src/features/{auth,super-admin,org-admin,employees,employee-portal,settings}/**` | Must not import from other top-level features (except documented cross-feature paths for org-admin → employees/settings and employees → settings/employees) |
+| `src/features/settings/<tab>/**` | May import `@/shared/**`, settings `shared/`, `shell/`, `api/`, own tab, and sibling tab folders listed per tab (barrel imports) |
+
+Prefer `@/shared/*`, `@/app/*`, and feature or tab `index.js` barrels over deep relative paths.
+
+## Verification
+
+After structural changes:
+
+```bash
+npm run build
+npm run lint
+```
+
+Manual smoke checks (org admin):
+
+- Login as org admin → `/dashboard`, `/employees`, `/settings/organization`
+- Placeholder routes: `/attendance`, `/payroll`, `/tracking`
+- Settings submenu expands on `/settings/*` paths

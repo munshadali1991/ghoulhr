@@ -1,0 +1,123 @@
+/**
+ * @typedef {'PENDING' | 'APPROVED' | 'REJECTED' | 'WITHDRAWN'} LeaveRequestStatus
+ */
+
+/**
+ * @typedef {'Leave' | 'Restricted Holiday' | 'Leave Cancel' | 'Comp Off Grant'} LeaveCategory
+ */
+
+/**
+ * @typedef {{
+ *   startDate: string,
+ *   endDate: string,
+ *   startSession: string,
+ *   endSession: string,
+ * }} LeaveDuration
+ */
+
+/**
+ * @typedef {{
+ *   id: string,
+ *   category: LeaveCategory,
+ *   leaveType: string,
+ *   status: LeaveRequestStatus,
+ *   daysCount: number,
+ *   approverName?: string,
+ *   duration: LeaveDuration,
+ *   reason?: string,
+ *   appliedOn: string,
+ * }} LeaveRequest
+ */
+
+/**
+ * @typedef {{
+ *   id: string,
+ *   name: string,
+ *   granted: number,
+ *   balance: number,
+ *   consumed: number,
+ * }} LeaveBalance
+ */
+
+/**
+ * @typedef {'P' | 'A' | 'R'} AttendanceDayStatus
+ */
+
+/**
+ * @typedef {'general' | 'restricted' | null} HolidayIndicator
+ */
+
+/**
+ * @typedef {{
+ *   date: string,
+ *   status?: AttendanceDayStatus,
+ *   shiftCode?: string,
+ *   holiday?: HolidayIndicator,
+ *   hasBreak?: boolean,
+ * }} CalendarDayMarker
+ */
+
+/**
+ * @typedef {{
+ *   date: string,
+ *   shiftName: string,
+ *   shiftTime: string,
+ *   scheme: string,
+ *   firstIn: string,
+ *   lastOut: string,
+ *   lateIn: string,
+ *   earlyOut: string,
+ *   totalWorkHrs: string,
+ *   breakHrs: string,
+ *   actualWork: string,
+ *   status: string,
+ *   remarks: string,
+ *   sessions: { session: string; timing: string; firstIn: string; lastOut: string }[],
+ * }} AttendanceDayDetail
+ */
+
+/**
+ * @typedef {{
+ *   date: string,
+ *   name: string,
+ *   dayOfWeek: string,
+ *   applicationStatus: 'none' | 'applied' | 'applicable',
+ * }} Holiday
+ */
+
+/**
+ * @typedef {{
+ *   employeeName: string,
+ *   days: number,
+ *   from: string,
+ *   to: string,
+ * }} LeaveTransaction
+ */
+
+/**
+ * @typedef {{
+ *   exceptionDays: number,
+ *   avgWorkHrs: string,
+ *   avgWorkHrsTrend: string,
+ *   avgActualWorkHrs: string,
+ *   avgActualWorkHrsTrend: string,
+ *   penaltyDays: number,
+ *   insightsCount: number,
+ * }} AttendanceSummary
+ */
+
+/**
+ * @typedef {{
+ *   greeting: string,
+ *   quote: string,
+ *   attendance: { date: string; shift: string; signedIn: boolean },
+ *   upcomingHolidays: Holiday[],
+ *   quickLinks: { label: string; href: string }[],
+ *   payslip: { month: string; paidDays: number; grossMasked: boolean },
+ *   itDeclaration: { message: string; period: string },
+ *   poi: { message: string },
+ *   pendingLeaveCount: number,
+ * }} EmployeeHomeData
+ */
+
+export {};
