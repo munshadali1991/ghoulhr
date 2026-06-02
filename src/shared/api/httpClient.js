@@ -66,9 +66,14 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!res.ok) {
-    const message =
-      (payload && (payload.message?.[0] ?? payload.message ?? payload.error)) ||
-      'Request failed. Please try again.';
+    let message = 'Request failed. Please try again.';
+    if (payload?.message) {
+      message = Array.isArray(payload.message)
+        ? payload.message.join(', ')
+        : String(payload.message);
+    } else if (payload?.error) {
+      message = String(payload.error);
+    }
     const error = new Error(message);
     error.status = res.status;
     throw error;

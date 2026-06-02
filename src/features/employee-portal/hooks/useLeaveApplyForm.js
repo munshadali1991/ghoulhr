@@ -9,6 +9,7 @@ const defaultValues = {
   toDate: '',
   toSession: 'Session 2',
   applyingTo: '',
+  ccEmployeeIds: [],
   contactDetails: '',
   reason: '',
 };

@@ -36,7 +36,53 @@
  *   granted: number,
  *   balance: number,
  *   consumed: number,
+ *   pending?: number,
  * }} LeaveBalance
+ */
+
+/**
+ * @typedef {{
+ *   availableBalance: number,
+ *   openingBalance: number,
+ *   granted: number,
+ *   availed: number,
+ *   applied: number,
+ * }} LeaveBalanceSummary
+ */
+
+/**
+ * @typedef {{
+ *   month: number,
+ *   label: string,
+ *   balance: number,
+ *   consumed: number,
+ * }} LeaveBalanceMonthlyChartPoint
+ */
+
+/**
+ * @typedef {{
+ *   id: string,
+ *   transactionType: string,
+ *   postedOn: string | null,
+ *   fromDate: string,
+ *   fromSession: string,
+ *   toDate: string,
+ *   toSession: string,
+ *   days: number,
+ *   reason?: string,
+ *   remarks?: string | null,
+ *   expiryDate?: string | null,
+ * }} LeaveBalanceLedgerTransaction
+ */
+
+/**
+ * @typedef {{
+ *   year: number,
+ *   leaveType: { id: string, name: string },
+ *   summary: LeaveBalanceSummary,
+ *   monthlyChart: LeaveBalanceMonthlyChartPoint[],
+ *   transactions: LeaveBalanceLedgerTransaction[],
+ * }} LeaveBalanceDetail
  */
 
 /**

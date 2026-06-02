@@ -52,6 +52,10 @@ export function LeaveApplyPage() {
       });
       show('Leave request submitted successfully');
       form.reset();
+      const firstApprover = typesData?.approvers?.[0]?.value;
+      if (firstApprover) {
+        form.setValue('applyingTo', firstApprover, { shouldValidate: true });
+      }
       setTab('pending');
     } catch (e) {
       show(e?.message ?? 'Failed to submit leave request', 'error');
@@ -86,6 +90,7 @@ export function LeaveApplyPage() {
                 form={form}
                 leaveTypes={typesData?.types ?? []}
                 approvers={typesData?.approvers ?? []}
+                rules={typesData?.rules ?? []}
                 onSubmit={handleSubmit}
                 submitting={submitMutation.isPending}
               />

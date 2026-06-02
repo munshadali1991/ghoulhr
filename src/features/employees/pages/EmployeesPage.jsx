@@ -24,6 +24,8 @@ import {
   Typography,
   CircularProgress,
   InputAdornment,
+  Tab,
+  Tabs,
 } from '@mui/material';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { BrandedButton } from '@/shared/components/ui/BrandedButton';
@@ -40,8 +42,10 @@ import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import { getEmployeeById, listEmployees } from '@/features/employees/api/employeesApi';
 import { EmployeeOnboardingWizard } from '@/features/employees/onboarding/EmployeeOnboardingWizard';
 import { mapEmployeeToOnboardingValues } from '@/features/employees/onboarding/onboardingSchema';
+import { ReportingManagersTab } from '@/features/employees/reporting/ReportingManagersTab';
 
 export function EmployeesPage({ organizationId }) {
+  const [pageTab, setPageTab] = useState(0);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -196,30 +200,47 @@ export function EmployeesPage({ organizationId }) {
             Employee Management
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Manage your organization's employees and their credentials
+            Manage employee profiles and reporting structure
           </Typography>
         </Box>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-          <Button
-            variant="outlined"
-            startIcon={<RefreshRoundedIcon />}
-            onClick={fetchEmployees}
-            disabled={loading}
-            fullWidth
-            sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}
-          >
-            Refresh
-          </Button>
-          <BrandedButton
-            startIcon={<PersonAddRoundedIcon />}
-            onClick={() => setShowAddWizard(true)}
-            fullWidth
-          >
-            Add Employee
-          </BrandedButton>
-        </Stack>
+        {pageTab === 0 ? (
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshRoundedIcon />}
+              onClick={fetchEmployees}
+              disabled={loading}
+              fullWidth
+              sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}
+            >
+              Refresh
+            </Button>
+            <BrandedButton
+              startIcon={<PersonAddRoundedIcon />}
+              onClick={() => setShowAddWizard(true)}
+              fullWidth
+            >
+              Add Employee
+            </BrandedButton>
+          </Stack>
+        ) : null}
       </Box>
 
+      <Tabs
+        value={pageTab}
+        onChange={(_, v) => setPageTab(v)}
+        sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
+      >
+        <Tab label="Employee directory" />
+        <Tab label="Reporting managers" />
+      </Tabs>
+
+      {pageTab === 1 ? (
+        <ReportingManagersTab showSnackbar={showSnackbar} />
+      ) : null}
+
+      {pageTab === 0 ? (
+        <>
       {/* Search Bar */}
       <PageCard sx={{ mb: 3 }}>
         <CardContent>
@@ -325,6 +346,8 @@ export function EmployeesPage({ organizationId }) {
           </Table>
         </TableContainer>
       </PageCard>
+        </>
+      ) : null}
 
       {/* Success Dialog with Credentials */}
       <Dialog

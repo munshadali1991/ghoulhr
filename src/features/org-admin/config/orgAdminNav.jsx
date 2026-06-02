@@ -64,7 +64,9 @@ export function buildOrgAdminNavItems(pathname) {
       active,
       children: item.children?.map((child) => ({
         ...child,
-        active: Boolean(child.path) && pathname === child.path,
+        active:
+          Boolean(child.path) &&
+          (pathname === child.path || pathname.startsWith(`${child.path}/`)),
       })),
     };
   });

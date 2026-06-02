@@ -202,6 +202,26 @@ export function LeaveWizardStepContent({
                 })}
               />
             </LeaveFormRow>
+            <LeaveFormRow
+              label="Max consecutive days"
+              hint="Maximum days allowed in a single leave request; leave blank for no limit"
+            >
+              <TextField
+                fullWidth
+                size="small"
+                type="number"
+                hiddenLabel
+                inputProps={{
+                  'aria-label': 'Max consecutive days',
+                  min: 1,
+                  max: 366,
+                  step: 1,
+                }}
+                {...register(`leaves.${idx}.maxConsecutiveDays`, {
+                  valueAsNumber: true,
+                })}
+              />
+            </LeaveFormRow>
             <LeaveSelectFormRow
               control={control}
               name={`leaves.${idx}.appliesTo`}

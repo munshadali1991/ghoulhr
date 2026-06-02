@@ -16,7 +16,14 @@ import { HeroBanner } from '@/shared/components/ui/HeroBanner';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { BrandedButton } from '@/shared/components/ui/BrandedButton';
 import { EmptyStatePanel } from '../../components/EmptyStatePanel';
-import { useEmployeeHome } from '../../hooks/useEmployeePortalQueries';
+import { TimesheetHomeWidget } from '../../components/timesheet/TimesheetHomeWidget';
+import {
+  useEmployeeHome,
+  useSignInAttendance,
+  useSignOutAttendance,
+} from '../../hooks/useEmployeePortalQueries';
+import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
+import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 
 function LiveClock() {
   const [now, setNow] = useState(dayjs());
@@ -73,7 +80,25 @@ function PayslipRing() {
 
 export function EmployeeHomePage({ userName }) {
   const navigate = useNavigate();
-  const { data, isLoading, error } = useEmployeeHome();
+  const { data, isLoading, error, refetch } = useEmployeeHome();
+  const signInMutation = useSignInAttendance();
+  const signOutMutation = useSignOutAttendance();
+  const { snackbar, show, close } = useAppSnackbar();
+
+  const handleAttendanceToggle = async () => {
+    try {
+      if (data?.attendance?.signedIn) {
+        await signOutMutation.mutateAsync();
+        show('Signed out successfully');
+      } else {
+        await signInMutation.mutateAsync();
+        show('Signed in successfully');
+      }
+      refetch();
+    } catch (e) {
+      show(e?.message ?? 'Attendance action failed', 'error');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -124,14 +149,7 @@ export function EmployeeHomePage({ userName }) {
 
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 4 }}>
-          <PageCard sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                Review
-              </Typography>
-              <EmptyStatePanel title="No pending tasks" />
-            </CardContent>
-          </PageCard>
+          <TimesheetHomeWidget timesheet={data.timesheet} />
         </Grid>
 
         <Grid size={{ xs: 12, md: 4 }}>
@@ -147,8 +165,12 @@ export function EmployeeHomePage({ userName }) {
                   </Typography>
                   <LiveClock />
                 </Box>
-                <BrandedButton size="small" onClick={() => navigate('/attendance')}>
-                  Sign In
+                <BrandedButton
+                  size="small"
+                  disabled={signInMutation.isPending || signOutMutation.isPending}
+                  onClick={handleAttendanceToggle}
+                >
+                  {data.attendance.signedIn ? 'Sign Out' : 'Sign In'}
                 </BrandedButton>
               </Stack>
               <Link
@@ -284,6 +306,8 @@ export function EmployeeHomePage({ userName }) {
           </PageCard>
         </Grid>
       </Grid>
+
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={close} />
     </>
   );
 }

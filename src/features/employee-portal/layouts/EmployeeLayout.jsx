@@ -11,10 +11,10 @@ import {
 } from '@mui/material';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
-import NotificationsNoneRoundedIcon from '@mui/icons-material/NotificationsNoneRounded';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { SidebarContent } from '@/shared/components/layout/SidebarContent';
 import { buildEmployeeNavItems, getEmployeePageTitle } from '../config/employeeNav';
+import { EmployeeNotificationsMenu } from '../components/EmployeeNotificationsMenu';
 
 const DRAWER_WIDTH = 280;
 
@@ -93,9 +93,7 @@ export function EmployeeLayout({
             </Typography>
           </Box>
           <Stack direction="row" spacing={1} alignItems="center">
-            <IconButton size="small" aria-label="Notifications">
-              <NotificationsNoneRoundedIcon />
-            </IconButton>
+            <EmployeeNotificationsMenu />
             <Button color="inherit" size="small" startIcon={<LogoutRoundedIcon />} onClick={onLogout}>
               Logout
             </Button>

@@ -7,16 +7,58 @@ import {
   WORK_MODE_OPTIONS,
 } from '../constants';
 import { EmployeeAutocomplete } from '../components/EmployeeAutocomplete';
+import { useEmploymentLocationShifts } from '../hooks/useEmploymentLocationShifts';
+import {
+  formatShiftOptionLabel,
+  getShiftsForLocation,
+  locationNameForId,
+  resolveBusinessUnitToLocationId,
+  resolveShiftName,
+} from '../utils/employmentLocationShift';
 
-export function StepEmployment({ managerOptions, employeeSettings }) {
+export function StepEmployment({ organizationId, hrManagerOptions, employeeSettings }) {
   const {
     control,
     setValue,
     formState: { errors },
   } = useFormContext();
 
+  const { activeLocations, shifts, isLoading: locationShiftsLoading } =
+    useEmploymentLocationShifts(organizationId);
+
   const selectedDepartmentId = useWatch({ control, name: 'employment.departmentId' });
   const selectedDesignationId = useWatch({ control, name: 'employment.designationId' });
+  const selectedBusinessUnit = useWatch({ control, name: 'employment.businessUnit' });
+  const selectedShift = useWatch({ control, name: 'employment.shift' });
+
+  const selectedLocationId = useMemo(
+    () => resolveBusinessUnitToLocationId(selectedBusinessUnit, activeLocations),
+    [selectedBusinessUnit, activeLocations],
+  );
+
+  const locationOptions = useMemo(
+    () =>
+      activeLocations.map((loc) => ({
+        id: String(loc.id),
+        label: loc.city ? `${loc.name} (${loc.city})` : String(loc.name),
+        name: String(loc.name).trim(),
+      })),
+    [activeLocations],
+  );
+
+  const shiftsForSelectedLocation = useMemo(
+    () => getShiftsForLocation(shifts, selectedLocationId),
+    [shifts, selectedLocationId],
+  );
+
+  const shiftOptions = useMemo(
+    () =>
+      shiftsForSelectedLocation.map((s) => ({
+        value: String(s.name).trim(),
+        label: formatShiftOptionLabel(s),
+      })),
+    [shiftsForSelectedLocation],
+  );
 
   const activeDepartments = useMemo(
     () =>
@@ -47,6 +89,66 @@ export function StepEmployment({ managerOptions, employeeSettings }) {
       setValue('employment.designationId', '');
     }
   }, [filteredDesignations, selectedDesignationId, setValue]);
+
+  useEffect(() => {
+    if (!selectedLocationId) return;
+    const storedName = locationNameForId(selectedLocationId, activeLocations);
+    if (storedName && selectedBusinessUnit !== storedName) {
+      setValue('employment.businessUnit', storedName, { shouldDirty: false });
+    }
+  }, [activeLocations, selectedBusinessUnit, selectedLocationId, setValue]);
+
+  useEffect(() => {
+    if (!selectedLocationId) {
+      if (selectedShift) setValue('employment.shift', '');
+      return;
+    }
+
+    if (shiftsForSelectedLocation.length === 0) {
+      if (selectedShift) setValue('employment.shift', '');
+      return;
+    }
+
+    const resolved = resolveShiftName(selectedShift, shiftsForSelectedLocation);
+    const isValid = shiftsForSelectedLocation.some((s) => String(s.name).trim() === resolved);
+
+    if (!isValid) {
+      if (shiftsForSelectedLocation.length === 1) {
+        setValue('employment.shift', String(shiftsForSelectedLocation[0].name).trim(), {
+          shouldDirty: true,
+        });
+      } else {
+        setValue('employment.shift', '');
+      }
+      return;
+    }
+
+    if (resolved !== selectedShift) {
+      setValue('employment.shift', resolved, { shouldDirty: false });
+    } else if (shiftsForSelectedLocation.length === 1 && !selectedShift) {
+      setValue('employment.shift', String(shiftsForSelectedLocation[0].name).trim(), {
+        shouldDirty: true,
+      });
+    }
+  }, [
+    selectedLocationId,
+    shiftsForSelectedLocation,
+    selectedShift,
+    setValue,
+  ]);
+
+  const businessUnitHelper =
+    activeLocations.length === 0 && !locationShiftsLoading
+      ? 'Add locations under Settings → Locations'
+      : '';
+
+  const shiftHelper = !selectedLocationId
+    ? 'Select business unit first'
+    : shiftsForSelectedLocation.length === 0 && !locationShiftsLoading
+      ? 'No shifts for this location. Add under Settings → Attendance → Shifts.'
+      : shifts.length === 0 && !locationShiftsLoading
+        ? 'Configure shifts under Settings → Attendance'
+        : '';
 
   return (
     <Stack spacing={2.5}>
@@ -190,14 +292,7 @@ export function StepEmployment({ managerOptions, employeeSettings }) {
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
-          <EmployeeAutocomplete
-            name="employment.reportingManagerId"
-            label="Reporting manager"
-            options={managerOptions}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <EmployeeAutocomplete name="employment.hrManagerId" label="HR manager" options={managerOptions} />
+          <EmployeeAutocomplete name="employment.hrManagerId" label="HR manager" options={hrManagerOptions} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
@@ -216,9 +311,57 @@ export function StepEmployment({ managerOptions, employeeSettings }) {
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
+            name="employment.businessUnit"
+            control={control}
+            render={({ field }) => (
+              <Autocomplete
+                options={locationOptions}
+                loading={locationShiftsLoading}
+                getOptionLabel={(option) => option?.label || ''}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                value={
+                  locationOptions.find(
+                    (loc) =>
+                      loc.name === field.value ||
+                      loc.id === resolveBusinessUnitToLocationId(field.value, activeLocations),
+                  ) || null
+                }
+                onChange={(_, v) => {
+                  field.onChange(v?.name || '');
+                  setValue('employment.shift', '');
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Business unit"
+                    helperText={businessUnitHelper}
+                    placeholder={locationOptions.length ? undefined : 'No locations configured'}
+                  />
+                )}
+              />
+            )}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Controller
             name="employment.shift"
             control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="Shift" />}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                select
+                fullWidth
+                label="Shift"
+                disabled={!selectedLocationId || shiftOptions.length === 0}
+                helperText={shiftHelper}
+              >
+                {shiftOptions.map((o) => (
+                  <MenuItem key={o.value} value={o.value}>
+                    {o.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 3 }}>
@@ -237,13 +380,6 @@ export function StepEmployment({ managerOptions, employeeSettings }) {
             render={({ field }) => (
               <TextField {...field} fullWidth type="number" label="Notice period (days)" inputProps={{ min: 0 }} />
             )}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Controller
-            name="employment.businessUnit"
-            control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="Business unit" />}
           />
         </Grid>
       </Grid>

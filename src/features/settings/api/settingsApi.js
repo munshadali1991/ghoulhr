@@ -57,6 +57,17 @@ export function getAttendanceSettings(organizationId) {
   return settingsFetch('/settings/attendance', organizationId);
 }
 
+export function getTimesheetSettings(organizationId) {
+  return settingsFetch('/settings/timesheet', organizationId);
+}
+
+export function updateTimesheetSettings(organizationId, timesheetData) {
+  return settingsFetch('/settings/timesheet', organizationId, {
+    method: 'POST',
+    body: JSON.stringify(timesheetData),
+  });
+}
+
 export function updateAttendanceSettings(organizationId, attendanceData) {
   return settingsFetch('/settings/attendance', organizationId, {
     method: 'POST',
@@ -83,5 +94,46 @@ export function updateLeaveConfigurations(organizationId, payload) {
   return settingsFetch('/settings/leave-config', organizationId, {
     method: 'POST',
     body: JSON.stringify(payload),
+  });
+}
+
+export function fetchOrganizationCalendar(organizationId, year) {
+  const qs = new URLSearchParams({ year: String(year) });
+  return settingsFetch(
+    `/settings/organization/calendar?${qs.toString()}`,
+    organizationId,
+  );
+}
+
+export function createCalendarHoliday(organizationId, body) {
+  return settingsFetch('/settings/organization/calendar/holidays', organizationId, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateCalendarHoliday(organizationId, id, body) {
+  return settingsFetch(
+    `/settings/organization/calendar/holidays/${encodeURIComponent(id)}`,
+    organizationId,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export function deleteCalendarHoliday(organizationId, id) {
+  return settingsFetch(
+    `/settings/organization/calendar/holidays/${encodeURIComponent(id)}`,
+    organizationId,
+    { method: 'DELETE' },
+  );
+}
+
+export function publishOrganizationCalendar(organizationId, year) {
+  return settingsFetch('/settings/organization/calendar/publish', organizationId, {
+    method: 'POST',
+    body: JSON.stringify({ year }),
   });
 }

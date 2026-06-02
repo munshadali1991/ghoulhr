@@ -1,7 +1,6 @@
 import {
   Alert,
   Box,
-  Button,
   CircularProgress,
   FormControl,
   InputLabel,
@@ -11,7 +10,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
@@ -23,8 +21,8 @@ import { EmptyStatePanel } from '../../components/EmptyStatePanel';
 import { useLeaveCalendar, useLeaveTransactions } from '../../hooks/useEmployeePortalQueries';
 
 export function LeaveCalendarPage() {
-  const [month, setMonth] = useState(dayjs('2026-05-01'));
-  const [selectedDate, setSelectedDate] = useState(dayjs('2026-05-20'));
+  const [month, setMonth] = useState(() => dayjs().startOf('month'));
+  const [selectedDate, setSelectedDate] = useState(() => dayjs());
   const [filter, setFilter] = useState('me');
   const [search, setSearch] = useState('');
 
@@ -35,11 +33,19 @@ export function LeaveCalendarPage() {
   const calendarQuery = useLeaveCalendar(year, monthNum, filter);
   const transactionsQuery = useLeaveTransactions(dateKey, filter, search);
 
+  const teamOnLeaveCount = calendarQuery.data?.teamOnLeaveCount ?? 0;
+
   const legend = (
     <Stack direction="row" spacing={3} flexWrap="wrap" alignItems="center">
-      <Typography variant="caption" color="text.secondary">
-        Team on Leave <strong>0</strong>
-      </Typography>
+      {filter === 'team' ? (
+        <Typography variant="caption" color="text.secondary">
+          Team on Leave <strong>{teamOnLeaveCount}</strong>
+        </Typography>
+      ) : null}
+      <Stack direction="row" alignItems="center" spacing={0.5}>
+        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main' }} />
+        <Typography variant="caption">On Leave</Typography>
+      </Stack>
       <Stack direction="row" alignItems="center" spacing={0.5}>
         <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'warning.main' }} />
         <Typography variant="caption">Restricted Holiday</Typography>
@@ -56,18 +62,32 @@ export function LeaveCalendarPage() {
       ({ date }) => {
         const key = toDateKey(date);
         const marker = calendarQuery.data?.days?.[key];
-        if (!marker?.holiday) return null;
+        if (!marker?.holiday && !marker?.onLeave) return null;
+
         return (
-          <Box
-            sx={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              bgcolor: marker.holiday === 'restricted' ? 'warning.main' : 'secondary.main',
-              mx: 'auto',
-              mt: 0.25,
-            }}
-          />
+          <Stack direction="row" spacing={0.25} justifyContent="center" sx={{ mt: 0.25 }}>
+            {marker.onLeave ? (
+              <Box
+                sx={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  bgcolor: 'primary.main',
+                }}
+              />
+            ) : null}
+            {marker.holiday ? (
+              <Box
+                sx={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  bgcolor:
+                    marker.holiday === 'restricted' ? 'warning.main' : 'secondary.main',
+                }}
+              />
+            ) : null}
+          </Stack>
         );
       },
     [calendarQuery.data?.days],
@@ -84,11 +104,6 @@ export function LeaveCalendarPage() {
               <MenuItem value="team">My Team</MenuItem>
             </Select>
           </FormControl>
-        }
-        right={
-          <Button variant="contained" color="secondary" startIcon={<DownloadRoundedIcon />}>
-            Download
-          </Button>
         }
       />
 

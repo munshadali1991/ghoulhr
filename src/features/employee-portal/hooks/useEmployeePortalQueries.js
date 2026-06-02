@@ -6,13 +6,28 @@ import {
   fetchEmployeeHome,
   fetchHolidayCalendar,
   fetchLeaveBalances,
+  fetchLeaveBalanceDetail,
   fetchLeaveCalendar,
   fetchLeaveRequests,
   fetchLeaveTransactions,
+  fetchLeavePreview,
   fetchLeaveTypes,
+  fetchColleagues,
+  signInAttendance,
+  signOutAttendance,
   submitLeaveRequest,
   withdrawLeaveRequest,
+  fetchNotifications,
+  fetchNotificationUnreadCount,
+  markNotificationRead,
+  markAllNotificationsRead,
 } from '../api/employeePortalApi';
+import {
+  fetchTimesheetDay,
+  fetchTimesheetReports,
+  reopenTimesheetDay,
+  upsertTimesheetDay,
+} from '../api/timesheetApi';
 import { employeePortalKeys } from '../api/queryKeys';
 
 /**
@@ -32,11 +47,34 @@ export function useLeaveBalances(year) {
   });
 }
 
+/**
+ * @param {string | undefined} leaveConfigurationId
+ * @param {number} year
+ */
+export function useLeaveBalanceDetail(leaveConfigurationId, year) {
+  return useQuery({
+    queryKey: employeePortalKeys.leaveBalanceDetail(leaveConfigurationId, year),
+    queryFn: () => fetchLeaveBalanceDetail(leaveConfigurationId, year),
+    enabled: Boolean(leaveConfigurationId),
+  });
+}
+
 export function useLeaveTypes() {
   return useQuery({
     queryKey: employeePortalKeys.leaveTypes(),
     queryFn: fetchLeaveTypes,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * @param {string} search
+ */
+export function useColleaguesSearch(search) {
+  return useQuery({
+    queryKey: employeePortalKeys.colleagues(search),
+    queryFn: () => fetchColleagues(search),
+    staleTime: 60 * 1000,
   });
 }
 
@@ -49,9 +87,22 @@ export function useLeaveCalendar(year, month, filter) {
 
 export function useLeaveTransactions(date, filter, search) {
   return useQuery({
-    queryKey: employeePortalKeys.leaveTransactions(date, filter),
+    queryKey: employeePortalKeys.leaveTransactions(date, filter, search),
     queryFn: () => fetchLeaveTransactions(date, filter, search),
     enabled: Boolean(date),
+  });
+}
+
+/**
+ * @param {object | null} params
+ */
+export function useLeavePreview(params) {
+  return useQuery({
+    queryKey: employeePortalKeys.leavePreview(params),
+    queryFn: () => fetchLeavePreview(params),
+    enabled: Boolean(
+      params?.leaveType && params?.fromDate && params?.toDate && params?.fromSession && params?.toSession,
+    ),
   });
 }
 
@@ -107,6 +158,134 @@ export function useWithdrawLeaveRequest() {
     mutationFn: withdrawLeaveRequest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: employeePortalKeys.all });
+    },
+  });
+}
+
+function patchEmployeeHomeAttendance(queryClient, signedIn) {
+  queryClient.setQueryData(employeePortalKeys.home(), (old) => {
+    if (!old?.attendance) return old;
+    return {
+      ...old,
+      attendance: { ...old.attendance, signedIn },
+    };
+  });
+}
+
+export function useSignInAttendance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: signInAttendance,
+    onSuccess: (data) => {
+      patchEmployeeHomeAttendance(queryClient, data?.signedIn ?? true);
+      queryClient.invalidateQueries({ queryKey: employeePortalKeys.all });
+    },
+  });
+}
+
+export function useSignOutAttendance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: signOutAttendance,
+    onSuccess: (data) => {
+      patchEmployeeHomeAttendance(queryClient, data?.signedIn ?? false);
+      queryClient.invalidateQueries({ queryKey: employeePortalKeys.all });
+    },
+  });
+}
+
+export function useNotifications(enabled = true) {
+  return useQuery({
+    queryKey: employeePortalKeys.notifications(),
+    queryFn: fetchNotifications,
+    enabled,
+  });
+}
+
+export function useNotificationUnreadCount() {
+  return useQuery({
+    queryKey: employeePortalKeys.notificationUnreadCount(),
+    queryFn: fetchNotificationUnreadCount,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useMarkNotificationRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: markNotificationRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: employeePortalKeys.notifications() });
+      queryClient.invalidateQueries({
+        queryKey: employeePortalKeys.notificationUnreadCount(),
+      });
+    },
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: markAllNotificationsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: employeePortalKeys.notifications() });
+      queryClient.invalidateQueries({
+        queryKey: employeePortalKeys.notificationUnreadCount(),
+      });
+    },
+  });
+}
+
+/**
+ * @param {string} date YYYY-MM-DD
+ */
+export function useTimesheetDay(date) {
+  return useQuery({
+    queryKey: employeePortalKeys.timesheetDay(date),
+    queryFn: () => fetchTimesheetDay(date),
+    enabled: Boolean(date),
+  });
+}
+
+/**
+ * @param {{ granularity: string, from: string, to: string }} params
+ */
+export function useTimesheetReports(params) {
+  return useQuery({
+    queryKey: employeePortalKeys.timesheetReports(
+      params.granularity,
+      params.from,
+      params.to,
+    ),
+    queryFn: () => fetchTimesheetReports(params),
+    enabled: Boolean(params.from && params.to),
+  });
+}
+
+export function useUpsertTimesheetDay() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ date, payload }) => upsertTimesheetDay(date, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: employeePortalKeys.timesheetDay(variables.date),
+      });
+      queryClient.invalidateQueries({ queryKey: employeePortalKeys.home() });
+      queryClient.invalidateQueries({ queryKey: [...employeePortalKeys.all, 'timesheet-reports'] });
+    },
+  });
+}
+
+export function useReopenTimesheetDay() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (date) => reopenTimesheetDay(date),
+    onSuccess: (_data, date) => {
+      queryClient.invalidateQueries({
+        queryKey: employeePortalKeys.timesheetDay(date),
+      });
+      queryClient.invalidateQueries({ queryKey: employeePortalKeys.home() });
+      queryClient.invalidateQueries({ queryKey: [...employeePortalKeys.all, 'timesheet-reports'] });
     },
   });
 }

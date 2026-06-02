@@ -3,11 +3,13 @@ import EventNoteRoundedIcon from '@mui/icons-material/EventNoteRounded';
 import BeachAccessRoundedIcon from '@mui/icons-material/BeachAccessRounded';
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
+import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
 
 const ICONS = {
   home: DashboardRoundedIcon,
   leave: BeachAccessRoundedIcon,
   attendance: EventNoteRoundedIcon,
+  timesheet: ScheduleRoundedIcon,
   profile: PersonRoundedIcon,
   settings: SettingsRoundedIcon,
 };
@@ -31,6 +33,15 @@ export const EMPLOYEE_NAV_CONFIG = [
     expandPathPrefix: '/attendance',
     children: [
       { key: 'attendance-info', label: 'Attendance Info', path: '/attendance' },
+    ],
+  },
+  {
+    key: 'timesheet',
+    label: 'Timesheet',
+    expandPathPrefix: '/timesheet',
+    children: [
+      { key: 'timesheet-my', label: 'My Timesheet', path: '/timesheet' },
+      { key: 'timesheet-reports', label: 'My Reports', path: '/timesheet/reports' },
     ],
   },
   { key: 'profile', label: 'My Profile', path: '/profile' },
@@ -86,11 +97,15 @@ export function getEmployeePageTitle(pathname) {
       return item.label;
     }
     for (const child of item.children ?? []) {
-      if (child.path && pathname === child.path) {
+      if (child.path && (pathname === child.path || pathname.startsWith(`${child.path}/`))) {
         return child.label;
       }
     }
   }
   if (pathname.startsWith('/leave/apply')) return 'Leave Apply';
+  if (pathname === '/timesheet/reports') return 'My Reports';
+  if (pathname.startsWith('/timesheet/add')) return 'Add Timesheet';
+  if (pathname.startsWith('/timesheet/edit')) return 'Edit Timesheet';
+  if (pathname.startsWith('/timesheet')) return 'My Timesheet';
   return 'Home';
 }

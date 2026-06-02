@@ -10,16 +10,23 @@ import {
   Stack,
 } from '@mui/material';
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageToolbar } from '../../components/PageToolbar';
 import { LeaveBalanceCard } from '../../components/LeaveBalanceCard';
 import { useLeaveBalances } from '../../hooks/useEmployeePortalQueries';
 
+const currentYear = new Date().getFullYear();
+
 export function LeaveBalancesPage() {
   const navigate = useNavigate();
-  const [year, setYear] = useState(2026);
+  const [year, setYear] = useState(currentYear);
   const { data, isLoading, error } = useLeaveBalances(year);
+
+  const yearOptions = useMemo(
+    () => [currentYear - 1, currentYear, currentYear + 1],
+    [],
+  );
 
   return (
     <>
@@ -35,7 +42,7 @@ export function LeaveBalancesPage() {
             <FormControl size="small" sx={{ minWidth: 100 }}>
               <InputLabel>Year</InputLabel>
               <Select label="Year" value={year} onChange={(e) => setYear(Number(e.target.value))}>
-                {[2025, 2026, 2027].map((y) => (
+                {yearOptions.map((y) => (
                   <MenuItem key={y} value={y}>
                     {y}
                   </MenuItem>
@@ -55,7 +62,7 @@ export function LeaveBalancesPage() {
       ) : (
         <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
           {data?.balances?.map((b, i) => (
-            <LeaveBalanceCard key={b.id} balance={b} showProgress={i === 0} />
+            <LeaveBalanceCard key={b.id} balance={b} year={year} showProgress={i === 0} />
           ))}
         </Stack>
       )}

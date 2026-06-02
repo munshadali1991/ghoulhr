@@ -6,6 +6,7 @@ export const SETTINGS_SECTIONS = [
   { slug: 'locations', label: 'Locations' },
   { slug: 'leave', label: 'Leave config' },
   { slug: 'attendance', label: 'Attendance' },
+  { slug: 'timesheet', label: 'Timesheet' },
 ];
 
 export const DEFAULT_SETTINGS_SLUG = 'organization';
@@ -43,6 +44,9 @@ export function currentSettingsSlugFromPath(pathname) {
 /** Settings tabs that use a wider content column (tables / dense forms). */
 export const SETTINGS_WIDE_LAYOUT_SLUGS = new Set(['leave', 'attendance']);
 
-export function isWideSettingsLayout(slug) {
-  return SETTINGS_WIDE_LAYOUT_SLUGS.has(slug);
+export function isWideSettingsLayout(slug, pathname = '') {
+  if (SETTINGS_WIDE_LAYOUT_SLUGS.has(slug)) {
+    return true;
+  }
+  return slug === 'organization' && pathname.includes('/organization/calendar');
 }

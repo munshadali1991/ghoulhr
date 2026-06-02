@@ -1,45 +1,52 @@
-import {
-  MOCK_LEAVE_REQUESTS,
-  MOCK_LEAVE_BALANCES,
-  MOCK_LEAVE_TYPES,
-  MOCK_APPROVERS,
-  MOCK_ATTENDANCE_SUMMARY,
-  MOCK_ATTENDANCE_DAY_DETAIL,
-  MOCK_EMPLOYEE_HOME,
-  MOCK_LEAVE_TRANSACTIONS,
-  buildMockLeaveCalendarDays,
-  buildMockHolidayCalendar,
-  buildMockAttendanceDays,
-} from '../mocks/employeePortalMocks';
+import { apiFetch } from '@/shared/api/httpClient';
 
-const USE_MOCK = import.meta.env.VITE_EMPLOYEE_PORTAL_MOCK !== 'false';
-
-const delay = (ms = 280) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/** In-memory store for mock mutations */
-let mockLeaveRequests = [...MOCK_LEAVE_REQUESTS];
-
-/**
- * @param {'PENDING' | 'APPROVED' | 'REJECTED'} status
- */
 export async function fetchLeaveRequests(status) {
-  await delay();
-  if (!USE_MOCK) {
-    throw new Error('Employee leave API not configured. Set VITE_EMPLOYEE_PORTAL_MOCK=true or implement backend.');
-  }
-  return mockLeaveRequests.filter((r) => r.status === status);
+  return apiFetch(`/ess/leave/requests?status=${encodeURIComponent(status)}`);
 }
 
 export async function fetchLeaveBalances(year) {
-  await delay();
-  if (!USE_MOCK) throw new Error('Employee leave balances API not configured.');
-  return { year, balances: MOCK_LEAVE_BALANCES };
+  const data = await apiFetch(`/ess/leave/balances?year=${encodeURIComponent(year)}`);
+  return { year: data.year, balances: data.balances ?? [], rules: data.rules ?? [] };
+}
+
+/**
+ * @param {string} leaveConfigurationId
+ * @param {number} year
+ * @returns {Promise<import('../types/employeePortal.types').LeaveBalanceDetail>}
+ */
+export async function fetchLeaveBalanceDetail(leaveConfigurationId, year) {
+  const qs = new URLSearchParams({ year: String(year) });
+  return apiFetch(
+    `/ess/leave/balances/${encodeURIComponent(leaveConfigurationId)}?${qs.toString()}`,
+  );
 }
 
 export async function fetchLeaveTypes() {
-  await delay(120);
-  if (!USE_MOCK) throw new Error('Employee leave types API not configured.');
-  return { types: MOCK_LEAVE_TYPES, approvers: MOCK_APPROVERS };
+  return apiFetch('/ess/leave/types');
+}
+
+/**
+ * @param {string} [search]
+ */
+export async function fetchColleagues(search = '') {
+  const qs = new URLSearchParams();
+  if (search) qs.set('search', search);
+  qs.set('limit', '25');
+  return apiFetch(`/ess/leave/colleagues?${qs.toString()}`);
+}
+
+/**
+ * @param {object} params
+ */
+export async function fetchLeavePreview(params) {
+  const qs = new URLSearchParams({
+    leaveConfigurationId: params.leaveType,
+    fromDate: params.fromDate,
+    toDate: params.toDate,
+    fromSession: params.fromSession,
+    toSession: params.toSession,
+  });
+  return apiFetch(`/ess/leave/preview-days?${qs.toString()}`);
 }
 
 /**
@@ -48,14 +55,12 @@ export async function fetchLeaveTypes() {
  * @param {string} filter
  */
 export async function fetchLeaveCalendar(year, month, filter) {
-  await delay();
-  if (!USE_MOCK) throw new Error('Employee leave calendar API not configured.');
-  return {
-    year,
-    month,
+  const qs = new URLSearchParams({
+    year: String(year),
+    month: String(month),
     filter,
-    days: buildMockLeaveCalendarDays(year, month),
-  };
+  });
+  return apiFetch(`/ess/leave/calendar?${qs.toString()}`);
 }
 
 /**
@@ -64,52 +69,44 @@ export async function fetchLeaveCalendar(year, month, filter) {
  * @param {string} [search]
  */
 export async function fetchLeaveTransactions(date, filter, search = '') {
-  await delay(200);
-  if (!USE_MOCK) throw new Error('Employee leave transactions API not configured.');
-  const items = MOCK_LEAVE_TRANSACTIONS.filter((t) => {
-    if (!search) return true;
-    return t.employeeName.toLowerCase().includes(search.toLowerCase());
-  });
-  return { date, filter, items };
+  const qs = new URLSearchParams({ date, filter });
+  if (search) qs.set('search', search);
+  return apiFetch(`/ess/leave/transactions?${qs.toString()}`);
 }
 
 export async function fetchHolidayCalendar(year) {
-  await delay();
-  if (!USE_MOCK) throw new Error('Employee holiday calendar API not configured.');
-  return { year, months: buildMockHolidayCalendar(year) };
+  return apiFetch(`/ess/holidays?year=${encodeURIComponent(year)}`);
 }
 
 /**
  * @param {object} payload
  */
 export async function submitLeaveRequest(payload) {
-  await delay(400);
-  if (!USE_MOCK) throw new Error('Submit leave API not configured.');
-  const newRequest = {
-    id: `lr-${Date.now()}`,
-    category: 'Leave',
-    leaveType: payload.leaveTypeLabel ?? payload.leaveType,
-    status: 'PENDING',
-    daysCount: 1,
-    approverName: payload.approverLabel ?? 'Manager',
-    duration: {
-      startDate: payload.fromDate,
-      endDate: payload.toDate,
-      startSession: payload.fromSession,
-      endSession: payload.toSession,
-    },
+  const body = {
+    leaveConfigurationId: payload.leaveType,
+    fromDate: payload.fromDate,
+    toDate: payload.toDate,
+    fromSession: payload.fromSession,
+    toSession: payload.toSession,
+    applyingTo: payload.applyingTo,
+    ccEmployeeIds: payload.ccEmployeeIds ?? [],
+    notifyAllEmployees: false,
     reason: payload.reason,
-    appliedOn: new Date().toISOString().slice(0, 10),
+    contactDetails: payload.contactDetails || undefined,
+    supportingDocumentId: payload.supportingDocumentId || undefined,
+    supportingDocument: payload.supportingDocument || undefined,
   };
-  mockLeaveRequests = [newRequest, ...mockLeaveRequests];
-  return newRequest;
+  const data = await apiFetch('/ess/leave/requests', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  return data.request;
 }
 
 export async function withdrawLeaveRequest(id) {
-  await delay(300);
-  if (!USE_MOCK) throw new Error('Withdraw leave API not configured.');
-  mockLeaveRequests = mockLeaveRequests.filter((r) => r.id !== id);
-  return { success: true };
+  return apiFetch(`/ess/leave/requests/${encodeURIComponent(id)}/withdraw`, {
+    method: 'POST',
+  });
 }
 
 /**
@@ -117,30 +114,45 @@ export async function withdrawLeaveRequest(id) {
  * @param {number} month
  */
 export async function fetchAttendanceSummary(year, month) {
-  await delay();
-  if (!USE_MOCK) throw new Error('Attendance summary API not configured.');
-  return { ...MOCK_ATTENDANCE_SUMMARY, year, month };
+  const qs = new URLSearchParams({ year: String(year), month: String(month) });
+  return apiFetch(`/ess/attendance/summary?${qs.toString()}`);
 }
 
 export async function fetchAttendanceDays(year, month) {
-  await delay();
-  if (!USE_MOCK) throw new Error('Attendance days API not configured.');
-  return { year, month, days: buildMockAttendanceDays(year, month) };
+  const qs = new URLSearchParams({ year: String(year), month: String(month) });
+  return apiFetch(`/ess/attendance/days?${qs.toString()}`);
 }
 
 export async function fetchAttendanceDayDetail(date) {
-  await delay(200);
-  if (!USE_MOCK) throw new Error('Attendance day API not configured.');
-  return { ...MOCK_ATTENDANCE_DAY_DETAIL, date };
+  return apiFetch(`/ess/attendance/days/${encodeURIComponent(date)}`);
 }
 
 export async function fetchEmployeeHome() {
-  await delay();
-  if (!USE_MOCK) throw new Error('Employee home API not configured.');
-  return MOCK_EMPLOYEE_HOME;
+  return apiFetch('/ess/home');
 }
 
-/** Reset mocks — useful for dev */
-export function resetEmployeePortalMocks() {
-  mockLeaveRequests = [...MOCK_LEAVE_REQUESTS];
+export async function signInAttendance() {
+  return apiFetch('/ess/attendance/sign-in', { method: 'POST', body: JSON.stringify({}) });
+}
+
+export async function signOutAttendance() {
+  return apiFetch('/ess/attendance/sign-out', { method: 'POST', body: JSON.stringify({}) });
+}
+
+export async function fetchNotifications() {
+  return apiFetch('/ess/notifications');
+}
+
+export async function fetchNotificationUnreadCount() {
+  return apiFetch('/ess/notifications/unread-count');
+}
+
+export async function markNotificationRead(id) {
+  return apiFetch(`/ess/notifications/${encodeURIComponent(id)}/read`, {
+    method: 'PATCH',
+  });
+}
+
+export async function markAllNotificationsRead() {
+  return apiFetch('/ess/notifications/read-all', { method: 'PATCH' });
 }

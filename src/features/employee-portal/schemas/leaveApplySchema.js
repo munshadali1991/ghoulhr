@@ -8,6 +8,7 @@ export const leaveApplySchema = z
     toDate: z.string().min(1, 'To date is required'),
     toSession: z.string().min(1),
     applyingTo: z.string().min(1, 'Select an approver'),
+    ccEmployeeIds: z.array(z.string()).default([]),
     contactDetails: z.string().optional(),
     reason: z.string().min(1, 'Reason is required'),
   })

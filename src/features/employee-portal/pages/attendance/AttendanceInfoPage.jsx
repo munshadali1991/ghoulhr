@@ -12,7 +12,12 @@ import {
   useAttendanceDayDetail,
   useAttendanceDays,
   useAttendanceSummary,
+  useEmployeeHome,
+  useSignInAttendance,
+  useSignOutAttendance,
 } from '../../hooks/useEmployeePortalQueries';
+import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
+import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 
 const STATUS_BG = {
   P: 'success.light',
@@ -21,8 +26,13 @@ const STATUS_BG = {
 };
 
 export function AttendanceInfoPage() {
-  const [month, setMonth] = useState(dayjs('2026-05-01'));
-  const [selectedDate, setSelectedDate] = useState(dayjs('2026-05-20'));
+  const [month, setMonth] = useState(dayjs());
+  const [selectedDate, setSelectedDate] = useState(dayjs());
+
+  const { data: homeData, refetch: refetchHome } = useEmployeeHome();
+  const signInMutation = useSignInAttendance();
+  const signOutMutation = useSignOutAttendance();
+  const { snackbar, show, close } = useAppSnackbar();
 
   const year = month.year();
   const monthNum = month.month() + 1;
@@ -31,6 +41,28 @@ export function AttendanceInfoPage() {
   const summaryQuery = useAttendanceSummary(year, monthNum);
   const daysQuery = useAttendanceDays(year, monthNum);
   const detailQuery = useAttendanceDayDetail(dateKey);
+
+  const signedIn = homeData?.attendance?.signedIn ?? false;
+
+  const handleAttendanceToggle = async () => {
+    try {
+      if (signedIn) {
+        await signOutMutation.mutateAsync();
+        show('Signed out successfully');
+      } else {
+        await signInMutation.mutateAsync();
+        show('Signed in successfully');
+      }
+      await Promise.all([
+        refetchHome(),
+        summaryQuery.refetch(),
+        daysQuery.refetch(),
+        detailQuery.refetch(),
+      ]);
+    } catch (e) {
+      show(e?.message ?? 'Attendance action failed', 'error');
+    }
+  };
 
   const days = daysQuery.data?.days ?? {};
 
@@ -70,9 +102,20 @@ export function AttendanceInfoPage() {
     <>
       <PageToolbar
         right={
-          <Button variant="contained" color="secondary" size="small">
-            My Regularizations
-          </Button>
+          <>
+            <Button variant="outlined" color="secondary" size="small">
+              My Regularizations
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              size="small"
+              disabled={signInMutation.isPending || signOutMutation.isPending}
+              onClick={handleAttendanceToggle}
+            >
+              {signedIn ? 'Sign Out' : 'Sign In'}
+            </Button>
+          </>
         }
       />
 
@@ -109,6 +152,8 @@ export function AttendanceInfoPage() {
           />
         </Grid>
       </Grid>
+
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={close} />
     </>
   );
 }

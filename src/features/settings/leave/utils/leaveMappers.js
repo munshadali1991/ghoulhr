@@ -45,6 +45,7 @@ export function createEmptyLeaveRow(defaultLocationId) {
     negativeBalanceAllowed: false,
     requiresSupportingDocument: false,
     supportingDocumentAfterDays: 2,
+    maxConsecutiveDays: '',
     allowHalfDay: true,
     weekendsCountAsLeave: false,
     holidaysCountAsLeave: false,
@@ -88,6 +89,10 @@ export function leaveApiToFormRow(row, idx, defaultLocId) {
     requiresSupportingDocument: !!row.requiresSupportingDocument,
     supportingDocumentAfterDays:
       row.supportingDocumentAfterDays != null ? Number(row.supportingDocumentAfterDays) : 2,
+    maxConsecutiveDays:
+      row.maxConsecutiveDays != null && row.maxConsecutiveDays !== ''
+        ? Number(row.maxConsecutiveDays)
+        : '',
     allowHalfDay: row.allowHalfDay !== false,
     weekendsCountAsLeave: !!row.weekendsCountAsLeave,
     holidaysCountAsLeave: !!row.holidaysCountAsLeave,
@@ -166,6 +171,15 @@ export function leavesFormToPayload(formData) {
         !Number.isNaN(Number(row.supportingDocumentAfterDays))
           ? Math.round(Number(row.supportingDocumentAfterDays))
           : undefined;
+      const maxConsecutiveRaw = row.maxConsecutiveDays;
+      const maxConsecutiveNum =
+        maxConsecutiveRaw === '' || maxConsecutiveRaw == null
+          ? undefined
+          : Number(maxConsecutiveRaw);
+      const maxConsecutive =
+        Number.isFinite(maxConsecutiveNum) && maxConsecutiveNum > 0
+          ? Math.round(maxConsecutiveNum)
+          : undefined;
 
       return {
         id: String(row.id).trim(),
@@ -178,6 +192,7 @@ export function leavesFormToPayload(formData) {
         encashmentAllowed: !!row.encashmentAllowed,
         negativeBalanceAllowed: !!row.negativeBalanceAllowed,
         supportingDocumentAfterDays: docAfter,
+        maxConsecutiveDays: maxConsecutive,
         weekendsCountAsLeave: !!row.weekendsCountAsLeave,
         holidaysCountAsLeave: !!row.holidaysCountAsLeave,
         appliesTo: row.appliesTo?.trim() === 'ALL_BRANCHES' ? 'ALL_BRANCHES' : 'ALL_EMPLOYEES',

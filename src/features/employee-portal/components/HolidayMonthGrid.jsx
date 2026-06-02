@@ -30,7 +30,7 @@ export function HolidayMonthGrid({ year, months, onApply }) {
                   <Box sx={{ mt: 1 }}>
                     {holidays.map((h) => (
                       <Box
-                        key={h.date}
+                        key={`${h.date}-${h.name}`}
                         sx={{
                           display: 'grid',
                           gridTemplateColumns: '48px 1fr auto',

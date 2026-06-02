@@ -16,12 +16,14 @@ import {
   settingsPageContainerSx,
 } from '@/shared/components/settings/settingsLayout';
 import { useOrganizationSettingsForm } from '@/features/settings/organization';
-import { OrganizationSettingsContent } from '@/features/settings/organization';
+import { OrganizationSettingsPage } from '@/features/settings/organization/OrganizationSettingsPage';
+import { organizationTabFromPath, ORGANIZATION_TABS } from '@/features/settings/organization/organizationTabs';
 import { EmployeeSettingsPage } from '@/features/settings/employees';
 import { OrgStructurePage } from '@/features/settings/org-structure';
 import { AttendanceSettingsPage } from '@/features/settings/attendance';
 import { LocationsSettingsPage } from '@/features/settings/locations';
 import { LeaveConfigSettingsPage } from '@/features/settings/leave';
+import { TimesheetSettingsPage } from '@/features/settings/timesheet';
 
 function SettingsPageSkeleton() {
   return (
@@ -43,8 +45,11 @@ export function SettingsPage({ organizationId }) {
   const activeSlug = currentSettingsSlugFromPath(location.pathname) ?? DEFAULT_SETTINGS_SLUG;
 
   const orgForm = useOrganizationSettingsForm(organizationId);
-  const showOrgDraftBar = activeSlug === DEFAULT_SETTINGS_SLUG && orgForm.hasChanges;
-  const pageMaxWidth = isWideSettingsLayout(activeSlug)
+  const isOrgProfileTab =
+    activeSlug === DEFAULT_SETTINGS_SLUG &&
+    organizationTabFromPath(location.pathname) === ORGANIZATION_TABS.profile;
+  const showOrgDraftBar = isOrgProfileTab && orgForm.hasChanges;
+  const pageMaxWidth = isWideSettingsLayout(activeSlug, location.pathname)
     ? SETTINGS_PAGE_WIDE_MAX_WIDTH
     : SETTINGS_PAGE_MAX_WIDTH;
 
@@ -55,13 +60,13 @@ export function SettingsPage({ organizationId }) {
     }
   }, [location.pathname, navigate]);
 
-  if (orgForm.isLoading && activeSlug === DEFAULT_SETTINGS_SLUG) {
+  if (orgForm.isLoading && isOrgProfileTab) {
     return <SettingsPageSkeleton />;
   }
 
   return (
     <Box sx={settingsPageContainerSx(pageMaxWidth, showOrgDraftBar)}>
-      {orgForm.successMessage && activeSlug === DEFAULT_SETTINGS_SLUG && (
+      {orgForm.successMessage && isOrgProfileTab && (
         <Alert
           severity="success"
           sx={{ mb: 3 }}
@@ -98,12 +103,7 @@ function SettingsPanel({ slug, organizationId, orgForm }) {
   switch (slug) {
     case 'organization':
       return (
-        <OrganizationSettingsContent
-          register={orgForm.register}
-          errors={orgForm.errors}
-          logoPreview={orgForm.logoPreview}
-          onLogoUpload={orgForm.handleLogoUpload}
-        />
+        <OrganizationSettingsPage organizationId={organizationId} orgForm={orgForm} />
       );
     case 'employees':
       return <EmployeeSettingsPage organizationId={organizationId} />;
@@ -115,6 +115,8 @@ function SettingsPanel({ slug, organizationId, orgForm }) {
       return <LeaveConfigSettingsPage organizationId={organizationId} />;
     case 'attendance':
       return <AttendanceSettingsPage organizationId={organizationId} />;
+    case 'timesheet':
+      return <TimesheetSettingsPage organizationId={organizationId} />;
     default:
       return null;
   }

@@ -123,12 +123,12 @@ export function EmployeeOnboardingWizard({
     return () => clearTimeout(t);
   }, [watchedBasic]);
 
-  const managerOptions = useMemo(() => {
+  const hrManagerOptions = useMemo(() => {
     return (employees || [])
-      .filter((e) => e.role === 'MANAGER' || e.role === 'ORG_ADMIN')
+      .filter((e) => e.status !== 'TERMINATED')
       .map((e) => ({
         id: e.id,
-        label: `${e.name} (${e.employeeCode}) — ${e.role}`,
+        label: `${e.name} (${e.employeeCode})`,
       }));
   }, [employees]);
 
@@ -194,7 +194,13 @@ export function EmployeeOnboardingWizard({
       case 0:
         return <StepBasicInfo duplicateResult={duplicateResult} />;
       case 1:
-        return <StepEmployment managerOptions={managerOptions} employeeSettings={employeeSettings} />;
+        return (
+          <StepEmployment
+            organizationId={organizationId}
+            hrManagerOptions={hrManagerOptions}
+            employeeSettings={employeeSettings}
+          />
+        );
       case 2:
         return <StepExperience />;
       case 3:
