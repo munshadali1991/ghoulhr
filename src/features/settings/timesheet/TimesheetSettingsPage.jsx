@@ -1,26 +1,37 @@
-import {
-  Box,
-  FormControlLabel,
-  MenuItem,
-  Skeleton,
-  Stack,
-  Switch,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { useState } from 'react';
+import { Alert, Box, Skeleton } from '@mui/material';
 import { FormStatusAlerts } from '@/shared/components/feedback/FormStatusAlerts';
-import { PageCard } from '@/shared/components/ui/PageCard';
-import { BrandedButton } from '@/shared/components/ui/BrandedButton';
+import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
+import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
 import { useTimesheetSettingsForm } from './hooks/useTimesheetSettingsForm';
-import { WEEK_START_OPTIONS } from './constants';
+import { useTimesheetCategories } from './hooks/useTimesheetCategories';
+import { TimesheetSettingsToolbar } from './components/TimesheetSettingsToolbar';
+import { TIMESHEET_TABS } from './timesheetTabs';
+import { GeneralSettingsTab } from './GeneralSettingsTab';
+import { CategoryTab } from './category/CategoryTab';
+import { CategoryFormPage } from './category/CategoryFormPage';
 
 /**
  * @param {{ organizationId: string }} props
  */
 export function TimesheetSettingsPage({ organizationId }) {
+  const [activeTab, setActiveTab] = useState(TIMESHEET_TABS.general);
+  const [categoryFormView, setCategoryFormView] = useState(null);
   const form = useTimesheetSettingsForm(organizationId);
+  const categories = useTimesheetCategories(organizationId);
+  const { snackbar, show, close } = useAppSnackbar();
 
-  if (form.isLoading) {
+  const closeCategoryForm = () => {
+    categories.clearActionError();
+    setCategoryFormView(null);
+  };
+
+  const handleTabChange = (tab) => {
+    closeCategoryForm();
+    setActiveTab(tab);
+  };
+
+  if (form.isLoading && activeTab === TIMESHEET_TABS.general && !categoryFormView) {
     return (
       <Box>
         <Skeleton variant="text" width={280} height={40} sx={{ mb: 2 }} />
@@ -29,111 +40,71 @@ export function TimesheetSettingsPage({ organizationId }) {
     );
   }
 
+  if (categoryFormView !== null) {
+    return (
+      <Box>
+        <CategoryFormPage
+          record={categoryFormView?.id ? categoryFormView : null}
+          isSaving={categories.isSaving}
+          actionError={categories.actionError}
+          onClearActionError={categories.clearActionError}
+          onBack={closeCategoryForm}
+          onSave={async (values, id) => {
+            await categories.saveCategory(values, id);
+            show(id ? 'Category updated' : 'Category created');
+          }}
+        />
+        <AppSnackbar snackbar={snackbar} onClose={close} />
+      </Box>
+    );
+  }
+
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 0.5 }}>
-        Timesheet settings
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Configure daily hour limits, submission windows, and employee guidance.
-      </Typography>
-
-      <FormStatusAlerts
-        loadError={form.error}
-        loadErrorMessage="Failed to load timesheet settings."
-        formError={form.formError}
-        onDismissFormError={form.dismissFormError}
-        successMessage={form.successMessage}
+      <TimesheetSettingsToolbar
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        showAddCategory={activeTab === TIMESHEET_TABS.category}
+        onAddCategory={() => {
+          categories.clearActionError();
+          setCategoryFormView({});
+        }}
       />
 
-      <form onSubmit={form.onSubmit}>
-        <PageCard sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
-            Limits & rules
-          </Typography>
-          <Stack spacing={2.5}>
-            <TextField
-              label="Max hours per day"
-              type="number"
-              inputProps={{ min: 1, max: 24, step: 0.5 }}
-              {...form.register('max_hours_per_day')}
-              error={Boolean(form.formState.errors.max_hours_per_day)}
-              helperText={form.formState.errors.max_hours_per_day?.message}
-              fullWidth
-            />
-            <TextField
-              label="Max past days allowed for entry"
-              type="number"
-              inputProps={{ min: 0, max: 30, step: 1 }}
-              {...form.register('max_past_days')}
-              error={Boolean(form.formState.errors.max_past_days)}
-              helperText={
-                form.formState.errors.max_past_days?.message ??
-                'How far back employees may log or edit timesheets.'
-              }
-              fullWidth
-            />
-            <TextField
-              select
-              label="Week starts on"
-              {...form.register('week_starts_on')}
-              fullWidth
-            >
-              {WEEK_START_OPTIONS.map((opt) => (
-                <MenuItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <FormControlLabel
-              control={
-                <Switch
-                  {...form.register('require_submission_by_eod')}
-                  checked={form.watch('require_submission_by_eod')}
-                  onChange={(e) =>
-                    form.setValue('require_submission_by_eod', e.target.checked, {
-                      shouldDirty: true,
-                    })
-                  }
-                />
-              }
-              label="Show end-of-day submission reminder on employee home"
-            />
-          </Stack>
-        </PageCard>
-
-        <PageCard sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
-            Employee guidance
-          </Typography>
-          <TextField
-            label="Helper text (shown on My Timesheet)"
-            multiline
-            minRows={3}
-            {...form.register('employee_helper_text')}
-            error={Boolean(form.formState.errors.employee_helper_text)}
-            helperText={form.formState.errors.employee_helper_text?.message}
-            fullWidth
+      {activeTab === TIMESHEET_TABS.general ? (
+        <>
+          <FormStatusAlerts
+            loadError={form.error}
+            loadErrorMessage="Failed to load timesheet settings."
+            formError={form.formError}
+            onDismissFormError={form.dismissFormError}
+            successMessage={form.successMessage}
           />
-        </PageCard>
+          <GeneralSettingsTab form={form} />
+        </>
+      ) : (
+        <>
+          {categories.error ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {categories.error.message || 'Failed to load categories.'}
+            </Alert>
+          ) : null}
+          <CategoryTab
+            categories={categories.categories}
+            isLoading={categories.isLoading}
+            isSaving={categories.isSaving}
+            actionError={categories.actionError}
+            onClearActionError={categories.clearActionError}
+            onEdit={(row) => {
+              categories.clearActionError();
+              setCategoryFormView(row);
+            }}
+            onDelete={categories.removeCategory}
+          />
+        </>
+      )}
 
-        <Stack direction="row" spacing={2} justifyContent="flex-end">
-          <BrandedButton
-            type="button"
-            variant="outlined"
-            onClick={form.handleReset}
-            disabled={!form.formState.isDirty || form.isUpdating}
-          >
-            Reset
-          </BrandedButton>
-          <BrandedButton
-            type="submit"
-            disabled={!form.formState.isDirty || form.isUpdating}
-          >
-            {form.isUpdating ? 'Saving…' : 'Save settings'}
-          </BrandedButton>
-        </Stack>
-      </form>
+      <AppSnackbar snackbar={snackbar} onClose={close} />
     </Box>
   );
 }

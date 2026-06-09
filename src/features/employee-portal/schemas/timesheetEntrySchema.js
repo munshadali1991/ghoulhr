@@ -1,16 +1,5 @@
 import { z } from 'zod';
 
-const workTypeEnum = z.enum([
-  'DEVELOPMENT',
-  'BUG_FIX',
-  'TESTING',
-  'MEETING',
-  'RESEARCH',
-  'DOCUMENTATION',
-  'DEPLOYMENT',
-  'SUPPORT',
-]);
-
 const taskStatusEnum = z.enum([
   'NOT_STARTED',
   'IN_PROGRESS',
@@ -21,19 +10,15 @@ const taskStatusEnum = z.enum([
 
 const priorityEnum = z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
 
-export const timesheetEntrySchema = z.object({
-  id: z.string().optional(),
-  projectName: z.string().min(1, 'Project is required').max(120),
-  taskName: z.string().min(1, 'Task name is required').max(200),
-  taskDescription: z.string().min(1, 'Description is required').max(2000),
-  workType: workTypeEnum,
+/** Inline row validation (UI fields only). */
+export const timesheetInlineRowSchema = z.object({
+  workDate: z.string().min(1, 'Date is required'),
+  categoryId: z.string().uuid('Select a category'),
+  workAreaDescription: z.string().min(1, 'Work area / description is required').max(2000),
   hoursSpent: z.coerce.number().min(0.25, 'Minimum 0.25 hours').max(24),
   taskStatus: taskStatusEnum,
   priority: priorityEnum,
-  blockerNotes: z.string().max(1000).optional().or(z.literal('')),
+  refNumber: z.string().max(120).optional().or(z.literal('')),
 });
 
-export const timesheetDayPayloadSchema = z.object({
-  status: z.enum(['DRAFT', 'SUBMITTED']),
-  entries: z.array(timesheetEntrySchema),
-});
+export const timesheetEntrySchema = timesheetInlineRowSchema;

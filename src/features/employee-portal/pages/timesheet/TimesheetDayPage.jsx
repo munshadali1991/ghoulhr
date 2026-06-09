@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
@@ -7,7 +7,6 @@ import {
   Chip,
   CircularProgress,
   IconButton,
-  InputAdornment,
   Stack,
   Table,
   TableBody,
@@ -15,50 +14,36 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Typography,
 } from '@mui/material';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
-import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
-import PostAddRoundedIcon from '@mui/icons-material/PostAddRounded';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import AssessmentRoundedIcon from '@mui/icons-material/AssessmentRounded';
+import { useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { PageCard } from '@/shared/components/ui/PageCard';
-import { BrandedButton } from '@/shared/components/ui/BrandedButton';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
-import { TimesheetDatePickerBar } from '../../components/timesheet/TimesheetDatePickerBar';
-import { TimesheetDayActions } from '../../components/timesheet/TimesheetDayActions';
+import { TimesheetInlineEntryRow } from '../../components/timesheet/TimesheetInlineEntryRow';
+import { TimesheetMyReportView } from '../../components/timesheet/TimesheetMyReportView';
 import { TimesheetStatusChip } from '../../components/timesheet/TimesheetStatusChip';
-import { PRIORITIES, TASK_STATUSES, WORK_TYPES } from '../../constants/timesheetEnums';
+import { fetchTimesheetDay } from '../../api/timesheetApi';
+import { DEFAULT_INLINE_ROW, PRIORITIES, TASK_STATUSES } from '../../constants/timesheetEnums';
+import { timesheetInlineRowSchema } from '../../schemas/timesheetEntrySchema';
 import {
   useReopenTimesheetDay,
+  useTimesheetCategories,
   useTimesheetDay,
   useUpsertTimesheetDay,
 } from '../../hooks/useEmployeePortalQueries';
+import {
+  apiEntryToDisplay,
+  serializeEntriesForApi,
+} from '../../utils/timesheetEntryMappers';
 
 function sumHours(entries) {
   return entries.reduce((acc, e) => acc + Number(e.hoursSpent || 0), 0);
-}
-
-function serializeEntriesForApi(entries) {
-  return entries.map((entry) => {
-    const payload = {
-      projectName: entry.projectName,
-      taskName: entry.taskName,
-      taskDescription: entry.taskDescription,
-      workType: entry.workType,
-      hoursSpent: Number(entry.hoursSpent),
-      taskStatus: entry.taskStatus,
-      priority: entry.priority,
-    };
-    if (entry.id) payload.id = entry.id;
-    if (entry.blockerNotes) payload.blockerNotes = entry.blockerNotes;
-    return payload;
-  });
 }
 
 function entryKey(entry) {
@@ -69,23 +54,26 @@ function labelFor(options, value) {
   return options.find((o) => o.value === value)?.label ?? value;
 }
 
-function priorityColor(priority) {
-  switch (priority) {
-    case 'CRITICAL':
-      return 'error';
-    case 'HIGH':
-      return 'warning';
-    case 'MEDIUM':
-      return 'info';
-    default:
-      return 'default';
-  }
+function createEmptyDraftRow(workDate, categoryId) {
+  return {
+    ...DEFAULT_INLINE_ROW,
+    workDate,
+    categoryId,
+    _draftId: `draft-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  };
+}
+
+function isDraftRowEmpty(row) {
+  return !String(row.workAreaDescription ?? '').trim() && !Number(row.hoursSpent);
+}
+
+function enrichWithCategory(row, categories) {
+  const cat = categories.find((c) => c.id === row.categoryId);
+  return { ...row, categoryName: cat?.name ?? row.categoryName ?? '' };
 }
 
 export function TimesheetDayPage() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState('');
   const dateParam = searchParams.get('date');
   const selectedDate = useMemo(
     () => (dateParam ? dayjs(dateParam) : dayjs()),
@@ -94,11 +82,19 @@ export function TimesheetDayPage() {
   const workDate = selectedDate.format('YYYY-MM-DD');
 
   const { data, isLoading, error, refetch } = useTimesheetDay(workDate);
+  const { data: categoriesData } = useTimesheetCategories();
+  const categories = categoriesData?.categories ?? [];
+  const defaultCategoryId = categories[0]?.id ?? '';
   const upsertMutation = useUpsertTimesheetDay();
   const reopenMutation = useReopenTimesheetDay();
   const { snackbar, show, close } = useAppSnackbar();
 
   const [entries, setEntries] = useState([]);
+  const [draftRows, setDraftRows] = useState([]);
+  const [editingKey, setEditingKey] = useState(null);
+  const [draftErrors, setDraftErrors] = useState({});
+  const [showMyReport, setShowMyReport] = useState(false);
+  const [pendingEditEntryId, setPendingEditEntryId] = useState(null);
 
   const maxHours = data?.settings?.maxHoursPerDay ?? 12;
   const maxPastDays = data?.settings?.maxPastDays ?? 7;
@@ -108,47 +104,156 @@ export function TimesheetDayPage() {
   const canReopen = Boolean(data?.canReopen);
   const totalHours = sumHours(entries);
   const overLimit = totalHours > maxHours;
-  const canSubmit = entries.length > 0 && !overLimit;
 
   useEffect(() => {
     if (data) {
       setEntries(
         (data.entries ?? []).map((e, i) => ({
-          ...e,
+          ...apiEntryToDisplay(e),
           _localId: e.id ?? `row-${i}`,
         })),
       );
     }
   }, [data]);
 
-  const setDate = useCallback(
-    (d) => {
-      setSearchParams({ date: d.format('YYYY-MM-DD') });
-    },
-    [setSearchParams],
-  );
+  useEffect(() => {
+    if (editingKey) return;
+    setDraftRows([createEmptyDraftRow(workDate, defaultCategoryId)]);
+    setDraftErrors({});
+  }, [workDate, editingKey, defaultCategoryId]);
 
-  const filteredEntries = entries.filter((entry) => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      entry.projectName?.toLowerCase().includes(q) ||
-      entry.taskName?.toLowerCase().includes(q) ||
-      entry.taskDescription?.toLowerCase().includes(q) ||
-      labelFor(WORK_TYPES, entry.workType).toLowerCase().includes(q)
+  useEffect(() => {
+    if (editingKey || !defaultCategoryId) return;
+    setDraftRows((rows) =>
+      rows.map((row) => (row.categoryId ? row : { ...row, categoryId: defaultCategoryId })),
     );
-  });
+  }, [defaultCategoryId, editingKey]);
 
-  const handleSave = async (status) => {
+  useEffect(() => {
+    if (!pendingEditEntryId || !data?.entries) return;
+    const entry = data.entries.find((e) => e.id === pendingEditEntryId);
+    if (entry) {
+      loadEntryIntoDrafts({ ...apiEntryToDisplay(entry), id: entry.id }, workDate);
+      setPendingEditEntryId(null);
+    }
+  }, [data, pendingEditEntryId, workDate]);
+
+  const handleDraftChange = (draftId, next) => {
+    setDraftRows((rows) => rows.map((row) => (row._draftId === draftId ? next : row)));
+    if (next.workDate && next.workDate !== workDate) {
+      setSearchParams({ date: next.workDate });
+    }
+  };
+
+  const loadEntryIntoDrafts = (entry, dateOverride) => {
+    const display = apiEntryToDisplay(entry);
+    const date = dateOverride ?? workDate;
+    setDraftRows([
+      {
+        workDate: date,
+        categoryId: display.categoryId,
+        workAreaDescription: display.workAreaDescription,
+        hoursSpent: display.hoursSpent,
+        taskStatus: display.taskStatus,
+        priority: display.priority,
+        refNumber: display.refNumber ?? '',
+        _draftId: `draft-edit-${entryKey(entry)}`,
+      },
+    ]);
+    setEditingKey(entryKey(entry));
+    setDraftErrors({});
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleAddRow = () => {
+    setDraftRows((rows) => [...rows, createEmptyDraftRow(workDate, defaultCategoryId)]);
+  };
+
+  const handleSaveAll = async () => {
+    const filledDrafts = draftRows.filter((row) => !isDraftRowEmpty(row));
+    const hasSavedEntries = entries.length > 0;
+
+    if (filledDrafts.length === 0 && !hasSavedEntries) {
+      show('Fill at least one row before saving', 'warning');
+      return;
+    }
+
+    const allErrors = {};
+    const validated = [];
+
+    for (const row of filledDrafts) {
+      const parsed = timesheetInlineRowSchema.safeParse({
+        ...row,
+        workDate: row.workDate || workDate,
+      });
+      if (!parsed.success) {
+        const fieldErrors = {};
+        parsed.error.issues.forEach((issue) => {
+          const path = issue.path[0];
+          if (path) fieldErrors[path] = { message: issue.message };
+        });
+        allErrors[row._draftId] = fieldErrors;
+      } else {
+        validated.push(enrichWithCategory(apiEntryToDisplay(parsed.data), categories));
+      }
+    }
+
+    if (Object.keys(allErrors).length > 0) {
+      setDraftErrors(allErrors);
+      show('Please fix the highlighted fields', 'error');
+      return;
+    }
+
+    setDraftErrors({});
+
+    let nextEntries = entries;
+
+    if (editingKey && validated.length > 0) {
+      const [updated, ...extras] = validated;
+      nextEntries = entries.map((e) =>
+        entryKey(e) === editingKey
+          ? { ...updated, id: e.id, _localId: e._localId }
+          : e,
+      );
+      if (extras.length > 0) {
+        nextEntries = [
+          ...nextEntries,
+          ...extras.map((row) => ({
+            ...row,
+            _localId: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          })),
+        ];
+      }
+    } else if (validated.length > 0) {
+      nextEntries = [
+        ...entries,
+        ...validated.map((row) => ({
+          ...row,
+          _localId: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        })),
+      ];
+    }
+
+    if (sumHours(nextEntries) > maxHours) {
+      show(`Total hours exceed the daily limit of ${maxHours}h`, 'error');
+      return;
+    }
+
     try {
       await upsertMutation.mutateAsync({
         date: workDate,
-        payload: {
-          status,
-          entries: serializeEntriesForApi(entries),
-        },
+        payload: { status: 'DRAFT', entries: serializeEntriesForApi(nextEntries) },
       });
-      show(status === 'SUBMITTED' ? 'All timesheets submitted' : 'Draft saved');
+      show(
+        editingKey
+          ? 'Entry updated'
+          : validated.length > 1
+            ? `${validated.length} records saved`
+            : 'All records saved',
+      );
+      setEntries(nextEntries);
+      setDraftRows([createEmptyDraftRow(workDate, defaultCategoryId)]);
+      setEditingKey(null);
       refetch();
     } catch (e) {
       show(e?.message ?? 'Failed to save', 'error');
@@ -165,7 +270,11 @@ export function TimesheetDayPage() {
         date: workDate,
         payload: { status: 'DRAFT', entries: serializeEntriesForApi(next) },
       });
-      show('Timesheet removed');
+      show('Record removed');
+      if (editingKey === key) {
+        setEditingKey(null);
+        setDraftRows([createEmptyDraftRow(workDate, defaultCategoryId)]);
+      }
       refetch();
     } catch (e) {
       show(e?.message ?? 'Failed to delete', 'error');
@@ -176,16 +285,66 @@ export function TimesheetDayPage() {
   const handleReopen = async () => {
     try {
       await reopenMutation.mutateAsync(workDate);
-      show('Timesheets reopened for editing');
+      show('Timesheet reopened for editing');
       refetch();
     } catch (e) {
       show(e?.message ?? 'Could not reopen', 'error');
     }
   };
 
-  const goAdd = () => navigate(`/timesheet/add?date=${workDate}`);
-  const goEdit = (entry) =>
-    navigate(`/timesheet/edit?date=${workDate}&entryId=${encodeURIComponent(entryKey(entry))}`);
+  const handleReportEdit = async (row) => {
+    try {
+      if (row.canReopen && row.dayStatus === 'SUBMITTED') {
+        await reopenMutation.mutateAsync(row.workDate);
+      }
+      setShowMyReport(false);
+      setSearchParams({ date: row.workDate });
+      setPendingEditEntryId(row.entryId);
+    } catch (e) {
+      show(e?.message ?? 'Could not open entry for editing', 'error');
+    }
+  };
+
+  const handleReportDelete = async (row) => {
+    if (!row.canModify) {
+      show('This entry cannot be deleted', 'warning');
+      return;
+    }
+    try {
+      if (row.canReopen && row.dayStatus === 'SUBMITTED') {
+        await reopenMutation.mutateAsync(row.workDate);
+      }
+      const day = await fetchTimesheetDay(row.workDate);
+      if (!day.editable) {
+        show('This timesheet cannot be edited', 'error');
+        return;
+      }
+      const next = (day.entries ?? []).filter((e) => e.id !== row.entryId);
+      await upsertMutation.mutateAsync({
+        date: row.workDate,
+        payload: { status: 'DRAFT', entries: serializeEntriesForApi(next) },
+      });
+      show('Record removed');
+      if (row.workDate === workDate) refetch();
+    } catch (e) {
+      show(e?.message ?? 'Failed to delete', 'error');
+    }
+  };
+
+  if (showMyReport) {
+    return (
+      <Box>
+        <TimesheetMyReportView
+          initialDate={workDate}
+          onBack={() => setShowMyReport(false)}
+          onEdit={handleReportEdit}
+          onDelete={handleReportDelete}
+          showSnackbar={show}
+        />
+        <AppSnackbar snackbar={snackbar} onClose={close} />
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -205,10 +364,10 @@ export function TimesheetDayPage() {
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {data?.settings?.employeeHelperText ||
-              'Add separate timesheets for each task. Submit when your day is complete.'}
+              'Use + to add rows, fill each line, then Save All to store them together.'}
           </Typography>
         </Box>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignSelf: { sm: 'flex-start' } }}>
           <Button
             variant="outlined"
             startIcon={<RefreshRoundedIcon />}
@@ -217,11 +376,13 @@ export function TimesheetDayPage() {
           >
             Refresh
           </Button>
-          {isEditable ? (
-            <BrandedButton startIcon={<PostAddRoundedIcon />} onClick={goAdd}>
-              Add Timesheet
-            </BrandedButton>
-          ) : null}
+          <Button
+            variant="contained"
+            startIcon={<AssessmentRoundedIcon />}
+            onClick={() => setShowMyReport(true)}
+          >
+            My Report
+          </Button>
         </Stack>
       </Box>
 
@@ -236,72 +397,98 @@ export function TimesheetDayPage() {
           severity="info"
           sx={{ mb: 2 }}
           action={
-            <Button color="inherit" size="small" onClick={handleReopen} disabled={reopenMutation.isPending}>
-              Edit timesheets
+            <Button
+              color="inherit"
+              size="small"
+              onClick={handleReopen}
+              disabled={reopenMutation.isPending}
+            >
+              Edit timesheet
             </Button>
           }
         >
-          Submitted for this day. Reopen to edit individual timesheets.
+          Submitted for this day. Reopen to add or edit rows.
         </Alert>
       ) : null}
 
       {!isEditable && !canReopen && data?.status === 'APPROVED' ? (
         <Alert severity="info" sx={{ mb: 2 }}>
-          Approved — timesheets for this day cannot be edited.
+          Approved — this day is read-only.
         </Alert>
       ) : null}
 
       {overLimit ? (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Total {totalHours.toFixed(1)}h exceeds the daily limit of {maxHours}h. Fix hours before
-          submitting.
+          Total {totalHours.toFixed(1)}h exceeds the daily limit of {maxHours}h.
         </Alert>
       ) : null}
 
       <PageCard sx={{ mb: 2 }}>
         <CardContent>
           <Stack
-            direction={{ xs: 'column', md: 'row' }}
+            direction={{ xs: 'column', sm: 'row' }}
             justifyContent="space-between"
-            alignItems={{ xs: 'stretch', md: 'center' }}
+            alignItems={{ xs: 'stretch', sm: 'center' }}
             spacing={2}
           >
-            <TimesheetDatePickerBar
-              value={selectedDate}
-              onChange={setDate}
-              minDate={minDate}
-              maxDate={maxDate}
-            />
-            <Stack direction="row" alignItems="center" spacing={2} flexWrap="wrap">
-              <TimesheetStatusChip status={data?.status} size="medium" />
-              <Typography variant="body2" fontWeight={600}>
-                Total: {totalHours.toFixed(1)}h / {maxHours}h
-              </Typography>
-            </Stack>
+            <TimesheetStatusChip status={data?.status} size="medium" />
+            <Typography variant="body2" fontWeight={600}>
+              {entries.length} record(s) · {totalHours.toFixed(1)}h / {maxHours}h max
+            </Typography>
           </Stack>
         </CardContent>
       </PageCard>
 
-      <PageCard sx={{ mb: 2 }}>
-        <CardContent>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Search by project, task, or work type..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchRoundedIcon color="action" />
-                </InputAdornment>
-              ),
-            }}
-          />
-        </CardContent>
-      </PageCard>
+      {isEditable ? (
+        <PageCard sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 2 }}>
+              {editingKey ? 'Edit entry' : 'New entries'}
+            </Typography>
+            <Stack spacing={2}>
+              {draftRows.map((row, index) => (
+                <Box key={row._draftId}>
+                  {draftRows.length > 1 ? (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mb: 0.5, display: 'block' }}
+                    >
+                      Row {index + 1}
+                    </Typography>
+                  ) : null}
+                  <TimesheetInlineEntryRow
+                    value={{ ...row, workDate: row.workDate || workDate }}
+                    onChange={(next) => handleDraftChange(row._draftId, next)}
+                    errors={draftErrors[row._draftId] ?? {}}
+                    minDate={minDate}
+                    maxDate={maxDate}
+                    onAdd={handleAddRow}
+                    onSaveAll={handleSaveAll}
+                    addLabel="Add row"
+                    saving={upsertMutation.isPending}
+                    categories={categories}
+                    showActions={false}
+                    showDate={index === 0}
+                  />
+                </Box>
+              ))}
+              <TimesheetInlineEntryRow
+                actionsOnly
+                value={{ workDate }}
+                onChange={() => {}}
+                onAdd={handleAddRow}
+                onSaveAll={handleSaveAll}
+                addLabel="Add row"
+                saving={upsertMutation.isPending}
+                categories={categories}
+              />
+            </Stack>
+          </CardContent>
+        </PageCard>
+      ) : null}
 
-      <PageCard sx={{ mb: 2 }}>
+      <PageCard>
         <TableContainer sx={{ overflowX: 'auto' }}>
           <Table size="small" sx={{ minWidth: 900 }}>
             <TableHead>
@@ -310,13 +497,10 @@ export function TimesheetDayPage() {
                   <strong>#</strong>
                 </TableCell>
                 <TableCell>
-                  <strong>Project</strong>
+                  <strong>Category</strong>
                 </TableCell>
                 <TableCell>
-                  <strong>Task</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Work type</strong>
+                  <strong>Work Area/Description</strong>
                 </TableCell>
                 <TableCell align="right">
                   <strong>Hours</strong>
@@ -327,87 +511,83 @@ export function TimesheetDayPage() {
                 <TableCell>
                   <strong>Priority</strong>
                 </TableCell>
-                <TableCell align="right">
-                  <strong>Actions</strong>
+                <TableCell>
+                  <strong>Ref #</strong>
                 </TableCell>
+                {isEditable ? (
+                  <TableCell align="right">
+                    <strong>Actions</strong>
+                  </TableCell>
+                ) : null}
               </TableRow>
             </TableHead>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
+                  <TableCell colSpan={isEditable ? 8 : 7} align="center" sx={{ py: 6 }}>
                     <CircularProgress size={40} />
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                      Loading timesheets...
+                      Loading records...
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={isEditable ? 8 : 7}>
                     <Alert severity="error">{error.message}</Alert>
                   </TableCell>
                 </TableRow>
-              ) : filteredEntries.length === 0 ? (
+              ) : entries.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
-                    <Typography variant="body1" color="text.secondary" gutterBottom>
-                      {searchQuery
-                        ? 'No timesheets match your search'
-                        : 'No timesheets for this day yet'}
+                  <TableCell colSpan={isEditable ? 8 : 7} align="center" sx={{ py: 6 }}>
+                    <Typography variant="body1" color="text.secondary">
+                      No records for this date. Use the form above to add your first entry.
                     </Typography>
-                    {isEditable && !searchQuery ? (
-                      <Button
-                        variant="outlined"
-                        startIcon={<AddRoundedIcon />}
-                        onClick={goAdd}
-                        sx={{ mt: 2 }}
-                      >
-                        Add your first timesheet
-                      </Button>
-                    ) : null}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredEntries.map((entry, index) => (
+                entries.map((entry, index) => (
                   <TableRow
                     key={entryKey(entry)}
                     hover
-                    sx={{ cursor: isEditable ? 'pointer' : 'default' }}
-                    onClick={() => isEditable && goEdit(entry)}
+                    sx={{
+                      cursor: isEditable ? 'pointer' : 'default',
+                      bgcolor: editingKey === entryKey(entry) ? 'action.hover' : undefined,
+                    }}
+                    onClick={() => isEditable && loadEntryIntoDrafts(entry)}
                   >
                     <TableCell>{index + 1}</TableCell>
                     <TableCell>
-                      <Typography variant="body2" fontWeight={600}>
-                        {entry.projectName}
-                      </Typography>
+                      <Chip
+                        label={entry.categoryName || '—'}
+                        size="small"
+                        color="secondary"
+                        variant="outlined"
+                      />
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" fontWeight={600}>
-                        {entry.taskName}
-                      </Typography>
                       <Typography
-                        variant="caption"
-                        color="text.secondary"
+                        variant="body2"
                         sx={{
-                          display: 'block',
-                          maxWidth: 220,
+                          maxWidth: 400,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {entry.taskDescription}
+                        {entry.workAreaDescription}
                       </Typography>
                     </TableCell>
-                    <TableCell>{labelFor(WORK_TYPES, entry.workType)}</TableCell>
                     <TableCell align="right">
-                      <Typography fontWeight={600}>{Number(entry.hoursSpent).toFixed(1)}</Typography>
+                      <Typography fontWeight={600}>
+                        {Number(entry.hoursSpent).toFixed(1)}
+                      </Typography>
                     </TableCell>
                     <TableCell>
                       <Chip
                         label={labelFor(TASK_STATUSES, entry.taskStatus)}
                         size="small"
+                        color="info"
                         variant="outlined"
                       />
                     </TableCell>
@@ -415,34 +595,42 @@ export function TimesheetDayPage() {
                       <Chip
                         label={labelFor(PRIORITIES, entry.priority)}
                         size="small"
-                        color={priorityColor(entry.priority)}
+                        color={
+                          entry.priority === 'CRITICAL' || entry.priority === 'HIGH'
+                            ? 'error'
+                            : entry.priority === 'LOW'
+                              ? 'default'
+                              : 'warning'
+                        }
+                        variant="outlined"
                       />
                     </TableCell>
-                    <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                      {isEditable ? (
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {entry.refNumber || '—'}
+                      </Typography>
+                    </TableCell>
+                    {isEditable ? (
+                      <TableCell align="right" onClick={(e) => e.stopPropagation()}>
                         <Stack direction="row" justifyContent="flex-end" spacing={0.5}>
                           <IconButton
                             size="small"
-                            aria-label="Edit timesheet"
-                            onClick={() => goEdit(entry)}
+                            aria-label="Edit"
+                            onClick={() => loadEntryIntoDrafts(entry)}
                           >
                             <EditOutlinedIcon fontSize="small" />
                           </IconButton>
                           <IconButton
                             size="small"
                             color="error"
-                            aria-label="Delete timesheet"
+                            aria-label="Delete"
                             onClick={() => handleDelete(entry)}
                           >
                             <DeleteOutlineIcon fontSize="small" />
                           </IconButton>
                         </Stack>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">
-                          —
-                        </Typography>
-                      )}
-                    </TableCell>
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 ))
               )}
@@ -450,14 +638,6 @@ export function TimesheetDayPage() {
           </Table>
         </TableContainer>
       </PageCard>
-
-      <TimesheetDayActions
-        editable={isEditable}
-        isSaving={upsertMutation.isPending}
-        canSubmit={canSubmit}
-        onSaveDraft={() => handleSave('DRAFT')}
-        onSubmit={() => handleSave('SUBMITTED')}
-      />
 
       <AppSnackbar snackbar={snackbar} onClose={close} />
     </Box>

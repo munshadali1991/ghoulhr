@@ -34,5 +34,12 @@ export const employeePortalKeys = {
     from,
     to,
   ],
+  timesheetReportEntries: (from, to) => [
+    ...employeePortalKeys.all,
+    'timesheet-report-entries',
+    from,
+    to,
+  ],
   timesheetSettings: () => [...employeePortalKeys.all, 'timesheet-settings'],
+  timesheetCategories: () => [...employeePortalKeys.all, 'timesheet-categories'],
 };

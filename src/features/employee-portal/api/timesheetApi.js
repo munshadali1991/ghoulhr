@@ -40,6 +40,19 @@ export async function fetchTimesheetReports(params) {
   return apiFetch(`/ess/timesheet/reports?${qs.toString()}`);
 }
 
+/**
+ * Flat entry rows for My Report table.
+ * @param {{ from: string, to: string }} params
+ */
+export async function fetchTimesheetReportEntries(params) {
+  const qs = new URLSearchParams({ from: params.from, to: params.to });
+  return apiFetch(`/ess/timesheet/report-entries?${qs.toString()}`);
+}
+
 export async function fetchTimesheetSettings() {
   return apiFetch('/ess/timesheet/settings');
+}
+
+export async function fetchTimesheetCategories() {
+  return apiFetch('/ess/timesheet/categories');
 }

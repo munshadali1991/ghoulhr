@@ -2,6 +2,7 @@ import { Alert, Box, Button, CircularProgress, Grid, Stack, Typography } from '@
 import LocalCafeRoundedIcon from '@mui/icons-material/LocalCafeRounded';
 import dayjs from 'dayjs';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { PageToolbar } from '../../components/PageToolbar';
 import { MonthCalendarGrid } from '../../components/MonthCalendarGrid';
@@ -26,6 +27,7 @@ const STATUS_BG = {
 };
 
 export function AttendanceInfoPage() {
+  const navigate = useNavigate();
   const [month, setMonth] = useState(dayjs());
   const [selectedDate, setSelectedDate] = useState(dayjs());
 
@@ -65,6 +67,16 @@ export function AttendanceInfoPage() {
   };
 
   const days = daysQuery.data?.days ?? {};
+
+  const handleDateSelect = (date) => {
+    const key = toDateKey(date);
+    const marker = days[key];
+    if (marker?.status === 'A') {
+      navigate(`/leave/apply?tab=apply&fromDate=${key}&toDate=${key}`);
+      return;
+    }
+    setSelectedDate(date);
+  };
 
   const renderCell = ({ date }) => {
     const key = toDateKey(date);
@@ -127,31 +139,53 @@ export function AttendanceInfoPage() {
         <AttendanceMetricsRow summary={summaryQuery.data} />
       ) : null}
 
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, lg: 7 }}>
-          <PageCard sx={{ p: 2 }}>
-            {daysQuery.isLoading ? (
-              <CircularProgress size={32} />
-            ) : daysQuery.error ? (
-              <Alert severity="error">{daysQuery.error.message}</Alert>
-            ) : (
-              <MonthCalendarGrid
-                month={month}
-                selectedDate={selectedDate}
-                onMonthChange={setMonth}
-                onDateSelect={setSelectedDate}
-                renderCell={renderCell}
-              />
-            )}
-          </PageCard>
-        </Grid>
-        <Grid size={{ xs: 12, lg: 5 }}>
-          <AttendanceDayDetailPanel
-            detail={detailQuery.data ?? { date: dateKey, shiftName: '—', shiftTime: '—', scheme: '—', firstIn: '-', lastOut: '-', lateIn: '-', earlyOut: '-', totalWorkHrs: '-', breakHrs: '-', actualWork: '-', status: '-', remarks: '-', sessions: [] }}
-            loading={detailQuery.isLoading}
+      <PageCard sx={{ p: 2, mb: 2 }}>
+        {daysQuery.isLoading ? (
+          <CircularProgress size={32} />
+        ) : daysQuery.error ? (
+          <Alert severity="error">{daysQuery.error.message}</Alert>
+        ) : (
+          <MonthCalendarGrid
+            month={month}
+            selectedDate={selectedDate}
+            onMonthChange={setMonth}
+            onDateSelect={handleDateSelect}
+            renderCell={renderCell}
           />
-        </Grid>
-      </Grid>
+        )}
+      </PageCard>
+
+      <AttendanceDayDetailPanel
+        detail={
+          detailQuery.data ?? {
+            date: dateKey,
+            dayOfWeek: selectedDate.format('ddd'),
+            shiftName: '—',
+            shiftTime: '—',
+            scheme: '—',
+            schemeLabel: 'Attendance Scheme',
+            firstIn: '-',
+            lastOut: '-',
+            lateIn: '-',
+            earlyOut: '-',
+            totalWorkHrs: '-',
+            breakHrs: '-',
+            actualWork: '-',
+            workHoursInShift: '-',
+            shortfallHrs: '-',
+            excessHrs: '-',
+            progressPercent: 0,
+            processedAt: null,
+            status: '-',
+            remarks: '-',
+            sessions: [],
+            permissions: [],
+            swipes: [],
+          }
+        }
+        loading={detailQuery.isLoading}
+        error={detailQuery.error}
+      />
 
       <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={close} />
     </>

@@ -51,6 +51,7 @@ export function mapShiftsToFormState(shifts, defaultLocationId = '') {
       end_time: s.end_time ?? s.endTime ?? '',
       break_minutes: s.break_minutes ?? s.breakMinutes ?? 0,
       locationId: s.locationId || s.location_id || s.location?.id || defaultLocationId || '',
+      sessions: Array.isArray(s.sessions) ? s.sessions : [],
       createdAt,
     };
   });
@@ -125,6 +126,15 @@ export function serializeShiftForApi(shift) {
     end_time: shift.end_time,
     break_minutes: Number(shift.break_minutes) || 0,
     locationId: String(shift.locationId).trim(),
+    sessions: Array.isArray(shift.sessions)
+      ? shift.sessions
+          .filter((s) => s?.start_time && s?.end_time)
+          .map((s, i) => ({
+            sessionLabel: s.sessionLabel?.trim() || `Session ${i + 1}`,
+            start_time: s.start_time,
+            end_time: s.end_time,
+          }))
+      : undefined,
   };
   const sid = typeof shift.id === 'string' ? shift.id.trim() : '';
   if (

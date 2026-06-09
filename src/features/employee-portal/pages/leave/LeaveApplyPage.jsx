@@ -1,6 +1,7 @@
 import { Alert, Box, CircularProgress, Stack } from '@mui/material';
 import { useSearchParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import dayjs from 'dayjs';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
 import { PageCard } from '@/shared/components/ui/PageCard';
@@ -30,6 +31,18 @@ export function LeaveApplyPage() {
   const { snackbar, show, close } = useAppSnackbar();
 
   const form = useLeaveApplyForm();
+  const fromDateParam = searchParams.get('fromDate');
+  const toDateParam = searchParams.get('toDate');
+
+  useEffect(() => {
+    if (fromDateParam && dayjs(fromDateParam).isValid()) {
+      form.setValue('fromDate', fromDateParam, { shouldValidate: true });
+    }
+    if (toDateParam && dayjs(toDateParam).isValid()) {
+      form.setValue('toDate', toDateParam, { shouldValidate: true });
+    }
+  }, [fromDateParam, toDateParam, form]);
+
   const { data: typesData, isLoading: typesLoading } = useLeaveTypes();
   const submitMutation = useSubmitLeaveRequest();
   const withdrawMutation = useWithdrawLeaveRequest();

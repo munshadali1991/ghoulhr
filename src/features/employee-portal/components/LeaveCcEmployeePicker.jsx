@@ -77,11 +77,8 @@ export function LeaveCcEmployeePicker({ value, onChange, excludeEmployees = [] }
       const names = hiddenBecauseExcluded.map((e) => e.name).join(', ');
       return `${names} ${hiddenBecauseExcluded.length === 1 ? 'is' : 'are'} already your approver and will be notified through the approval flow.`;
     }
-    if (search.trim()) {
-      return 'No employees match your search';
-    }
-    return 'Type a name to search colleagues, or pick from the list below';
-  }, [colleaguesQuery.isError, colleaguesQuery.error, hiddenBecauseExcluded, options.length, search]);
+    return 'No employees match your search';
+  }, [colleaguesQuery.isError, colleaguesQuery.error, hiddenBecauseExcluded, options.length]);
 
   const toggleEmployee = (employee) => {
     const isSelected = value.includes(employee.id);
@@ -140,6 +137,11 @@ export function LeaveCcEmployeePicker({ value, onChange, excludeEmployees = [] }
         </Box>
       ) : null}
 
+      {!debouncedSearch ? (
+        <Typography variant="body2" color="text.secondary">
+          Type a name, employee code, or email to search colleagues
+        </Typography>
+      ) : (
       <Box
         sx={{
           border: '1px solid',
@@ -200,6 +202,7 @@ export function LeaveCcEmployeePicker({ value, onChange, excludeEmployees = [] }
           </List>
         )}
       </Box>
+      )}
 
       <Typography variant="caption" color="text.secondary">
         Selected colleagues will receive an email and in-app notification when you submit this leave

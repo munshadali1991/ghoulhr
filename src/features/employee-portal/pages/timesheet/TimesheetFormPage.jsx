@@ -13,23 +13,7 @@ import {
   useTimesheetDay,
   useUpsertTimesheetDay,
 } from '../../hooks/useEmployeePortalQueries';
-
-function serializeEntriesForApi(entries) {
-  return entries.map((entry) => {
-    const payload = {
-      projectName: entry.projectName,
-      taskName: entry.taskName,
-      taskDescription: entry.taskDescription,
-      workType: entry.workType,
-      hoursSpent: Number(entry.hoursSpent),
-      taskStatus: entry.taskStatus,
-      priority: entry.priority,
-    };
-    if (entry.id) payload.id = entry.id;
-    if (entry.blockerNotes) payload.blockerNotes = entry.blockerNotes;
-    return payload;
-  });
-}
+import { serializeEntriesForApi } from '../../utils/timesheetEntryMappers';
 
 function entryKey(entry) {
   return entry.id ?? entry._localId;

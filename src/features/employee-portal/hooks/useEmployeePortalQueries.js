@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import dayjs from 'dayjs';
 import {
   fetchAttendanceDayDetail,
   fetchAttendanceDays,
@@ -23,7 +24,9 @@ import {
   markAllNotificationsRead,
 } from '../api/employeePortalApi';
 import {
+  fetchTimesheetCategories,
   fetchTimesheetDay,
+  fetchTimesheetReportEntries,
   fetchTimesheetReports,
   reopenTimesheetDay,
   upsertTimesheetDay,
@@ -71,10 +74,12 @@ export function useLeaveTypes() {
  * @param {string} search
  */
 export function useColleaguesSearch(search) {
+  const term = search?.trim() ?? '';
   return useQuery({
-    queryKey: employeePortalKeys.colleagues(search),
-    queryFn: () => fetchColleagues(search),
+    queryKey: employeePortalKeys.colleagues(term),
+    queryFn: () => fetchColleagues(term),
     staleTime: 60 * 1000,
+    enabled: term.length > 0,
   });
 }
 
@@ -128,10 +133,12 @@ export function useAttendanceDays(year, month) {
 }
 
 export function useAttendanceDayDetail(date) {
+  const isToday = date === dayjs().format('YYYY-MM-DD');
   return useQuery({
     queryKey: employeePortalKeys.attendanceDay(date),
     queryFn: () => fetchAttendanceDayDetail(date),
     enabled: Boolean(date),
+    refetchInterval: isToday ? 60_000 : false,
   });
 }
 
@@ -247,6 +254,13 @@ export function useTimesheetDay(date) {
   });
 }
 
+export function useTimesheetCategories() {
+  return useQuery({
+    queryKey: employeePortalKeys.timesheetCategories(),
+    queryFn: fetchTimesheetCategories,
+  });
+}
+
 /**
  * @param {{ granularity: string, from: string, to: string }} params
  */
@@ -262,6 +276,17 @@ export function useTimesheetReports(params) {
   });
 }
 
+/**
+ * @param {{ from: string, to: string }} params
+ */
+export function useTimesheetReportEntries(params) {
+  return useQuery({
+    queryKey: employeePortalKeys.timesheetReportEntries(params.from, params.to),
+    queryFn: () => fetchTimesheetReportEntries(params),
+    enabled: Boolean(params.from && params.to),
+  });
+}
+
 export function useUpsertTimesheetDay() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -272,6 +297,12 @@ export function useUpsertTimesheetDay() {
       });
       queryClient.invalidateQueries({ queryKey: employeePortalKeys.home() });
       queryClient.invalidateQueries({ queryKey: [...employeePortalKeys.all, 'timesheet-reports'] });
+      queryClient.invalidateQueries({
+        queryKey: [...employeePortalKeys.all, 'timesheet-report-entries'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: employeePortalKeys.timesheetCategories(),
+      });
     },
   });
 }
@@ -286,6 +317,12 @@ export function useReopenTimesheetDay() {
       });
       queryClient.invalidateQueries({ queryKey: employeePortalKeys.home() });
       queryClient.invalidateQueries({ queryKey: [...employeePortalKeys.all, 'timesheet-reports'] });
+      queryClient.invalidateQueries({
+        queryKey: [...employeePortalKeys.all, 'timesheet-report-entries'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: employeePortalKeys.timesheetCategories(),
+      });
     },
   });
 }

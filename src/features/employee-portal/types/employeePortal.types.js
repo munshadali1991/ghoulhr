@@ -105,10 +105,23 @@
 
 /**
  * @typedef {{
+ *   id: string,
+ *   punchedAt: string,
+ *   swipeTime: string,
+ *   swipeDate: string,
+ *   location: string,
+ *   source: string,
+ * }} AttendanceSwipe
+ */
+
+/**
+ * @typedef {{
  *   date: string,
+ *   dayOfWeek?: string,
  *   shiftName: string,
  *   shiftTime: string,
  *   scheme: string,
+ *   schemeLabel?: string,
  *   firstIn: string,
  *   lastOut: string,
  *   lateIn: string,
@@ -116,9 +129,17 @@
  *   totalWorkHrs: string,
  *   breakHrs: string,
  *   actualWork: string,
+ *   workHoursInShift: string,
+ *   shortfallHrs: string,
+ *   excessHrs: string,
+ *   progressPercent: number,
+ *   processedAt: string | null,
+ *   locationName?: string,
  *   status: string,
  *   remarks: string,
  *   sessions: { session: string; timing: string; firstIn: string; lastOut: string }[],
+ *   permissions: unknown[],
+ *   swipes: AttendanceSwipe[],
  * }} AttendanceDayDetail
  */
 

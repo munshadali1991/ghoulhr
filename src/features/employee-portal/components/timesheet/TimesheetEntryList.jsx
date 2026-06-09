@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { WORK_TYPES, TASK_STATUSES, PRIORITIES } from '../../constants/timesheetEnums';
+import { TASK_STATUSES, PRIORITIES } from '../../constants/timesheetEnums';
 
 function labelFor(options, value) {
   return options.find((o) => o.value === value)?.label ?? value;
@@ -51,7 +51,7 @@ function TimesheetEntryCard({ entry, editable, onEdit, onDelete }) {
         {entry.taskDescription}
       </Typography>
       <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 1 }}>
-        <Typography variant="caption">{labelFor(WORK_TYPES, entry.workType)}</Typography>
+        <Typography variant="caption">{entry.categoryName || '—'}</Typography>
         <Typography variant="caption">·</Typography>
         <Typography variant="caption">{labelFor(TASK_STATUSES, entry.taskStatus)}</Typography>
         <Typography variant="caption">·</Typography>
@@ -136,7 +136,7 @@ export function TimesheetEntryList({ entries, editable, onEdit, onDelete }) {
                   {entry.taskDescription}
                 </Typography>
               </TableCell>
-              <TableCell>{labelFor(WORK_TYPES, entry.workType)}</TableCell>
+              <TableCell>{entry.categoryName || '—'}</TableCell>
               <TableCell align="right">{Number(entry.hoursSpent).toFixed(1)}</TableCell>
               <TableCell>{labelFor(TASK_STATUSES, entry.taskStatus)}</TableCell>
               <TableCell>{labelFor(PRIORITIES, entry.priority)}</TableCell>

@@ -1,8 +1,8 @@
 import { Box, Grid, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { Controller, useFormContext } from 'react-hook-form';
-import { PRIORITIES, TASK_STATUSES, WORK_TYPES } from '../../constants/timesheetEnums';
+import { PRIORITIES, TASK_STATUSES } from '../../constants/timesheetEnums';
 
-export function TimesheetEntryFormBody() {
+export function TimesheetEntryFormBody({ categories = [] }) {
   const {
     control,
     formState: { errors },
@@ -93,13 +93,13 @@ export function TimesheetEntryFormBody() {
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
-            name="workType"
+            name="categoryId"
             control={control}
             render={({ field }) => (
-              <TextField {...field} select fullWidth required label="Work type">
-                {WORK_TYPES.map((opt) => (
-                  <MenuItem key={opt.value} value={opt.value}>
-                    {opt.label}
+              <TextField {...field} select fullWidth required label="Category">
+                {(categories ?? []).map((opt) => (
+                  <MenuItem key={opt.id} value={opt.id}>
+                    {opt.name}
                   </MenuItem>
                 ))}
               </TextField>

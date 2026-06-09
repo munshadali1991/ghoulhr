@@ -12,12 +12,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { timesheetEntrySchema } from '../../schemas/timesheetEntrySchema';
-import {
-  DEFAULT_ENTRY,
-  PRIORITIES,
-  TASK_STATUSES,
-  WORK_TYPES,
-} from '../../constants/timesheetEnums';
+import { DEFAULT_ENTRY, PRIORITIES, TASK_STATUSES } from '../../constants/timesheetEnums';
 
 /**
  * @param {{
@@ -25,9 +20,10 @@ import {
  *   initial?: object | null,
  *   onClose: () => void,
  *   onSave: (entry: object) => void,
+ *   categories?: { id: string, name: string }[],
  * }} props
  */
-export function TimesheetEntryFormDialog({ open, initial, onClose, onSave }) {
+export function TimesheetEntryFormDialog({ open, initial, onClose, onSave, categories = [] }) {
   const {
     register,
     handleSubmit,
@@ -84,13 +80,15 @@ export function TimesheetEntryFormDialog({ open, initial, onClose, onSave }) {
             />
             <TextField
               select
-              label="Work type"
-              {...register('workType')}
+              label="Category"
+              {...register('categoryId')}
+              error={Boolean(errors.categoryId)}
+              helperText={errors.categoryId?.message}
               fullWidth
             >
-              {WORK_TYPES.map((opt) => (
-                <MenuItem key={opt.value} value={opt.value}>
-                  {opt.label}
+              {categories.map((opt) => (
+                <MenuItem key={opt.id} value={opt.id}>
+                  {opt.name}
                 </MenuItem>
               ))}
             </TextField>

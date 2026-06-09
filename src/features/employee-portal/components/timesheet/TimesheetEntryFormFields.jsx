@@ -1,13 +1,14 @@
 import { MenuItem, Stack, TextField } from '@mui/material';
-import { PRIORITIES, TASK_STATUSES, WORK_TYPES } from '../../constants/timesheetEnums';
+import { PRIORITIES, TASK_STATUSES } from '../../constants/timesheetEnums';
 
 /**
  * @param {{
  *   register: import('react-hook-form').UseFormRegister<object>,
  *   errors: import('react-hook-form').FieldErrors,
+ *   categories?: { id: string, name: string }[],
  * }} props
  */
-export function TimesheetEntryFormFields({ register, errors }) {
+export function TimesheetEntryFormFields({ register, errors, categories = [] }) {
   return (
     <Stack spacing={2.5}>
       <TextField
@@ -33,10 +34,17 @@ export function TimesheetEntryFormFields({ register, errors }) {
         helperText={errors.taskDescription?.message}
         fullWidth
       />
-      <TextField select label="Work type" {...register('workType')} fullWidth>
-        {WORK_TYPES.map((opt) => (
-          <MenuItem key={opt.value} value={opt.value}>
-            {opt.label}
+      <TextField
+        select
+        label="Category"
+        {...register('categoryId')}
+        error={Boolean(errors.categoryId)}
+        helperText={errors.categoryId?.message}
+        fullWidth
+      >
+        {categories.map((opt) => (
+          <MenuItem key={opt.id} value={opt.id}>
+            {opt.name}
           </MenuItem>
         ))}
       </TextField>

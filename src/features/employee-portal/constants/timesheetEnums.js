@@ -5,17 +5,6 @@ export const TIMESHEET_DAY_STATUS = {
   REJECTED: 'REJECTED',
 };
 
-export const WORK_TYPES = [
-  { value: 'DEVELOPMENT', label: 'Development' },
-  { value: 'BUG_FIX', label: 'Bug Fix' },
-  { value: 'TESTING', label: 'Testing' },
-  { value: 'MEETING', label: 'Meeting' },
-  { value: 'RESEARCH', label: 'Research' },
-  { value: 'DOCUMENTATION', label: 'Documentation' },
-  { value: 'DEPLOYMENT', label: 'Deployment' },
-  { value: 'SUPPORT', label: 'Support' },
-];
-
 export const TASK_STATUSES = [
   { value: 'NOT_STARTED', label: 'Not Started' },
   { value: 'IN_PROGRESS', label: 'In Progress' },
@@ -47,13 +36,14 @@ export const STATUS_LABELS = {
   MISSING: 'Missing',
 };
 
-export const DEFAULT_ENTRY = {
-  projectName: '',
-  taskName: '',
-  taskDescription: '',
-  workType: 'DEVELOPMENT',
-  hoursSpent: 1,
+export const DEFAULT_INLINE_ROW = {
+  workDate: '',
+  categoryId: '',
+  workAreaDescription: '',
+  hoursSpent: 0,
   taskStatus: 'IN_PROGRESS',
   priority: 'MEDIUM',
-  blockerNotes: '',
+  refNumber: '',
 };
+
+export const DEFAULT_ENTRY = DEFAULT_INLINE_ROW;

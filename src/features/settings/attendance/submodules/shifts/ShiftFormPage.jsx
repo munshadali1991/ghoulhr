@@ -4,9 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
   Box,
+  Button,
   FormControl,
   FormHelperText,
   Grid,
+  IconButton,
   InputAdornment,
   InputLabel,
   MenuItem,
@@ -17,6 +19,8 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import { SettingsField } from '@/shared/components/settings/SettingsField';
 import { RhfDesktopTimePicker } from '@/shared/components/forms/RhfDesktopTimePicker';
 import { RecordFormLayout } from '@/features/settings/shared';
@@ -78,6 +82,14 @@ export function ShiftFormPage({
   const theme = useTheme();
   const isEdit = Boolean(record?.id);
   const [clockFormat, setClockFormat] = useState(loadAttendanceClockFormat);
+  const [sessions, setSessions] = useState(
+    () =>
+      (Array.isArray(record?.sessions) ? record.sessions : []).map((s, i) => ({
+        sessionLabel: s.sessionLabel || `Session ${i + 1}`,
+        start_time: s.start_time || '',
+        end_time: s.end_time || '',
+      })),
+  );
 
   useEffect(() => {
     saveAttendanceClockFormat(clockFormat);
@@ -119,6 +131,7 @@ export function ShiftFormPage({
           end_time: values.end_time,
           break_minutes: values.break_minutes,
           locationId: values.locationId,
+          sessions,
           createdAt: record?.createdAt ?? null,
         },
         record?.id,
@@ -257,6 +270,100 @@ export function ShiftFormPage({
               </SettingsField>
             )}
           />
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+            <Typography variant="subtitle2" fontWeight={600}>
+              Session windows (optional)
+            </Typography>
+            <Button
+              size="small"
+              startIcon={<AddRoundedIcon />}
+              onClick={() =>
+                setSessions((prev) => [
+                  ...prev,
+                  {
+                    sessionLabel: `Session ${prev.length + 1}`,
+                    start_time: '',
+                    end_time: '',
+                  },
+                ])
+              }
+            >
+              Add session
+            </Button>
+          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+            Split the shift into sessions for attendance tracking. If empty, the full shift counts as one session.
+          </Typography>
+          {sessions.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              No sessions defined — employees use the full shift window.
+            </Typography>
+          ) : (
+            sessions.map((sess, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 2,
+                  alignItems: 'flex-start',
+                  mb: 2,
+                  pb: 2,
+                  borderBottom: idx < sessions.length - 1 ? '1px solid' : 'none',
+                  borderColor: 'divider',
+                }}
+              >
+                <TextField
+                  size="small"
+                  label="Label"
+                  value={sess.sessionLabel}
+                  onChange={(e) =>
+                    setSessions((prev) =>
+                      prev.map((s, i) =>
+                        i === idx ? { ...s, sessionLabel: e.target.value } : s,
+                      ),
+                    )
+                  }
+                  sx={{ minWidth: 140 }}
+                />
+                <TextField
+                  size="small"
+                  label="Start (HH:mm)"
+                  placeholder="13:00"
+                  value={sess.start_time}
+                  onChange={(e) =>
+                    setSessions((prev) =>
+                      prev.map((s, i) => (i === idx ? { ...s, start_time: e.target.value } : s)),
+                    )
+                  }
+                  sx={{ width: 120 }}
+                />
+                <TextField
+                  size="small"
+                  label="End (HH:mm)"
+                  placeholder="17:30"
+                  value={sess.end_time}
+                  onChange={(e) =>
+                    setSessions((prev) =>
+                      prev.map((s, i) => (i === idx ? { ...s, end_time: e.target.value } : s)),
+                    )
+                  }
+                  sx={{ width: 120 }}
+                />
+                <IconButton
+                  size="small"
+                  color="error"
+                  aria-label="Remove session"
+                  onClick={() => setSessions((prev) => prev.filter((_, i) => i !== idx))}
+                >
+                  <DeleteOutlineRoundedIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            ))
+          )}
         </Grid>
       </Grid>
     </RecordFormLayout>
