@@ -7,9 +7,13 @@ import { PublicRoutes } from './PublicRoutes';
 import { SuperAdminRoutes } from './SuperAdminRoutes';
 
 export function AppRoutes() {
-  const { user, isAuthenticated, isSuperAdmin, isEmployee, userName, logout } = useAuth();
+  const { user, isAuthenticated, isInitializing, isSuperAdmin, isEmployee, userName, logout } = useAuth();
   const drawer = useMobileDrawer();
   const orgData = useSuperAdminOrganizations(isAuthenticated && isSuperAdmin);
+
+  if (isInitializing) {
+    return null;
+  }
 
   if (isAuthenticated && isSuperAdmin) {
     return (

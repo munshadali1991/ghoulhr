@@ -6,6 +6,7 @@ import { AuthContext } from './authContext';
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => readSession());
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const user = session?.user ?? null;
   const isAuthenticated = Boolean(user);
@@ -24,6 +25,9 @@ export function AuthProvider({ children }) {
       })
       .catch(() => {
         if (mounted) setSession(null);
+      })
+      .finally(() => {
+        if (mounted) setIsInitializing(false);
       });
 
     return () => {
@@ -43,12 +47,13 @@ export function AuthProvider({ children }) {
       setSession,
       user,
       isAuthenticated,
+      isInitializing,
       isSuperAdmin,
       isEmployee,
       userName,
       logout,
     }),
-    [session, user, isAuthenticated, isSuperAdmin, isEmployee, userName, logout],
+    [session, user, isAuthenticated, isInitializing, isSuperAdmin, isEmployee, userName, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
