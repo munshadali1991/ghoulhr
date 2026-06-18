@@ -11,6 +11,9 @@ import { SETTINGS_PAGE_MAX_WIDTH } from '@/shared/components/settings/settingsLa
  *   onDiscard: () => void,
  *   changeCount: number,
  *   maxWidth?: number,
+ *   publishLabel?: string,
+ *   publishingLabel?: string,
+ *   statusText?: string,
  * }} props
  */
 export function DraftStatusBar({
@@ -20,6 +23,9 @@ export function DraftStatusBar({
   onDiscard,
   changeCount,
   maxWidth = SETTINGS_PAGE_MAX_WIDTH,
+  publishLabel = 'Publish Changes',
+  publishingLabel = 'Publishing...',
+  statusText = 'You have unpublished changes',
 }) {
   if (!hasChanges) return null;
 
@@ -54,7 +60,7 @@ export function DraftStatusBar({
             size="small"
           />
           <Typography variant="body2" color="text.secondary">
-            You have unpublished changes
+            {statusText}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -67,7 +73,7 @@ export function DraftStatusBar({
             disabled={isPublishing}
             startIcon={isPublishing ? <CircularProgress size={20} /> : <SaveIcon />}
           >
-            {isPublishing ? 'Publishing...' : 'Publish Changes'}
+            {isPublishing ? publishingLabel : publishLabel}
           </Button>
         </Box>
       </Box>

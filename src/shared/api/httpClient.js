@@ -4,6 +4,7 @@ let refreshPromise = null;
 
 function isAuthPublicPath(path) {
   if (path === '/auth/refresh' || path === '/auth/logout' || path === '/auth/session') return true;
+  if (path.startsWith('/auth/handoff/')) return true;
   if (path.startsWith('/auth/login')) return true;
   if (path.startsWith('/auth/register')) return true;
   if (path.startsWith('/auth/superadmin/bootstrap')) return true;

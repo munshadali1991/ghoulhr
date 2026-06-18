@@ -10,6 +10,7 @@ import { AttendanceInfoPage } from '../pages/attendance/AttendanceInfoPage';
 import { TimesheetDayPage } from '../pages/timesheet/TimesheetDayPage';
 import { TimesheetReportsPage } from '../pages/timesheet/TimesheetReportsPage';
 import { PlaceholderPage } from '../pages/PlaceholderPage';
+import { RequireAccess } from '@/features/auth/components/RequireAccess';
 
 /**
  * @param {{
@@ -39,19 +40,83 @@ export function EmployeeRoutes({
       onLogout={onLogout}
     >
       <Routes>
-        <Route path="/dashboard" element={<EmployeeHomePage userName={userName} />} />
+        <Route
+          path="/dashboard"
+          element={
+            <RequireAccess
+              permissions={['ess.leave:read', 'ess.attendance:read', 'ess.timesheet:read']}
+            >
+              <EmployeeHomePage userName={userName} />
+            </RequireAccess>
+          }
+        />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/leave/apply" element={<LeaveApplyPage />} />
-        <Route path="/leave/balances" element={<LeaveBalancesPage />} />
-        <Route path="/leave/balances/:leaveConfigurationId" element={<LeaveBalanceDetailPage />} />
-        <Route path="/leave/calendar" element={<LeaveCalendarPage />} />
-        <Route path="/leave/holidays" element={<HolidayCalendarPage />} />
-        <Route path="/attendance" element={<AttendanceInfoPage />} />
-        <Route path="/timesheet" element={<TimesheetDayPage />} />
+        <Route
+          path="/leave/apply"
+          element={
+            <RequireAccess module="leave" permission="ess.leave:apply">
+              <LeaveApplyPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/leave/balances"
+          element={
+            <RequireAccess module="leave" permission="ess.leave:read">
+              <LeaveBalancesPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/leave/balances/:leaveConfigurationId"
+          element={
+            <RequireAccess module="leave" permission="ess.leave:read">
+              <LeaveBalanceDetailPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/leave/calendar"
+          element={
+            <RequireAccess module="leave" permission="ess.leave:read">
+              <LeaveCalendarPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/leave/holidays"
+          element={
+            <RequireAccess module="leave" permission="ess.leave:read">
+              <HolidayCalendarPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/attendance"
+          element={
+            <RequireAccess module="attendance" permission="ess.attendance:read">
+              <AttendanceInfoPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/timesheet"
+          element={
+            <RequireAccess module="timesheet" permission="ess.timesheet:read">
+              <TimesheetDayPage />
+            </RequireAccess>
+          }
+        />
         <Route path="/timesheet/add" element={<Navigate to="/timesheet" replace />} />
         <Route path="/timesheet/edit" element={<Navigate to="/timesheet" replace />} />
-        <Route path="/timesheet/reports" element={<TimesheetReportsPage />} />
-        <Route path="/profile" element={<PlaceholderPage title="My Profile" />} />
+        <Route
+          path="/timesheet/reports"
+          element={
+            <RequireAccess module="timesheet" permission="ess.timesheet:read">
+              <TimesheetReportsPage />
+            </RequireAccess>
+          }
+        />
         <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

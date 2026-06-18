@@ -35,7 +35,7 @@ async function authPost(path, body, extraHeaders = {}) {
   return payload;
 }
 
-export async function fetchSessionUser() {
+async function loadSessionFromApi() {
   let res = await fetch(`${API_BASE_URL}/auth/session`, {
     credentials: 'include',
   });
@@ -58,7 +58,25 @@ export async function fetchSessionUser() {
   }
 
   const data = await parseJsonResponse(res);
-  return data?.user ?? null;
+  if (!data?.user) {
+    return null;
+  }
+
+  return {
+    user: data.user,
+    entitledModules: data.entitledModules ?? [],
+    permissions: data.permissions ?? [],
+    roles: data.roles ?? [],
+  };
+}
+
+export async function fetchSession() {
+  return loadSessionFromApi();
+}
+
+export async function fetchSessionUser() {
+  const session = await loadSessionFromApi();
+  return session?.user ?? null;
 }
 
 export async function logoutRequest() {
@@ -86,16 +104,19 @@ export function bootstrapSuperAdminRequest(email, password) {
   );
 }
 
+/** @deprecated Use loginRequest — unified tenant login. */
 export function employeeLoginRequest(email, password, subdomain) {
   const body = { email, password };
-
   if (subdomain) {
     body.subdomain = subdomain;
   }
-
-  return authPost('/auth/employee/login', body);
+  return authPost('/auth/login', body);
 }
 
 export function changePasswordRequest(currentPassword, newPassword) {
   return authPost('/auth/change-password', { currentPassword, newPassword });
+}
+
+export function consumeHandoffRequest(code) {
+  return authPost('/auth/handoff/consume', { code });
 }

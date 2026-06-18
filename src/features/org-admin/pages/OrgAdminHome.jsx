@@ -13,6 +13,7 @@ import EventNoteRoundedIcon from '@mui/icons-material/EventNoteRounded';
 import AttachMoneyRoundedIcon from '@mui/icons-material/AttachMoneyRounded';
 import ApartmentRoundedIcon from '@mui/icons-material/ApartmentRounded';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/app/providers/useAuth';
 import { HeroBanner } from '@/shared/components/ui/HeroBanner';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { DEFAULT_SETTINGS_PATH } from '@/features/settings/shell/settingsNav';
@@ -22,6 +23,8 @@ import { DEFAULT_SETTINGS_PATH } from '@/features/settings/shell/settingsNav';
  */
 export function OrgAdminHome({ user, userName }) {
   const navigate = useNavigate();
+  const { session } = useAuth();
+  const roleLabel = session?.roles?.[0] ?? user?.role ?? 'User';
 
   const quickActionSx = {
     p: 2,
@@ -225,7 +228,7 @@ export function OrgAdminHome({ user, userName }) {
             </Typography>
           </Alert>
           <Typography variant="body2" color="text.secondary">
-            You are logged in as <strong>ORG_ADMIN</strong>. This dashboard allows you to manage
+            You are logged in as <strong>{roleLabel}</strong>. This dashboard allows you to manage
             your organization&apos;s employees, attendance, payroll, and settings. More features
             will be available soon!
           </Typography>

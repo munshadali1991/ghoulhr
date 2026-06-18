@@ -3,12 +3,14 @@ import { Box, Alert, Skeleton } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  DEFAULT_SETTINGS_PATH,
   DEFAULT_SETTINGS_SLUG,
+  canAccessSettingsSlug,
   currentSettingsSlugFromPath,
+  firstAllowedSettingsPath,
   isValidSettingsSlug,
   isWideSettingsLayout,
 } from '@/features/settings/shell/settingsNav';
+import { useAuth } from '@/app/providers/useAuth';
 import { DraftStatusBar } from '@/features/settings/shell/components/DraftStatusBar';
 import {
   SETTINGS_PAGE_MAX_WIDTH,
@@ -24,6 +26,7 @@ import { AttendanceSettingsPage } from '@/features/settings/attendance';
 import { LocationsSettingsPage } from '@/features/settings/locations';
 import { LeaveConfigSettingsPage } from '@/features/settings/leave';
 import { TimesheetSettingsPage } from '@/features/settings/timesheet';
+import { RbacSettingsPage } from '@/features/rbac/pages/RbacSettingsPage';
 
 function SettingsPageSkeleton() {
   return (
@@ -42,6 +45,7 @@ function SettingsPageSkeleton() {
 export function SettingsPage({ organizationId }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { session } = useAuth();
   const activeSlug = currentSettingsSlugFromPath(location.pathname) ?? DEFAULT_SETTINGS_SLUG;
 
   const orgForm = useOrganizationSettingsForm(organizationId);
@@ -56,9 +60,13 @@ export function SettingsPage({ organizationId }) {
   useEffect(() => {
     const slug = currentSettingsSlugFromPath(location.pathname);
     if (location.pathname === '/settings' || (slug && !isValidSettingsSlug(slug))) {
-      navigate(DEFAULT_SETTINGS_PATH, { replace: true });
+      navigate(firstAllowedSettingsPath(session), { replace: true });
+      return;
     }
-  }, [location.pathname, navigate]);
+    if (slug && !canAccessSettingsSlug(session, slug)) {
+      navigate(firstAllowedSettingsPath(session), { replace: true });
+    }
+  }, [location.pathname, navigate, session]);
 
   if (orgForm.isLoading && isOrgProfileTab) {
     return <SettingsPageSkeleton />;
@@ -76,7 +84,13 @@ export function SettingsPage({ organizationId }) {
         </Alert>
       )}
 
-      <SettingsPanel slug={activeSlug} organizationId={organizationId} orgForm={orgForm} />
+      <SettingsPanel
+        slug={activeSlug}
+        pathname={location.pathname}
+        organizationId={organizationId}
+        orgForm={orgForm}
+        session={session}
+      />
 
       {showOrgDraftBar && (
         <DraftStatusBar
@@ -95,29 +109,43 @@ export function SettingsPage({ organizationId }) {
 /**
  * @param {{
  *   slug: string,
+ *   pathname: string,
  *   organizationId: string,
  *   orgForm: ReturnType<typeof useOrganizationSettingsForm>,
+ *   session: import('@/app/providers/authContext').AuthSession | null | undefined,
  * }} props
  */
-function SettingsPanel({ slug, organizationId, orgForm }) {
-  switch (slug) {
-    case 'organization':
-      return (
-        <OrganizationSettingsPage organizationId={organizationId} orgForm={orgForm} />
-      );
-    case 'employees':
-      return <EmployeeSettingsPage organizationId={organizationId} />;
-    case 'departments':
-      return <OrgStructurePage organizationId={organizationId} />;
-    case 'locations':
-      return <LocationsSettingsPage organizationId={organizationId} />;
-    case 'leave':
-      return <LeaveConfigSettingsPage organizationId={organizationId} />;
-    case 'attendance':
-      return <AttendanceSettingsPage organizationId={organizationId} />;
-    case 'timesheet':
-      return <TimesheetSettingsPage organizationId={organizationId} />;
-    default:
-      return null;
+function SettingsPanel({ slug, pathname, organizationId, orgForm, session }) {
+  if (!canAccessSettingsSlug(session, slug)) {
+    return (
+      <Alert severity="warning">You do not have permission to view this settings section.</Alert>
+    );
   }
+
+  const panel = (() => {
+    switch (slug) {
+      case 'organization':
+        return (
+          <OrganizationSettingsPage organizationId={organizationId} orgForm={orgForm} />
+        );
+      case 'employees':
+        return <EmployeeSettingsPage organizationId={organizationId} />;
+      case 'departments':
+        return <OrgStructurePage organizationId={organizationId} />;
+      case 'locations':
+        return <LocationsSettingsPage organizationId={organizationId} />;
+      case 'leave':
+        return <LeaveConfigSettingsPage organizationId={organizationId} />;
+      case 'attendance':
+        return <AttendanceSettingsPage organizationId={organizationId} />;
+      case 'timesheet':
+        return <TimesheetSettingsPage organizationId={organizationId} />;
+      case 'rbac':
+        return <RbacSettingsPage key={pathname} />;
+      default:
+        return null;
+    }
+  })();
+
+  return panel;
 }

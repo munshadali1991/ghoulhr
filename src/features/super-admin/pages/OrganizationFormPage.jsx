@@ -17,6 +17,9 @@ import { PageCard } from '@/shared/components/ui/PageCard';
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import { createOrganization, getOrganizationById, updateOrganization } from '@/features/super-admin/api/organizationsApi';
+import { OrganizationModulesPanel } from '@/features/super-admin/components/OrganizationModulesPanel';
+import { OrganizationModulesPicker } from '@/features/super-admin/components/OrganizationModulesPicker';
+import { ALL_PLATFORM_MODULE_CODES } from '@/shared/constants/platformModules';
 
 const emptyForm = {
   // 1. Basic Organization Details
@@ -64,7 +67,6 @@ const emptyForm = {
   adminName: '',
   adminEmail: '',
   adminMobileNumber: '',
-  adminRolePermissions: '',
 
   // 6. Bank Details
   bankName: '',
@@ -79,6 +81,7 @@ export function OrganizationFormPage({ onSaved }) {
   const isEdit = Boolean(id);
 
   const [form, setForm] = useState(emptyForm);
+  const [enabledModules, setEnabledModules] = useState(ALL_PLATFORM_MODULE_CODES);
   const [loading, setLoading] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(Boolean(id));
   const [error, setError] = useState('');
@@ -150,7 +153,10 @@ export function OrganizationFormPage({ onSaved }) {
       if (isEdit && id) {
         await updateOrganization(id, payload);
       } else {
-        await createOrganization(payload);
+        await createOrganization({
+          ...payload,
+          enabledModules,
+        });
       }
 
       await onSaved?.();
@@ -530,21 +536,40 @@ export function OrganizationFormPage({ onSaved }) {
                       fullWidth
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField
-                      label="Role & Permissions"
-                      value={form.adminRolePermissions}
-                      onChange={handleChange('adminRolePermissions')}
-                      fullWidth
-                    />
+                  <Grid size={{ xs: 12 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      The admin email receives org admin credentials. They sign in via Employee
+                      Login and receive full access within enabled modules below.
+                    </Typography>
                   </Grid>
                 </Grid>
               </AccordionDetails>
             </Accordion>
 
+            <Accordion defaultExpanded={!isEdit}>
+              <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+                <Typography fontWeight={700}>
+                  {isEdit ? '7. Enabled Modules (RBAC)' : '6. Enabled Modules (RBAC)'}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                {isEdit ? (
+                  <OrganizationModulesPanel organizationId={id} />
+                ) : (
+                  <OrganizationModulesPicker
+                    value={enabledModules}
+                    onChange={setEnabledModules}
+                    disabled={loading}
+                  />
+                )}
+              </AccordionDetails>
+            </Accordion>
+
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
-                <Typography fontWeight={700}>6. Bank Details (Salary Processing)</Typography>
+                <Typography fontWeight={700}>
+                  {isEdit ? '8. Bank Details (Salary Processing)' : '7. Bank Details (Salary Processing)'}
+                </Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <Grid container spacing={1.2}>

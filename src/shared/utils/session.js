@@ -7,7 +7,12 @@ export function readSession() {
   if (typeof window !== 'undefined') {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('session')) {
-      const newUrl = window.location.pathname + window.location.hash;
+      urlParams.delete('session');
+      const query = urlParams.toString();
+      const newUrl =
+        window.location.pathname +
+        (query ? `?${query}` : '') +
+        window.location.hash;
       window.history.replaceState({}, document.title, newUrl);
     }
     try {
@@ -17,6 +22,26 @@ export function readSession() {
     }
   }
   return null;
+}
+
+export function stripHandoffFromUrl() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  const urlParams = new URLSearchParams(window.location.search);
+  if (!urlParams.has('handoff') && !urlParams.get('session')) {
+    return;
+  }
+  urlParams.delete('handoff');
+  if (urlParams.get('session')) {
+    urlParams.delete('session');
+  }
+  const query = urlParams.toString();
+  const newUrl =
+    window.location.pathname +
+    (query ? `?${query}` : '') +
+    window.location.hash;
+  window.history.replaceState({}, document.title, newUrl);
 }
 
 export function persistSession() {

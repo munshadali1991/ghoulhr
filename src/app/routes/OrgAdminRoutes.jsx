@@ -4,6 +4,7 @@ import { OrgAdminHome } from '@/features/org-admin/pages/OrgAdminHome';
 import { ModulePlaceholderPage } from '@/features/org-admin/pages/ModulePlaceholderPage';
 import { EmployeesPage } from '@/features/employees';
 import { SettingsPage } from '@/features/settings';
+import { RequireAccess } from '@/features/auth/components/RequireAccess';
 
 /**
  * @param {{
@@ -36,11 +37,38 @@ export function OrgAdminRoutes({
     >
       <Routes>
         <Route path="/dashboard" element={<OrgAdminHome user={user} userName={userName} />} />
-        <Route path="/employees" element={<EmployeesPage organizationId={organizationId} />} />
-        <Route path="/settings/*" element={<SettingsPage organizationId={organizationId} />} />
-        <Route path="/attendance" element={<ModulePlaceholderPage title="Attendance" />} />
-        <Route path="/payroll" element={<ModulePlaceholderPage title="Payroll" />} />
-        <Route path="/tracking" element={<ModulePlaceholderPage title="Tracking" />} />
+        <Route
+          path="/employees"
+          element={
+            <RequireAccess module="employees" permission="employees:read">
+              <EmployeesPage organizationId={organizationId} />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/settings/*"
+          element={
+            <RequireAccess module="settings">
+              <SettingsPage organizationId={organizationId} />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/attendance"
+          element={
+            <RequireAccess module="attendance">
+              <ModulePlaceholderPage title="Attendance" />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/payroll"
+          element={
+            <RequireAccess module="payroll" permission="payroll:read">
+              <ModulePlaceholderPage title="Payroll" />
+            </RequireAccess>
+          }
+        />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </OrgAdminLayout>

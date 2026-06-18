@@ -1,4 +1,5 @@
 import { TENANT_EMPLOYEE_ROLES } from '@/app/constants';
+import { isEmployeePortalUser as isEmployeePortalUserAuth } from './authorization';
 
 /**
  * @param {{ role?: string } | null | undefined} user
@@ -9,8 +10,12 @@ export function isSuperAdminUser(user) {
 
 /**
  * @param {{ role?: string, employeeCode?: string } | null | undefined} user
+ * @param {import('@/app/providers/authContext').AuthSession | null | undefined} [session]
  */
-export function isEmployeeTenantUser(user) {
+export function isEmployeeTenantUser(user, session) {
+  if (session) {
+    return isEmployeePortalUserAuth(user, session);
+  }
   return TENANT_EMPLOYEE_ROLES.includes(user?.role) && Boolean(user?.employeeCode);
 }
 

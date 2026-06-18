@@ -10,6 +10,7 @@ import {
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/app/providers/useAuth';
 import { SidebarContent } from '@/shared/components/layout/SidebarContent';
 import { DEFAULT_SETTINGS_PATH } from '@/features/settings/shell/settingsNav';
 import { buildOrgAdminNavItems } from '../config/orgAdminNav';
@@ -37,8 +38,9 @@ export function OrgAdminLayout({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { session } = useAuth();
 
-  const sidebarNavItems = buildOrgAdminNavItems(location.pathname);
+  const sidebarNavItems = buildOrgAdminNavItems(location.pathname, session);
 
   const handleNavItemClick = (item) => {
     if (item.path) {

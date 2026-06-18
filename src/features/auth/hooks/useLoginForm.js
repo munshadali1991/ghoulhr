@@ -8,9 +8,11 @@ import {
 
 const EMPTY_FORM = { email: '', password: '' };
 
-export function useLoginForm() {
+/**
+ * @param {'tenant' | 'admin'} mode
+ */
+export function useLoginForm(mode) {
   const { setSession } = useAuth();
-  const [mode, setMode] = useState('admin');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
@@ -30,12 +32,12 @@ export function useLoginForm() {
 
       try {
         const authResult = await authenticate(mode, form);
-        applyAuthResult(authResult, setSession);
+        await applyAuthResult(authResult, setSession);
       } catch (loginError) {
         if (mode === 'admin' && loginError.status === 401) {
           try {
             const bootstrapResult = await authenticateWithBootstrap(form);
-            if (applyAuthResult(bootstrapResult, setSession)) {
+            if (await applyAuthResult(bootstrapResult, setSession)) {
               return;
             }
             return;
@@ -54,7 +56,6 @@ export function useLoginForm() {
 
   return {
     mode,
-    setMode,
     form,
     loading,
     error,
