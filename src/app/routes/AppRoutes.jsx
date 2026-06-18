@@ -11,6 +11,10 @@ export function AppRoutes() {
   const drawer = useMobileDrawer();
   const orgData = useSuperAdminOrganizations(isAuthenticated && isSuperAdmin);
 
+  if (isInitializing) {
+    return null;
+  }
+
   if (isAuthenticated && isSuperAdmin) {
     return (
       <SuperAdminRoutes

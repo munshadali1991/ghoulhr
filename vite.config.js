@@ -3,7 +3,8 @@ import react from '@vitejs/plugin-react'
 import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? '/ghoulhrms/' : '/',
   plugins: [react()],
   resolve: {
     alias: {
@@ -18,7 +19,10 @@ export default defineConfig({
       'buggy.localhost',
       'cronjob.localhost',
       'ghoulhr.localhost',
-      '.localhost'
+      '.localhost',
+      'peopleaiq.com',
+      '*.peopleaiq.com',
+      '*.localhost',
     ]
   }
-})
+}))

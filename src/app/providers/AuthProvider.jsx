@@ -9,6 +9,7 @@ import { AuthContext } from './authContext';
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => readSession());
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const user = session?.user ?? null;
   const isAuthenticated = Boolean(user);
@@ -82,6 +83,7 @@ export function AuthProvider({ children }) {
       refreshSession,
       user,
       isAuthenticated,
+      isInitializing,
       isSuperAdmin,
       userName,
       logout,
