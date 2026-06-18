@@ -32,3 +32,18 @@ export function getTenantRedirectUrl(organizationSubdomain) {
 
   return `${protocol}//${targetHost}${portPart}`;
 }
+
+/** True when the app is served on a tenant subdomain (not bare localhost / apex). */
+export function isOnTenantSubdomain() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  const { hostname } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return false;
+  }
+  if (hostname.endsWith('.localhost')) {
+    return hostname !== 'localhost';
+  }
+  return hostname.split('.').length > 2;
+}

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   Alert,
   Box,
-  Button,
   Card,
   CardContent,
   Chip,
@@ -12,8 +11,6 @@ import {
   IconButton,
   InputAdornment,
   Stack,
-  Tab,
-  Tabs,
   TextField,
   Typography,
 } from '@mui/material';
@@ -24,13 +21,21 @@ import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
 import AutoGraphRoundedIcon from '@mui/icons-material/AutoGraphRounded';
 import SecurityRoundedIcon from '@mui/icons-material/SecurityRounded';
 import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import BadgeIcon from '@mui/icons-material/Badge';
 import { BrandedButton } from '@/shared/components/ui/BrandedButton';
+import { isOnTenantSubdomain } from '@/shared/utils/tenant';
 
+/**
+ * @param {{
+ *   mode: 'tenant' | 'admin',
+ *   form: { email: string, password: string },
+ *   onFieldChange: (field: string) => (event: import('react').ChangeEvent<HTMLInputElement>) => void,
+ *   onSubmit: (event: import('react').FormEvent) => void,
+ *   loading: boolean,
+ *   error: string,
+ * }} props
+ */
 export function LoginPage({
   mode,
-  setMode,
   form,
   onFieldChange,
   onSubmit,
@@ -38,6 +43,18 @@ export function LoginPage({
   error,
 }) {
   const [showPassword, setShowPassword] = useState(false);
+  const onTenantHost = isOnTenantSubdomain();
+  const isAdmin = mode === 'admin';
+
+  const title = isAdmin ? 'Super Admin' : 'Welcome back';
+  const subtitle = isAdmin
+    ? 'Sign in with your platform super admin credentials.'
+    : 'Sign in with your organization email and password.';
+  const infoMessage = isAdmin
+    ? 'Platform administration access only.'
+    : onTenantHost
+      ? 'Your workspace modules are shown based on your assigned permissions.'
+      : 'Sign in here — you will be redirected to your organization subdomain.';
 
   return (
     <Box
@@ -103,7 +120,9 @@ export function LoginPage({
                   GhoulHRMS
                 </Typography>
                 <Typography sx={{ mt: 1, opacity: 0.95 }}>
-                  Next-gen multi-tenant workspace for modern HR operations.
+                  {isAdmin
+                    ? 'Platform control panel for multi-tenant administration.'
+                    : 'One workspace for your team — modules appear based on your access.'}
                 </Typography>
               </Box>
 
@@ -138,49 +157,15 @@ export function LoginPage({
             <Grid size={{ xs: 12, md: 6 }}>
               <CardContent sx={{ p: { xs: 2.5, md: 3.5 } }}>
                 <Typography variant="h5" fontWeight={800}>
-                  Welcome back
+                  {title}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 2.5 }}>
-                  {mode === 'admin' 
-                    ? 'Sign in with your admin credentials to continue.'
-                    : 'Sign in with your employee credentials to continue.'
-                  }
+                  {subtitle}
                 </Typography>
 
-                <Tabs
-                  value={mode}
-                  onChange={(_, value) => setMode(value)}
-                  variant="fullWidth"
-                  sx={{
-                    mb: 2,
-                    '& .MuiTabs-indicator': { display: 'none' },
-                    '& .MuiTab-root': {
-                      borderRadius: 2,
-                      minHeight: 40,
-                      textTransform: 'none',
-                      border: '1px solid transparent',
-                    },
-                    '& .Mui-selected': {
-                      bgcolor: 'primary.main',
-                      color: 'white !important',
-                    },
-                  }}
-                >
-                  <Tab label="Admin Login" value="admin" icon={<AdminPanelSettingsIcon />} iconPosition="start" />
-                  <Tab label="Employee Login" value="employee" icon={<BadgeIcon />} iconPosition="start" />
-                </Tabs>
-
-                {mode === 'admin' && (
-                  <Alert severity="info" sx={{ mb: 2 }}>
-                    For Super Admin & Organization Admin accounts
-                  </Alert>
-                )}
-
-                {mode === 'employee' && (
-                  <Alert severity="info" sx={{ mb: 2 }}>
-                    For Employees & Managers
-                  </Alert>
-                )}
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  {infoMessage}
+                </Alert>
 
                 <Box component="form" onSubmit={onSubmit}>
                   <Stack spacing={2}>

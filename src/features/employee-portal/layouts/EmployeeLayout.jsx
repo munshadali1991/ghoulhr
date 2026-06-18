@@ -12,6 +12,7 @@ import {
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/app/providers/useAuth';
 import { SidebarContent } from '@/shared/components/layout/SidebarContent';
 import { buildEmployeeNavItems, getEmployeePageTitle } from '../config/employeeNav';
 import { EmployeeNotificationsMenu } from '../components/EmployeeNotificationsMenu';
@@ -40,9 +41,10 @@ export function EmployeeLayout({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { session } = useAuth();
   const pathname = location.pathname;
 
-  const sidebarNavItems = buildEmployeeNavItems(pathname);
+  const sidebarNavItems = buildEmployeeNavItems(pathname, session);
   const pageTitle = getEmployeePageTitle(pathname);
 
   const handleNavItemClick = (item) => {

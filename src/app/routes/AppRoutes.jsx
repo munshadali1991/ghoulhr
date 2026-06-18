@@ -1,5 +1,5 @@
-import { EmployeeRoutes } from '@/features/employee-portal/routes/EmployeeRoutes';
-import { OrgAdminRoutes } from './OrgAdminRoutes';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { TenantRoutes } from './TenantRoutes';
 import { useAuth } from '@/app/providers/useAuth';
 import { useMobileDrawer } from '@/shared/hooks/useMobileDrawer';
 import { useSuperAdminOrganizations } from '@/features/super-admin/hooks/useSuperAdminOrganizations';
@@ -7,7 +7,7 @@ import { PublicRoutes } from './PublicRoutes';
 import { SuperAdminRoutes } from './SuperAdminRoutes';
 
 export function AppRoutes() {
-  const { user, isAuthenticated, isSuperAdmin, isEmployee, userName, logout } = useAuth();
+  const { user, isAuthenticated, isSuperAdmin, userName, logout } = useAuth();
   const drawer = useMobileDrawer();
   const orgData = useSuperAdminOrganizations(isAuthenticated && isSuperAdmin);
 
@@ -22,22 +22,9 @@ export function AppRoutes() {
     );
   }
 
-  if (isAuthenticated && isEmployee) {
-    return (
-      <EmployeeRoutes
-        user={user}
-        userName={userName}
-        mobileDrawerOpen={drawer.mobileDrawerOpen}
-        onOpenMobileDrawer={drawer.openMobileDrawer}
-        onCloseMobileDrawer={drawer.closeMobileDrawer}
-        onLogout={logout}
-      />
-    );
-  }
-
   if (isAuthenticated) {
     return (
-      <OrgAdminRoutes
+      <TenantRoutes
         user={user}
         userName={userName}
         mobileDrawerOpen={drawer.mobileDrawerOpen}
