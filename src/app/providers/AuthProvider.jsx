@@ -59,6 +59,8 @@ export function AuthProvider({ children }) {
         }
       } catch {
         if (mounted) setSession(null);
+      } finally {
+        if (mounted) setIsInitializing(false);
       }
     }
 
@@ -88,7 +90,7 @@ export function AuthProvider({ children }) {
       userName,
       logout,
     }),
-    [session, refreshSession, user, isAuthenticated, isSuperAdmin, userName, logout],
+    [session, refreshSession, user, isAuthenticated, isInitializing, isSuperAdmin, userName, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
