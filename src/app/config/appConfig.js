@@ -1,5 +1,8 @@
 const STORAGE_KEY = 'ghoulhr_session';
 
+export const APP_NAME = 'peopleAIQ';
+export const APP_BRAND_INITIALS = 'pA';
+
 // Always route through proxy (port 8080) - it handles subdomain-based tenant routing
 const getCurrentApiUrl = () => {
   const hostname = window.location.hostname;

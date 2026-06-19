@@ -10,6 +10,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { APP_NAME } from '@/app/config/appConfig';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { HeroBanner } from '@/shared/components/ui/HeroBanner';
@@ -134,7 +135,7 @@ export function EmployeeHomePage({ userName }) {
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Box>
               <Typography variant="subtitle2" fontWeight={700}>
-                Unite by GhoulHR
+                Unite by {APP_NAME}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Loans and salary advances for employees.

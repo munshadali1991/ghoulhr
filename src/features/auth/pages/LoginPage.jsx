@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { APP_NAME } from '@/app/config/appConfig';
 import {
   Alert,
   Box,
@@ -117,7 +118,7 @@ export function LoginPage({
 
               <Box sx={{ position: 'relative', zIndex: 1 }}>
                 <Typography variant="h4" fontWeight={800}>
-                  GhoulHRMS
+                  {APP_NAME}
                 </Typography>
                 <Typography sx={{ mt: 1, opacity: 0.95 }}>
                   {isAdmin

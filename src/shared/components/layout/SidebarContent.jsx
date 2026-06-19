@@ -13,15 +13,16 @@ import {
 } from '@mui/material';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+import { APP_BRAND_INITIALS, APP_NAME } from '@/app/config/appConfig';
 
 export function SidebarContent({ user, navItems, onItemClick, pathname = '' }) {
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
         <Stack direction="row" spacing={1.5} alignItems="center">
-          <Avatar sx={{ bgcolor: 'primary.main' }}>GH</Avatar>
+          <Avatar sx={{ bgcolor: 'primary.main' }}>{APP_BRAND_INITIALS}</Avatar>
           <Box>
-            <Typography fontWeight={700}>GhoulHRMS</Typography>
+            <Typography fontWeight={700}>{APP_NAME}</Typography>
             <Typography variant="caption" color="text.secondary">
               Smart Workforce Platform
             </Typography>

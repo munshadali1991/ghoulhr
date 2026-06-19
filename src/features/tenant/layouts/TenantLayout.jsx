@@ -12,6 +12,7 @@ import {
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { APP_NAME } from '@/app/config/appConfig';
 import { useAuth } from '@/app/providers/useAuth';
 import { SidebarContent } from '@/shared/components/layout/SidebarContent';
 import { DEFAULT_SETTINGS_PATH } from '@/features/settings/shell/settingsNav';
@@ -154,7 +155,7 @@ export function TenantLayout({
           align="center"
           sx={{ py: 2, display: 'block' }}
         >
-          GhoulHRMS |{' '}
+          {APP_NAME} |{' '}
           <Link href="#" underline="hover" color="inherit">
             Privacy Policy
           </Link>{' '}
