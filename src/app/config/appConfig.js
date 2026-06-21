@@ -18,7 +18,7 @@ const getCurrentApiUrl = () => {
   // For any non-local host, force same-origin API path.
   // This avoids mixed-content by keeping protocol/host aligned with the current page.
   if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-    return `${protocol}//${host}/ghoulhrms/api/v1`;
+    return `${protocol}//${host}/api/v1`;
   }
 
   // Fallback to environment variable or default
