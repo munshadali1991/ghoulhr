@@ -58,7 +58,6 @@ export function DesignationFormPage({
           name: values.name,
           departmentIds: values.departmentIds,
           isActive: values.isActive,
-          createdAt: record?.createdAt ?? null,
         },
         record?.id,
       );

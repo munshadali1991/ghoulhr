@@ -4,6 +4,8 @@ import {
   generateUuid,
   removeDepartmentCascade,
   sanitizeMasterData,
+  toApiDepartment,
+  toApiDesignation,
   validateDepartments,
   validateDesignations,
 } from '../utils/orgStructure';
@@ -36,8 +38,8 @@ export function useOrgStructure(organizationId) {
 
       await updateSettings({
         ...settings,
-        departments: nextDepartments,
-        designations: nextDesignations,
+        departments: nextDepartments.map(toApiDepartment),
+        designations: nextDesignations.map(toApiDesignation),
       });
     },
     [settings, updateSettings],
@@ -51,7 +53,6 @@ export function useOrgStructure(organizationId) {
         name: payload.name.trim(),
         code: payload.code?.trim() || '',
         isActive: payload.isActive !== false,
-        createdAt: payload.createdAt ?? null,
       };
 
       const nextDepartments = existingId
@@ -93,7 +94,6 @@ export function useOrgStructure(organizationId) {
         name: payload.name.trim(),
         departmentIds: [...new Set(payload.departmentIds || [])],
         isActive: payload.isActive !== false,
-        createdAt: payload.createdAt ?? null,
       };
 
       const nextDesignations = existingId

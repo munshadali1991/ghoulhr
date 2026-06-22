@@ -132,7 +132,6 @@ export function ShiftFormPage({
           break_minutes: values.break_minutes,
           locationId: values.locationId,
           sessions,
-          createdAt: record?.createdAt ?? null,
         },
         record?.id,
       );

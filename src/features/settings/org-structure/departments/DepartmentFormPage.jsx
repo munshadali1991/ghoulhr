@@ -44,7 +44,6 @@ export function DepartmentFormPage({
           name: values.name,
           code: values.code,
           isActive: values.isActive,
-          createdAt: record?.createdAt ?? null,
         },
         record?.id,
       );
