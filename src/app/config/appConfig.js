@@ -3,29 +3,31 @@ const STORAGE_KEY = 'ghoulhr_session';
 export const APP_NAME = 'peopleAIQ';
 export const APP_BRAND_INITIALS = 'pA';
 
-// Always route through proxy (port 8080) - it handles subdomain-based tenant routing
-const getCurrentApiUrl = () => {
-  const hostname = window.location.hostname;
+const PRODUCTION_API_PATH = '/ghoulhrms/api/v1';
 
-  // For subdomain access (buggy.localhost, cronjob.localhost, etc.)
-  // Route to proxy on the same subdomain
-  if (hostname.includes('.localhost')) {
+// Local dev uses the domain proxy on :8080; production nginx serves API on same host.
+const getCurrentApiUrl = () => {
+  if (typeof window === 'undefined') {
+    return import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+  }
+
+  const { hostname, origin } = window.location;
+  const fromEnv = import.meta.env.VITE_API_BASE_URL?.trim();
+
+  if (hostname.endsWith('.localhost')) {
     const subdomain = hostname.split('.')[0];
     return `http://${subdomain}.localhost:8080`;
   }
 
-  // For production domains (e.g., buggy.ghoulhr.com)
-  if (hostname.includes('.') && hostname !== 'localhost' && hostname !== '127.0.0.1') {
-    const parts = hostname.split('.');
-    if (parts.length > 2) {
-      const subdomain = parts[0];
-      // In production, you might use a different proxy domain
-      return `http://${subdomain}.localhost:8080`;
-    }
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return fromEnv ?? 'http://localhost:8080';
   }
 
-  // Fallback to environment variable or default
-  return import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+  if (fromEnv) {
+    return fromEnv.replace(/\/$/, '');
+  }
+
+  return `${origin}${PRODUCTION_API_PATH}`;
 };
 
 export const API_BASE_URL = getCurrentApiUrl();
