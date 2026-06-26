@@ -1,8 +1,12 @@
+import { SETTINGS_ACCESS } from '@/features/auth/config/accessRegistry';
+
 export const RBAC_TABS = {
   roles: 'roles',
   employees: 'employees',
   audit: 'audit',
 };
+
+export const RBAC_TAB_DEFS = SETTINGS_ACCESS.rbac.tabs;
 
 export const RBAC_BASE_PATH = '/settings/rbac';
 export const RBAC_ROLES_PATH = '/settings/rbac/roles';

@@ -4,20 +4,11 @@ import {
   Box,
   Button,
   CardContent,
-  Chip,
   CircularProgress,
   IconButton,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
 } from '@mui/material';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import AssessmentRoundedIcon from '@mui/icons-material/AssessmentRounded';
 import { useSearchParams } from 'react-router-dom';
@@ -27,6 +18,7 @@ import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
 import { TimesheetInlineEntryRow } from '../../components/timesheet/TimesheetInlineEntryRow';
 import { TimesheetMyReportView } from '../../components/timesheet/TimesheetMyReportView';
+import { TimesheetSavedEntriesTable } from '../../components/timesheet/TimesheetSavedEntriesTable';
 import { TimesheetStatusChip } from '../../components/timesheet/TimesheetStatusChip';
 import { fetchTimesheetDay } from '../../api/timesheetApi';
 import { DEFAULT_INLINE_ROW, PRIORITIES, TASK_STATUSES } from '../../constants/timesheetEnums';
@@ -37,6 +29,7 @@ import {
   useTimesheetDay,
   useUpsertTimesheetDay,
 } from '../../hooks/useEmployeePortalQueries';
+import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
 import {
   apiEntryToDisplay,
   serializeEntriesForApi,
@@ -48,10 +41,6 @@ function sumHours(entries) {
 
 function entryKey(entry) {
   return entry.id ?? entry._localId;
-}
-
-function labelFor(options, value) {
-  return options.find((o) => o.value === value)?.label ?? value;
 }
 
 function createEmptyDraftRow(workDate, categoryId) {
@@ -74,6 +63,8 @@ function enrichWithCategory(row, categories) {
 
 export function TimesheetDayPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { can } = useAuthorization();
+  const canWriteTimesheet = can('ess.timesheet:write');
   const dateParam = searchParams.get('date');
   const selectedDate = useMemo(
     () => (dateParam ? dayjs(dateParam) : dayjs()),
@@ -100,8 +91,8 @@ export function TimesheetDayPage() {
   const maxPastDays = data?.settings?.maxPastDays ?? 7;
   const minDate = dayjs().subtract(maxPastDays, 'day');
   const maxDate = dayjs();
-  const isEditable = Boolean(data?.editable);
-  const canReopen = Boolean(data?.canReopen);
+  const isEditable = Boolean(data?.editable) && canWriteTimesheet;
+  const canReopen = Boolean(data?.canReopen) && canWriteTimesheet;
   const totalHours = sumHours(entries);
   const overLimit = totalHours > maxHours;
 
@@ -489,154 +480,18 @@ export function TimesheetDayPage() {
       ) : null}
 
       <PageCard>
-        <TableContainer sx={{ overflowX: 'auto' }}>
-          <Table size="small" sx={{ minWidth: 900 }}>
-            <TableHead>
-              <TableRow sx={{ bgcolor: 'background.default' }}>
-                <TableCell>
-                  <strong>#</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Category</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Work Area/Description</strong>
-                </TableCell>
-                <TableCell align="right">
-                  <strong>Hours</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Task status</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Priority</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Ref #</strong>
-                </TableCell>
-                {isEditable ? (
-                  <TableCell align="right">
-                    <strong>Actions</strong>
-                  </TableCell>
-                ) : null}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={isEditable ? 8 : 7} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={40} />
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                      Loading records...
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : error ? (
-                <TableRow>
-                  <TableCell colSpan={isEditable ? 8 : 7}>
-                    <Alert severity="error">{error.message}</Alert>
-                  </TableCell>
-                </TableRow>
-              ) : entries.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={isEditable ? 8 : 7} align="center" sx={{ py: 6 }}>
-                    <Typography variant="body1" color="text.secondary">
-                      No records for this date. Use the form above to add your first entry.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                entries.map((entry, index) => (
-                  <TableRow
-                    key={entryKey(entry)}
-                    hover
-                    sx={{
-                      cursor: isEditable ? 'pointer' : 'default',
-                      bgcolor: editingKey === entryKey(entry) ? 'action.hover' : undefined,
-                    }}
-                    onClick={() => isEditable && loadEntryIntoDrafts(entry)}
-                  >
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={entry.categoryName || '—'}
-                        size="small"
-                        color="secondary"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          maxWidth: 400,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {entry.workAreaDescription}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography fontWeight={600}>
-                        {Number(entry.hoursSpent).toFixed(1)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={labelFor(TASK_STATUSES, entry.taskStatus)}
-                        size="small"
-                        color="info"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={labelFor(PRIORITIES, entry.priority)}
-                        size="small"
-                        color={
-                          entry.priority === 'CRITICAL' || entry.priority === 'HIGH'
-                            ? 'error'
-                            : entry.priority === 'LOW'
-                              ? 'default'
-                              : 'warning'
-                        }
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {entry.refNumber || '—'}
-                      </Typography>
-                    </TableCell>
-                    {isEditable ? (
-                      <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                        <Stack direction="row" justifyContent="flex-end" spacing={0.5}>
-                          <IconButton
-                            size="small"
-                            aria-label="Edit"
-                            onClick={() => loadEntryIntoDrafts(entry)}
-                          >
-                            <EditOutlinedIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            aria-label="Delete"
-                            onClick={() => handleDelete(entry)}
-                          >
-                            <DeleteOutlineIcon fontSize="small" />
-                          </IconButton>
-                        </Stack>
-                      </TableCell>
-                    ) : null}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <TimesheetSavedEntriesTable
+          entries={entries}
+          isLoading={isLoading}
+          error={error}
+          isEditable={isEditable}
+          editingKey={editingKey}
+          entryKey={entryKey}
+          taskStatuses={TASK_STATUSES}
+          priorities={PRIORITIES}
+          onRowClick={loadEntryIntoDrafts}
+          onDelete={handleDelete}
+        />
       </PageCard>
 
       <AppSnackbar snackbar={snackbar} onClose={close} />

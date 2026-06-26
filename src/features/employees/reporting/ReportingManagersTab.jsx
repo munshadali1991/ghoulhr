@@ -21,17 +21,23 @@ import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import PersonAddRoundedIcon from '@mui/icons-material/PersonAddRounded';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { BrandedButton } from '@/shared/components/ui/BrandedButton';
+import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 import {
   listReportingManagers,
   removeReportingManager,
 } from '@/features/employees/api/reportingManagersApi';
 import { listEmployees } from '@/features/employees/api/employeesApi';
 import { AssignManagerDialog } from './AssignManagerDialog';
+import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
 
 /**
  * @param {{ showSnackbar: (msg: string, severity?: string) => void }} props
  */
 export function ReportingManagersTab({ showSnackbar }) {
+  const isMobileLayout = useIsMobileLayout();
+  const { can } = useAuthorization();
+  const canAssign = can('employees:reporting-manager:assign');
   const [rows, setRows] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -202,21 +208,27 @@ export function ReportingManagersTab({ showSnackbar }) {
             </>
           ) : null}
         </Stack>
-        <Stack direction="row" spacing={1}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
           <Button
             variant="outlined"
             startIcon={<RefreshRoundedIcon />}
             onClick={fetchRows}
             disabled={loading}
+            fullWidth
+            sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}
           >
             Refresh
           </Button>
+          {canAssign ? (
           <BrandedButton
             startIcon={<PersonAddRoundedIcon />}
             onClick={handleAssignManagerClick}
+            fullWidth
+            sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}
           >
             Assign manager
           </BrandedButton>
+          ) : null}
         </Stack>
       </Stack>
 
@@ -240,8 +252,72 @@ export function ReportingManagersTab({ showSnackbar }) {
       </PageCard>
 
       <PageCard>
+        {loading ? (
+          <Box sx={{ py: 6, textAlign: 'center' }}>
+            <CircularProgress size={40} />
+          </Box>
+        ) : rows.length === 0 ? (
+          <Box sx={{ py: 6, textAlign: 'center' }}>
+            <Typography color="text.secondary">
+              {filter === 'unassigned'
+                ? 'All employees have a reporting manager assigned'
+                : 'No employees match your search'}
+            </Typography>
+          </Box>
+        ) : isMobileLayout ? (
+          <Stack spacing={1.5} sx={{ p: 2 }}>
+            {rows.map((row) => (
+              <MobileDataCard
+                key={row.employeeId}
+                fields={[
+                  {
+                    label: 'Select',
+                    value: (
+                      <Checkbox
+                        checked={selectedIds.has(row.employeeId)}
+                        onChange={() => toggleRow(row.employeeId)}
+                        inputProps={{ 'aria-label': `Select ${row.employeeName}` }}
+                      />
+                    ),
+                  },
+                  { label: 'Employee', value: row.employeeName },
+                  { label: 'Code', value: row.employeeCode },
+                  { label: 'Department', value: row.departmentName || '—' },
+                  {
+                    label: 'Reporting manager',
+                    value: row.manager ? (
+                      `${row.manager.name} (${row.manager.employeeCode})`
+                    ) : (
+                      <Chip label="Unassigned" size="small" color="warning" variant="outlined" />
+                    ),
+                  },
+                  {
+                    label: 'Effective from',
+                    value: row.effectiveFrom
+                      ? new Date(row.effectiveFrom).toLocaleDateString()
+                      : '—',
+                  },
+                ]}
+                actions={
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0.5} sx={{ width: '100%' }}>
+                    {canAssign ? (
+                    <Button size="small" onClick={() => openAssign(row)} fullWidth>
+                      {row.manager ? 'Change' : 'Assign'}
+                    </Button>
+                    ) : null}
+                    {row.manager ? (
+                      <Button size="small" color="error" onClick={() => handleRemove(row)} fullWidth>
+                        Remove
+                      </Button>
+                    ) : null}
+                  </Stack>
+                }
+              />
+            ))}
+          </Stack>
+        ) : (
         <TableContainer sx={{ overflowX: 'auto' }}>
-          <Table size="small" sx={{ minWidth: 800 }}>
+          <Table size="small" sx={{ minWidth: { xs: 0, md: 800 } }}>
             <TableHead>
               <TableRow sx={{ bgcolor: 'background.default' }}>
                 <TableCell padding="checkbox">
@@ -274,24 +350,7 @@ export function ReportingManagersTab({ showSnackbar }) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={40} />
-                  </TableCell>
-                </TableRow>
-              ) : rows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                    <Typography color="text.secondary">
-                      {filter === 'unassigned'
-                        ? 'All employees have a reporting manager assigned'
-                        : 'No employees match your search'}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                rows.map((row) => (
+              {rows.map((row) => (
                   <TableRow
                     key={row.employeeId}
                     hover
@@ -323,9 +382,11 @@ export function ReportingManagersTab({ showSnackbar }) {
                     </TableCell>
                     <TableCell align="right">
                       <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                        {canAssign ? (
                         <Button size="small" onClick={() => openAssign(row)}>
                           {row.manager ? 'Change' : 'Assign'}
                         </Button>
+                        ) : null}
                         {row.manager ? (
                           <Button
                             size="small"
@@ -338,11 +399,11 @@ export function ReportingManagersTab({ showSnackbar }) {
                       </Stack>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
+                ))}
             </TableBody>
           </Table>
         </TableContainer>
+        )}
       </PageCard>
 
       <AssignManagerDialog

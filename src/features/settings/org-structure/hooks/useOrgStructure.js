@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useEmployeeSettings } from '@/features/settings/employees';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  getDepartments,
+  getDesignations,
+  updateDepartments,
+  updateDesignations,
+} from '@/features/settings/api/settingsApi';
 import {
   generateUuid,
   removeDepartmentCascade,
@@ -11,38 +17,74 @@ import {
 } from '../utils/orgStructure';
 
 export function useOrgStructure(organizationId) {
-  const { settings, isLoading, error, updateSettings, isUpdating, refetch } =
-    useEmployeeSettings(organizationId);
-
+  const queryClient = useQueryClient();
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [actionError, setActionError] = useState('');
 
+  const departmentsQuery = useQuery({
+    queryKey: ['settings', 'departments', organizationId],
+    queryFn: () => getDepartments(organizationId),
+    enabled: Boolean(organizationId),
+  });
+
+  const designationsQuery = useQuery({
+    queryKey: ['settings', 'designations', organizationId],
+    queryFn: () => getDesignations(organizationId),
+    enabled: Boolean(organizationId),
+  });
+
+  const isLoading = departmentsQuery.isLoading || designationsQuery.isLoading;
+  const error = departmentsQuery.error || designationsQuery.error;
+
   useEffect(() => {
     if (isLoading) return;
-    const sanitized = sanitizeMasterData(settings.departments, settings.designations);
+    const deptList = departmentsQuery.data?.departments ?? [];
+    const desigList = designationsQuery.data?.designations ?? [];
+    const sanitized = sanitizeMasterData(deptList, desigList);
     setDepartments(sanitized.departments);
     setDesignations(sanitized.designations);
-  }, [settings, isLoading]);
+  }, [departmentsQuery.data, designationsQuery.data, isLoading]);
 
-  const persist = useCallback(
+  const departmentsMutation = useMutation({
+    mutationFn: (nextDepartments) =>
+      updateDepartments(organizationId, nextDepartments.map(toApiDepartment)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings', 'departments', organizationId] });
+    },
+  });
+
+  const designationsMutation = useMutation({
+    mutationFn: (nextDesignations) =>
+      updateDesignations(organizationId, nextDesignations.map(toApiDesignation)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings', 'designations', organizationId] });
+    },
+  });
+
+  const isSaving = departmentsMutation.isPending || designationsMutation.isPending;
+
+  const persistDepartments = useCallback(
     async (nextDepartments, nextDesignations) => {
       const deptError = validateDepartments(nextDepartments);
-      if (deptError) {
-        throw new Error(deptError);
+      if (deptError) throw new Error(deptError);
+      await departmentsMutation.mutateAsync(nextDepartments);
+      if (nextDesignations) {
+        const desigError = validateDesignations(nextDesignations);
+        if (desigError) throw new Error(desigError);
+        await designationsMutation.mutateAsync(nextDesignations);
       }
-      const desigError = validateDesignations(nextDesignations);
-      if (desigError) {
-        throw new Error(desigError);
-      }
-
-      await updateSettings({
-        ...settings,
-        departments: nextDepartments.map(toApiDepartment),
-        designations: nextDesignations.map(toApiDesignation),
-      });
     },
-    [settings, updateSettings],
+    [departmentsMutation, designationsMutation],
+  );
+
+  const persistDesignations = useCallback(
+    async (nextDepartments, nextDesignations) => {
+      const desigError = validateDesignations(nextDesignations);
+      if (desigError) throw new Error(desigError);
+      await designationsMutation.mutateAsync(nextDesignations);
+    },
+    [designationsMutation],
   );
 
   const saveDepartment = useCallback(
@@ -60,14 +102,14 @@ export function useOrgStructure(organizationId) {
         : [...departments, record];
 
       try {
-        await persist(nextDepartments, designations);
+        await persistDepartments(nextDepartments, designations);
         return record;
       } catch (err) {
         setActionError(err.message || 'Failed to save department.');
         throw err;
       }
     },
-    [departments, designations, persist],
+    [departments, designations, persistDepartments],
   );
 
   const deleteDepartment = useCallback(
@@ -77,13 +119,13 @@ export function useOrgStructure(organizationId) {
         removeDepartmentCascade(departments, designations, departmentId);
 
       try {
-        await persist(nextDepartments, nextDesignations);
+        await persistDepartments(nextDepartments, nextDesignations);
       } catch (err) {
         setActionError(err.message || 'Failed to delete department.');
         throw err;
       }
     },
-    [departments, designations, persist],
+    [departments, designations, persistDepartments],
   );
 
   const saveDesignation = useCallback(
@@ -101,14 +143,14 @@ export function useOrgStructure(organizationId) {
         : [...designations, record];
 
       try {
-        await persist(departments, nextDesignations);
+        await persistDesignations(departments, nextDesignations);
         return record;
       } catch (err) {
         setActionError(err.message || 'Failed to save designation.');
         throw err;
       }
     },
-    [departments, designations, persist],
+    [departments, designations, persistDesignations],
   );
 
   const deleteDesignation = useCallback(
@@ -117,20 +159,25 @@ export function useOrgStructure(organizationId) {
       const nextDesignations = designations.filter((d) => d.id !== designationId);
 
       try {
-        await persist(departments, nextDesignations);
+        await persistDesignations(departments, nextDesignations);
       } catch (err) {
         setActionError(err.message || 'Failed to delete designation.');
         throw err;
       }
     },
-    [departments, designations, persist],
+    [departments, designations, persistDesignations],
   );
+
+  const refetch = useCallback(() => {
+    departmentsQuery.refetch();
+    designationsQuery.refetch();
+  }, [departmentsQuery, designationsQuery]);
 
   return {
     departments,
     designations,
     isLoading,
-    isSaving: isUpdating,
+    isSaving,
     error,
     actionError,
     clearActionError: () => setActionError(''),

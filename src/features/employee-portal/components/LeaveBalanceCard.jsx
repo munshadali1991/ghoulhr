@@ -22,8 +22,8 @@ export function LeaveBalanceCard({ balance, year, showProgress }) {
     <PageCard
       sx={{
         height: '100%',
-        minWidth: 200,
-        flex: '1 1 200px',
+        minWidth: { xs: 0, md: 200 },
+        flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 200px' },
         cursor: 'pointer',
         transition: 'box-shadow 0.2s',
         '&:hover': { boxShadow: 4 },

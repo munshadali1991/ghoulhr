@@ -142,6 +142,7 @@ export function TenantLayout({
           flexGrow: 1,
           p: { xs: 2, md: 3 },
           width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          minWidth: 0,
           mt: '72px',
           display: 'flex',
           flexDirection: 'column',

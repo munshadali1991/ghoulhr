@@ -24,7 +24,7 @@ import { requiredFieldLabel } from '../utils/employeeSettingsMappers';
  *   errors: import('react-hook-form').FieldErrors<Record<string, unknown>>,
  * }} props
  */
-export function RequiredFieldsSection({ register, control, errors }) {
+export function RequiredFieldsSection({ register, control, errors, readOnly = false }) {
   return (
     <SettingsSection
       icon={<ListIcon color="primary" />}
@@ -57,6 +57,7 @@ export function RequiredFieldsSection({ register, control, errors }) {
                     value={field.value || []}
                     onChange={(e) => field.onChange(e.target.value)}
                     label="Select required fields"
+                    disabled={readOnly}
                     renderValue={(selected) => (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                         {selected.map((value) => (
@@ -90,6 +91,7 @@ export function RequiredFieldsSection({ register, control, errors }) {
               fullWidth
               type="number"
               placeholder="90"
+              disabled={readOnly}
               {...register('default_probation_period', {
                 valueAsNumber: true,
                 validate: {

@@ -12,8 +12,12 @@ import { ScheduleTab } from './submodules/schedule/ScheduleTab';
 import { ScheduleFormPage } from './submodules/schedule/ScheduleFormPage';
 import { CheckInTab } from './submodules/check-in/CheckInTab';
 import { CheckInFormPage } from './submodules/check-in/CheckInFormPage';
+import { useSettingsSectionAccess } from '@/features/settings/hooks/useSettingsSectionAccess';
+import { SETTINGS_ACCESS } from '@/features/auth/config/accessRegistry';
 
 export function AttendanceSettingsPage({ organizationId }) {
+  const { canWrite } = useSettingsSectionAccess('attendance');
+  const attendanceTabs = SETTINGS_ACCESS.attendance.tabs ?? [];
   const [activeTab, setActiveTab] = useState(ATTENDANCE_TABS.shifts);
   const [formView, setFormView] = useState(null);
 
@@ -47,6 +51,7 @@ export function AttendanceSettingsPage({ organizationId }) {
   };
 
   const handlePrimaryAction = () => {
+    if (!canWrite) return;
     clearActionError();
     if (activeTab === ATTENDANCE_TABS.shifts) {
       setFormView({ type: 'shift', record: null });
@@ -139,8 +144,10 @@ export function AttendanceSettingsPage({ organizationId }) {
 
       <AttendanceToolbar
         activeTab={activeTab}
+        tabs={attendanceTabs}
         onTabChange={handleTabChange}
         onPrimaryAction={handlePrimaryAction}
+        canWrite={canWrite}
         primaryDisabled={
           (activeTab === ATTENDANCE_TABS.shifts && locationsEmpty) ||
           false
@@ -157,11 +164,15 @@ export function AttendanceSettingsPage({ organizationId }) {
               isSaving={isSaving}
               actionError={actionError}
               onClearActionError={clearActionError}
-              onEdit={(record) => {
-                clearActionError();
-                setFormView({ type: 'shift', record });
-              }}
-              onDelete={deleteShift}
+              onEdit={
+                canWrite
+                  ? (record) => {
+                      clearActionError();
+                      setFormView({ type: 'shift', record });
+                    }
+                  : undefined
+              }
+              onDelete={canWrite ? deleteShift : undefined}
               locationsEmpty={locationsEmpty}
             />
           ) : null}
@@ -171,10 +182,14 @@ export function AttendanceSettingsPage({ organizationId }) {
               schedule={schedule}
               actionError={actionError}
               onClearActionError={clearActionError}
-              onEdit={() => {
-                clearActionError();
-                setFormView({ type: 'schedule' });
-              }}
+              onEdit={
+                canWrite
+                  ? () => {
+                      clearActionError();
+                      setFormView({ type: 'schedule' });
+                    }
+                  : undefined
+              }
             />
           ) : null}
 
@@ -183,10 +198,14 @@ export function AttendanceSettingsPage({ organizationId }) {
               checkIn={checkIn}
               actionError={actionError}
               onClearActionError={clearActionError}
-              onEdit={() => {
-                clearActionError();
-                setFormView({ type: 'checkin' });
-              }}
+              onEdit={
+                canWrite
+                  ? () => {
+                      clearActionError();
+                      setFormView({ type: 'checkin' });
+                    }
+                  : undefined
+              }
             />
           ) : null}
         </Box>

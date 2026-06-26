@@ -27,6 +27,7 @@ import { LocationsSettingsPage } from '@/features/settings/locations';
 import { LeaveConfigSettingsPage } from '@/features/settings/leave';
 import { TimesheetSettingsPage } from '@/features/settings/timesheet';
 import { RbacSettingsPage } from '@/features/rbac/pages/RbacSettingsPage';
+import { useSettingsSectionAccess } from '@/features/settings/hooks/useSettingsSectionAccess';
 
 function SettingsPageSkeleton() {
   return (
@@ -49,10 +50,11 @@ export function SettingsPage({ organizationId }) {
   const activeSlug = currentSettingsSlugFromPath(location.pathname) ?? DEFAULT_SETTINGS_SLUG;
 
   const orgForm = useOrganizationSettingsForm(organizationId);
+  const { canWrite: canWriteOrganization } = useSettingsSectionAccess('organization');
   const isOrgProfileTab =
     activeSlug === DEFAULT_SETTINGS_SLUG &&
     organizationTabFromPath(location.pathname) === ORGANIZATION_TABS.profile;
-  const showOrgDraftBar = isOrgProfileTab && orgForm.hasChanges;
+  const showOrgDraftBar = isOrgProfileTab && orgForm.hasChanges && canWriteOrganization;
   const pageMaxWidth = isWideSettingsLayout(activeSlug, location.pathname)
     ? SETTINGS_PAGE_WIDE_MAX_WIDTH
     : SETTINGS_PAGE_MAX_WIDTH;

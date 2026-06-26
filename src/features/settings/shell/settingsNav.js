@@ -1,14 +1,14 @@
+import {
+  buildSettingsSections,
+  canAccessSettingsSection,
+  getSettingsSectionBySlug,
+  SETTINGS_ACCESS,
+  SETTINGS_SLUG_ORDER,
+} from '@/features/auth/config/accessRegistry';
+import { can, canAny } from '@/features/auth/utils/authorization';
+
 /** URL segments under `/settings/:slug` for org admin settings. */
-export const SETTINGS_SECTIONS = [
-  { slug: 'organization', label: 'Organization', module: 'settings', permission: 'settings.organization:read' },
-  { slug: 'employees', label: 'Employees', module: 'settings', permission: 'settings.employees:read' },
-  { slug: 'departments', label: 'Departments & Designations', module: 'employees', permission: 'employees:read' },
-  { slug: 'locations', label: 'Locations', module: 'settings', permission: 'settings.locations:read' },
-  { slug: 'leave', label: 'Leave config', module: 'settings', permission: 'settings.leave:read' },
-  { slug: 'attendance', label: 'Attendance', module: 'settings', permission: 'settings.attendance:read' },
-  { slug: 'timesheet', label: 'Timesheet', module: 'timesheet', permission: 'settings.timesheet:read' },
-  { slug: 'rbac', label: 'Roles & Permissions', module: 'rbac', permission: 'rbac:read' },
-];
+export const SETTINGS_SECTIONS = buildSettingsSections();
 
 export const DEFAULT_SETTINGS_SLUG = 'organization';
 
@@ -19,34 +19,38 @@ export function settingsPath(slug) {
 }
 
 export function settingsNavChildren(session) {
-  return SETTINGS_SECTIONS.filter((section) => {
-    if (section.module && session && !session.entitledModules?.includes(section.module)) {
-      return false;
-    }
-    if (section.permission && session && !session.permissions?.includes(section.permission)) {
-      return false;
-    }
-    return true;
-  }).map(({ slug, label }) => ({
-    key: `settings-${slug}`,
-    label,
-    path: settingsPath(slug),
-  }));
+  return SETTINGS_SLUG_ORDER.filter((slug) => {
+    const section = SETTINGS_ACCESS[slug];
+    return canAccessSettingsSection(session, section);
+  }).map((slug) => {
+    const section = SETTINGS_ACCESS[slug];
+    return {
+      key: `settings-${slug}`,
+      label: section.label,
+      path: settingsPath(slug),
+    };
+  });
 }
 
 /**
  * @param {import('@/app/providers/authContext').AuthSession | null | undefined} session
+ * @param {string} slug
  */
 export function canAccessSettingsSlug(session, slug) {
-  const section = SETTINGS_SECTIONS.find((s) => s.slug === slug);
+  const section = getSettingsSectionBySlug(slug);
   if (!section) return false;
-  if (section.module && session && !session.entitledModules?.includes(section.module)) {
-    return false;
-  }
-  if (section.permission && session && !session.permissions?.includes(section.permission)) {
-    return false;
-  }
-  return true;
+  return canAccessSettingsSection(session, section);
+}
+
+/**
+ * @param {import('@/app/providers/authContext').AuthSession | null | undefined} session
+ * @param {string} slug
+ */
+export function canWriteSettingsSlug(session, slug) {
+  const section = getSettingsSectionBySlug(slug);
+  if (!section?.write) return false;
+  if (!canAccessSettingsSection(session, section)) return false;
+  return can(session, section.write);
 }
 
 /**
@@ -60,12 +64,12 @@ export function firstAllowedSettingsPath(session) {
 export function settingsTabIndexFromPath(pathname) {
   const m = pathname.match(/^\/settings\/([^/]+)\/?/);
   const slug = m?.[1] ?? DEFAULT_SETTINGS_SLUG;
-  const idx = SETTINGS_SECTIONS.findIndex((s) => s.slug === slug);
+  const idx = SETTINGS_SLUG_ORDER.indexOf(slug);
   return idx >= 0 ? idx : 0;
 }
 
 export function isValidSettingsSlug(slug) {
-  return SETTINGS_SECTIONS.some((s) => s.slug === slug);
+  return SETTINGS_SLUG_ORDER.includes(slug);
 }
 
 export function currentSettingsSlugFromPath(pathname) {
@@ -81,4 +85,31 @@ export function isWideSettingsLayout(slug, pathname = '') {
     return true;
   }
   return slug === 'organization' && pathname.includes('/organization/calendar');
+}
+
+/**
+ * Read permissions required for a settings slug (for route guards).
+ * @param {string} slug
+ * @returns {string[]}
+ */
+export function settingsSlugReadPermissions(slug) {
+  const section = getSettingsSectionBySlug(slug);
+  if (!section) return [];
+  if (section.readAny?.length) return section.readAny;
+  if (section.read) return [section.read];
+  return [];
+}
+
+/**
+ * @param {import('@/app/providers/authContext').AuthSession | null | undefined} session
+ * @param {string} slug
+ */
+export function canAccessSettingsSlugWithAnyRead(session, slug) {
+  const perms = settingsSlugReadPermissions(slug);
+  if (!perms.length) return false;
+  const section = getSettingsSectionBySlug(slug);
+  if (section?.module && session && !session.entitledModules?.includes(section.module)) {
+    return false;
+  }
+  return canAny(session, perms);
 }

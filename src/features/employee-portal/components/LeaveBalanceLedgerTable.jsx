@@ -1,15 +1,7 @@
-import {
-  Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-} from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { PageCard } from '@/shared/components/ui/PageCard';
+import { ResponsiveDataTable } from '@/shared/components/data/ResponsiveDataTable';
 import { EmptyStatePanel } from './EmptyStatePanel';
 
 /**
@@ -28,6 +20,45 @@ function formatLeaveRange(dateStr, session) {
   );
 }
 
+const LEDGER_COLUMNS = [
+  { id: 'transactionType', label: 'Transaction type' },
+  {
+    id: 'postedOn',
+    label: 'Posted Date',
+    render: (row) => (row.postedOn ? dayjs(row.postedOn).format('DD MMM YYYY') : '—'),
+  },
+  {
+    id: 'fromDate',
+    label: 'From',
+    render: (row) => formatLeaveRange(row.fromDate, row.fromSession),
+  },
+  {
+    id: 'toDate',
+    label: 'To',
+    render: (row) => formatLeaveRange(row.toDate, row.toSession),
+  },
+  { id: 'days', label: 'Days', align: 'right' },
+  {
+    id: 'reason',
+    label: 'Reason',
+    render: (row) => row.reason || '—',
+  },
+  { id: 'remarks', label: 'Remarks', render: (row) => row.remarks ?? '—' },
+  {
+    id: 'expiryDate',
+    label: 'Expiry Date',
+    render: (row) => (row.expiryDate ? dayjs(row.expiryDate).format('DD MMM YYYY') : '—'),
+  },
+];
+
+const headerSx = {
+  fontWeight: 700,
+  bgcolor: 'primary.light',
+  color: 'primary.contrastText',
+  whiteSpace: { xs: 'normal', md: 'nowrap' },
+  py: 1.25,
+};
+
 /**
  * @param {{
  *   transactions: import('../types/employeePortal.types').LeaveBalanceLedgerTransaction[],
@@ -42,58 +73,18 @@ export function LeaveBalanceLedgerTable({ transactions }) {
     );
   }
 
-  const headerSx = {
-    fontWeight: 700,
-    bgcolor: 'primary.light',
-    color: 'primary.contrastText',
-    whiteSpace: 'nowrap',
-    py: 1.25,
-  };
-
   return (
-    <PageCard sx={{ overflow: 'hidden' }}>
-      <TableContainer>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell sx={headerSx}>Transaction type</TableCell>
-              <TableCell sx={headerSx}>Posted Date</TableCell>
-              <TableCell sx={headerSx}>From</TableCell>
-              <TableCell sx={headerSx}>To</TableCell>
-              <TableCell sx={headerSx} align="right">
-                Days
-              </TableCell>
-              <TableCell sx={headerSx}>Reason</TableCell>
-              <TableCell sx={headerSx}>Remarks</TableCell>
-              <TableCell sx={headerSx}>Expiry Date</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {transactions.map((row) => (
-              <TableRow key={row.id} hover>
-                <TableCell sx={{ maxWidth: 160 }}>
-                  <Typography variant="body2" noWrap title={row.transactionType}>
-                    {row.transactionType}
-                  </Typography>
-                </TableCell>
-                <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                  {row.postedOn ? dayjs(row.postedOn).format('DD MMM YYYY') : '—'}
-                </TableCell>
-                <TableCell>{formatLeaveRange(row.fromDate, row.fromSession)}</TableCell>
-                <TableCell>{formatLeaveRange(row.toDate, row.toSession)}</TableCell>
-                <TableCell align="right">{row.days}</TableCell>
-                <TableCell sx={{ maxWidth: 200 }}>
-                  <Typography variant="body2" noWrap title={row.reason ?? ''}>
-                    {row.reason || '—'}
-                  </Typography>
-                </TableCell>
-                <TableCell>{row.remarks ?? '—'}</TableCell>
-                <TableCell>{row.expiryDate ? dayjs(row.expiryDate).format('DD MMM YYYY') : '—'}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+    <PageCard sx={{ overflow: 'hidden', p: { xs: 1.5, sm: 2 } }}>
+      <ResponsiveDataTable
+        columns={LEDGER_COLUMNS}
+        rows={transactions}
+        rowKey="id"
+        tableMinWidth={720}
+        tableHeadSx={{
+          '& .MuiTableCell-root': headerSx,
+        }}
+        emptyMessage="No transactions"
+      />
     </PageCard>
   );
 }

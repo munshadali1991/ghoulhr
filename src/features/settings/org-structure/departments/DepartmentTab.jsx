@@ -11,6 +11,7 @@ export function DepartmentTab({
   onClearActionError,
   onEdit,
   onDelete,
+  readOnly = false,
 }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -74,6 +75,7 @@ export function DepartmentTab({
         emptyDescription="Create your first department to organize teams and assign designations."
         onEdit={onEdit}
         onDelete={setDeleteTarget}
+        readOnly={readOnly}
       />
 
       <ConfirmDeleteDialog

@@ -14,7 +14,8 @@ export function AttendanceMetricsRow({ summary }) {
         <Box
           sx={{
             display: 'flex',
-            alignItems: 'center',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'flex-start', sm: 'center' },
             justifyContent: 'space-between',
             gap: 2,
             px: 2,

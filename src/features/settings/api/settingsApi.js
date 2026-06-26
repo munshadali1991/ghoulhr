@@ -53,6 +53,28 @@ export function updateEmployeeSettings(organizationId, employeeData) {
   });
 }
 
+export function getDepartments(organizationId) {
+  return settingsFetch('/settings/departments', organizationId);
+}
+
+export function updateDepartments(organizationId, departments) {
+  return settingsFetch('/settings/departments', organizationId, {
+    method: 'POST',
+    body: JSON.stringify({ departments }),
+  });
+}
+
+export function getDesignations(organizationId) {
+  return settingsFetch('/settings/designations', organizationId);
+}
+
+export function updateDesignations(organizationId, designations) {
+  return settingsFetch('/settings/designations', organizationId, {
+    method: 'POST',
+    body: JSON.stringify({ designations }),
+  });
+}
+
 export function getAttendanceSettings(organizationId) {
   return settingsFetch('/settings/attendance', organizationId);
 }

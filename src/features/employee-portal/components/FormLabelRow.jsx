@@ -25,8 +25,8 @@ export function FormLabelRow({
       rowSpacing={{ xs: 1, md: 0 }}
       alignItems="flex-start"
       sx={{
-        py: { xs: 2, sm: 2.25 },
-        px: { xs: 2, sm: 2.5 },
+        py: { xs: 1.75, sm: 2.25 },
+        px: { xs: 1.5, sm: 2.5 },
         borderBottom: divider ? '1px solid' : 'none',
         borderColor: 'divider',
       }}
@@ -52,7 +52,7 @@ export function FormLabelRow({
           <Typography
             variant="caption"
             color="text.secondary"
-            sx={{ display: 'block', mt: 0.5, lineHeight: 1.45, maxWidth: 220 }}
+            sx={{ display: 'block', mt: 0.5, lineHeight: 1.45, maxWidth: { xs: '100%', md: 220 } }}
           >
             {hint}
           </Typography>
@@ -62,7 +62,8 @@ export function FormLabelRow({
         <Box
           sx={{
             width: '100%',
-            maxWidth: fullWidth ? 'none' : 480,
+            maxWidth: { xs: '100%', md: fullWidth ? 'none' : 480 },
+            minWidth: 0,
             '& .MuiTextField-root': { width: '100%' },
             '& .MuiFormControl-root': { width: '100%' },
             '& .MuiOutlinedInput-root': { borderRadius: 1.5 },

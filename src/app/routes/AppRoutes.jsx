@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { Box, CircularProgress } from '@mui/material';
 import { TenantRoutes } from './TenantRoutes';
 import { useAuth } from '@/app/providers/useAuth';
 import { useMobileDrawer } from '@/shared/hooks/useMobileDrawer';
@@ -12,7 +13,11 @@ export function AppRoutes() {
   const orgData = useSuperAdminOrganizations(isAuthenticated && isSuperAdmin);
 
   if (isInitializing) {
-    return null;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (isAuthenticated && isSuperAdmin) {

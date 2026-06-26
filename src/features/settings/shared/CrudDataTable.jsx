@@ -15,6 +15,8 @@ import {
 } from '@mui/material';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
+import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
 import { EmptyState } from './EmptyState';
 
 export function CrudDataTable({
@@ -26,7 +28,11 @@ export function CrudDataTable({
   emptyDescription,
   onEdit,
   onDelete,
+  readOnly = false,
+  renderMobileCard,
 }) {
+  const isMobileLayout = useIsMobileLayout();
+
   if (isLoading) {
     return (
       <Stack spacing={1}>
@@ -41,9 +47,51 @@ export function CrudDataTable({
     return <EmptyState title={emptyTitle} description={emptyDescription} />;
   }
 
+  const actionButtons = (row) =>
+    readOnly ? null : (
+    <Box sx={{ display: 'inline-flex', gap: 0.5 }}>
+      <Tooltip title="Edit">
+        <IconButton size="small" aria-label="Edit row" onClick={() => onEdit?.(row)}>
+          <EditOutlinedIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Delete">
+        <IconButton
+          size="small"
+          color="error"
+          aria-label="Delete row"
+          onClick={() => onDelete?.(row)}
+        >
+          <DeleteOutlineIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    </Box>
+  );
+
+  if (isMobileLayout) {
+    return (
+      <Stack spacing={1.5}>
+        {rows.map((row) =>
+          renderMobileCard ? (
+            <Box key={row[rowKey]}>{renderMobileCard(row, actionButtons(row))}</Box>
+          ) : (
+            <MobileDataCard
+              key={row[rowKey]}
+              fields={columns.map((col) => ({
+                label: col.label,
+                value: col.render ? col.render(row) : row[col.id],
+              }))}
+              actions={actionButtons(row)}
+            />
+          ),
+        )}
+      </Stack>
+    );
+  }
+
   return (
-    <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
-      <Table size="medium" aria-label="Data table">
+    <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, overflowX: 'auto' }}>
+      <Table size="medium" aria-label="Data table" sx={{ minWidth: 640 }}>
         <TableHead>
           <TableRow>
             {columns.map((col) => (
@@ -64,25 +112,7 @@ export function CrudDataTable({
                   {col.render ? col.render(row) : row[col.id]}
                 </TableCell>
               ))}
-              <TableCell align="right">
-                <Box sx={{ display: 'inline-flex', gap: 0.5 }}>
-                  <Tooltip title="Edit">
-                    <IconButton size="small" aria-label="Edit row" onClick={() => onEdit?.(row)}>
-                      <EditOutlinedIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      aria-label="Delete row"
-                      onClick={() => onDelete?.(row)}
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              </TableCell>
+              <TableCell align="right">{actionButtons(row)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

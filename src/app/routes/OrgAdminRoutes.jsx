@@ -5,6 +5,7 @@ import { ModulePlaceholderPage } from '@/features/org-admin/pages/ModulePlacehol
 import { EmployeesPage } from '@/features/employees';
 import { SettingsPage } from '@/features/settings';
 import { RequireAccess } from '@/features/auth/components/RequireAccess';
+import { SettingsRouteGuard } from '@/features/settings/shell/SettingsRouteGuard';
 
 /**
  * @param {{
@@ -48,9 +49,9 @@ export function OrgAdminRoutes({
         <Route
           path="/settings/*"
           element={
-            <RequireAccess module="settings">
+            <SettingsRouteGuard>
               <SettingsPage organizationId={organizationId} />
-            </RequireAccess>
+            </SettingsRouteGuard>
           }
         />
         <Route

@@ -25,6 +25,7 @@ import {
 } from '../../hooks/useEmployeePortalQueries';
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
+import { Can } from '@/features/auth/components/Can';
 
 function LiveClock() {
   const [now, setNow] = useState(dayjs());
@@ -149,134 +150,150 @@ export function EmployeeHomePage({ userName }) {
       </PageCard>
 
       <Grid container spacing={2}>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <TimesheetHomeWidget timesheet={data.timesheet} />
-        </Grid>
+        <Can permission="ess.timesheet:read">
+          <Grid size={{ xs: 12, md: 4 }}>
+            <TimesheetHomeWidget timesheet={data.timesheet} />
+          </Grid>
+        </Can>
 
-        <Grid size={{ xs: 12, md: 4 }}>
-          <PageCard sx={{ height: '100%' }}>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {data.attendance.date}
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {data.attendance.shift}
-                  </Typography>
-                  <LiveClock />
-                </Box>
-                <BrandedButton
-                  size="small"
-                  disabled={signInMutation.isPending || signOutMutation.isPending}
-                  onClick={handleAttendanceToggle}
-                >
-                  {data.attendance.signedIn ? 'Sign Out' : 'Sign In'}
-                </BrandedButton>
-              </Stack>
-              <Link
-                component="button"
-                variant="body2"
-                underline="hover"
-                sx={{ mt: 1 }}
-                onClick={() => navigate('/attendance')}
-              >
-                View Swipes
-              </Link>
-            </CardContent>
-          </PageCard>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 4 }}>
-          <PageCard sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                Upcoming Holidays
-              </Typography>
-              {data.upcomingHolidays.map((h) => (
-                <Stack
-                  key={h.date}
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  sx={{ py: 0.75, borderBottom: '1px solid', borderColor: 'divider' }}
-                >
+        <Can permission="ess.attendance:read">
+          <Grid size={{ xs: 12, md: 4 }}>
+            <PageCard sx={{ height: '100%' }}>
+              <CardContent>
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                   <Box>
-                    <Typography variant="body2" fontWeight={600}>
-                      {h.name}
-                    </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {dayjs(h.date).format('DD MMM')} · {h.dayOfWeek}
+                      {data.attendance.date}
                     </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {data.attendance.shift}
+                    </Typography>
+                    <LiveClock />
                   </Box>
-                  <Link
-                    component="button"
-                    variant="body2"
-                    color="secondary"
-                    onClick={() => navigate('/leave/apply?tab=apply')}
+                  <Can permission="ess.attendance:punch">
+                    <BrandedButton
+                      size="small"
+                      disabled={signInMutation.isPending || signOutMutation.isPending}
+                      onClick={handleAttendanceToggle}
+                    >
+                      {data.attendance.signedIn ? 'Sign Out' : 'Sign In'}
+                    </BrandedButton>
+                  </Can>
+                </Stack>
+                <Link
+                  component="button"
+                  variant="body2"
+                  underline="hover"
+                  sx={{ mt: 1 }}
+                  onClick={() => navigate('/attendance')}
+                >
+                  View Swipes
+                </Link>
+              </CardContent>
+            </PageCard>
+          </Grid>
+        </Can>
+
+        <Can permission="ess.leave:read">
+          <Grid size={{ xs: 12, md: 4 }}>
+            <PageCard sx={{ height: '100%' }}>
+              <CardContent>
+                <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                  Upcoming Holidays
+                </Typography>
+                {data.upcomingHolidays.map((h) => (
+                  <Stack
+                    key={h.date}
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    sx={{ py: 0.75, borderBottom: '1px solid', borderColor: 'divider' }}
                   >
-                    Apply
+                    <Box>
+                      <Typography variant="body2" fontWeight={600}>
+                        {h.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {dayjs(h.date).format('DD MMM')} · {h.dayOfWeek}
+                      </Typography>
+                    </Box>
+                    <Can permission="ess.leave:apply">
+                      <Link
+                        component="button"
+                        variant="body2"
+                        color="secondary"
+                        onClick={() => navigate('/leave/apply?tab=apply')}
+                      >
+                        Apply
+                      </Link>
+                    </Can>
+                  </Stack>
+                ))}
+              </CardContent>
+            </PageCard>
+          </Grid>
+        </Can>
+
+        <Can permission="ess.leave:read">
+          <Grid size={{ xs: 12, md: 4 }}>
+            <PageCard>
+              <CardContent>
+                <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                  Quick Access
+                </Typography>
+                <Stack spacing={0.5}>
+                  {data.quickLinks.map((link) => (
+                    <Link key={link.label} href={link.href} variant="body2" underline="hover">
+                      {link.label}
+                    </Link>
+                  ))}
+                </Stack>
+              </CardContent>
+            </PageCard>
+          </Grid>
+        </Can>
+
+        <Can permission="payroll:read">
+          <Grid size={{ xs: 12, md: 4 }}>
+            <PageCard>
+              <CardContent>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Payslip
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {data.payslip.month} · {data.payslip.paidDays} Paid Days
+                </Typography>
+                <PayslipRing />
+                <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 1 }}>
+                  <Link component="button" variant="body2">
+                    Download
+                  </Link>
+                  <Link component="button" variant="body2">
+                    Show Salary
                   </Link>
                 </Stack>
-              ))}
-            </CardContent>
-          </PageCard>
-        </Grid>
+              </CardContent>
+            </PageCard>
+          </Grid>
+        </Can>
 
-        <Grid size={{ xs: 12, md: 4 }}>
-          <PageCard>
-            <CardContent>
-              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                Quick Access
-              </Typography>
-              <Stack spacing={0.5}>
-                {data.quickLinks.map((link) => (
-                  <Link key={link.label} href={link.href} variant="body2" underline="hover">
-                    {link.label}
-                  </Link>
-                ))}
-              </Stack>
-            </CardContent>
-          </PageCard>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 4 }}>
-          <PageCard>
-            <CardContent>
-              <Typography variant="subtitle2" fontWeight={700}>
-                Payslip
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {data.payslip.month} · {data.payslip.paidDays} Paid Days
-              </Typography>
-              <PayslipRing />
-              <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 1 }}>
-                <Link component="button" variant="body2">
-                  Download
-                </Link>
-                <Link component="button" variant="body2">
-                  Show Salary
-                </Link>
-              </Stack>
-            </CardContent>
-          </PageCard>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 4 }}>
-          <PageCard
-            sx={{ cursor: 'pointer' }}
-            onClick={() => navigate('/leave/apply?tab=pending')}
-          >
-            <CardContent>
-              <Typography variant="h4" fontWeight={700}>
-                {String(data.pendingLeaveCount).padStart(2, '0')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Leave pending
-              </Typography>
-            </CardContent>
-          </PageCard>
-        </Grid>
+        <Can permission="ess.leave:read">
+          <Grid size={{ xs: 12, md: 4 }}>
+            <PageCard
+              sx={{ cursor: 'pointer' }}
+              onClick={() => navigate('/leave/apply?tab=pending')}
+            >
+              <CardContent>
+                <Typography variant="h4" fontWeight={700}>
+                  {String(data.pendingLeaveCount).padStart(2, '0')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Leave pending
+                </Typography>
+              </CardContent>
+            </PageCard>
+          </Grid>
+        </Can>
 
         <Grid size={{ xs: 12, md: 6 }}>
           <PageCard>

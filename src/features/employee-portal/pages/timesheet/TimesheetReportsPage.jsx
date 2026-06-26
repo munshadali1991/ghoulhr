@@ -21,6 +21,8 @@ import dayjs from 'dayjs';
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { HeroBanner } from '@/shared/components/ui/HeroBanner';
+import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 import { SegmentedTabs } from '../../components/SegmentedTabs';
 import { TimesheetSummaryCards } from '../../components/timesheet/TimesheetSummaryCards';
 import { TimesheetStatusChip } from '../../components/timesheet/TimesheetStatusChip';
@@ -46,6 +48,74 @@ function getRange(tab, anchor) {
   const start = anchor.startOf('year');
   const end = anchor.endOf('year');
   return { from: start.format('YYYY-MM-DD'), to: end.format('YYYY-MM-DD'), anchor };
+}
+
+function DayBreakdownTable({ days }) {
+  const isMobileLayout = useIsMobileLayout();
+
+  if (isMobileLayout) {
+    return (
+      <Stack spacing={1.5}>
+        {days.map((row) => (
+          <MobileDataCard
+            key={row.workDate}
+            fields={[
+              { label: 'Date', value: dayjs(row.workDate).format('DD MMM YYYY') },
+              { label: 'Hours', value: row.totalHours.toFixed(1) },
+              { label: 'Status', value: <TimesheetStatusChip status={row.status} /> },
+              {
+                label: 'Action',
+                value: (
+                  <Link
+                    component={RouterLink}
+                    to={`/timesheet?date=${row.workDate}`}
+                    underline="hover"
+                  >
+                    Open
+                  </Link>
+                ),
+              },
+            ]}
+          />
+        ))}
+      </Stack>
+    );
+  }
+
+  return (
+    <TableContainer sx={{ overflowX: 'auto' }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Date</TableCell>
+            <TableCell align="right">Hours</TableCell>
+            <TableCell>Status</TableCell>
+            <TableCell align="right">Action</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {days.map((row) => (
+            <TableRow key={row.workDate} hover>
+              <TableCell>{dayjs(row.workDate).format('DD MMM YYYY')}</TableCell>
+              <TableCell align="right">{row.totalHours.toFixed(1)}</TableCell>
+              <TableCell>
+                <TimesheetStatusChip status={row.status} />
+              </TableCell>
+              <TableCell align="right">
+                <Link
+                  component={RouterLink}
+                  to={`/timesheet?date=${row.workDate}`}
+                  underline="hover"
+                >
+                  Open
+                </Link>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
 }
 
 export function TimesheetReportsPage() {
@@ -136,38 +206,7 @@ export function TimesheetReportsPage() {
             <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
               Day breakdown
             </Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Date</TableCell>
-                    <TableCell align="right">Hours</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell align="right">Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {(data.days ?? []).map((row) => (
-                    <TableRow key={row.workDate} hover>
-                      <TableCell>{dayjs(row.workDate).format('DD MMM YYYY')}</TableCell>
-                      <TableCell align="right">{row.totalHours.toFixed(1)}</TableCell>
-                      <TableCell>
-                        <TimesheetStatusChip status={row.status} />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Link
-                          component={RouterLink}
-                          to={`/timesheet?date=${row.workDate}`}
-                          underline="hover"
-                        >
-                          Open
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <DayBreakdownTable days={data.days ?? []} />
           </PageCard>
         </>
       ) : null}

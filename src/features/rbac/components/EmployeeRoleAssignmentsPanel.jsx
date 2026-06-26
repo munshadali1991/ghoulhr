@@ -25,7 +25,11 @@ import { getEmployeeRoles } from '@/features/rbac/api/rbacApi';
 import { useRbacRoles } from '@/features/rbac/hooks/useRbacAdmin';
 import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
 import { EmployeeRoleDialog } from '@/features/rbac/components/EmployeeRoleDialog';
-import { EmployeeAssignmentTableRow } from '@/features/rbac/components/EmployeeAssignmentTableRow';
+import {
+  EmployeeAssignmentCard,
+  EmployeeAssignmentTableRow,
+} from '@/features/rbac/components/EmployeeAssignmentTableRow';
+import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 
 const DEFAULT_ROWS_PER_PAGE = 20;
 const ROWS_PER_PAGE_OPTIONS = [10, 20, 50];
@@ -44,6 +48,7 @@ async function fetchAssignmentsForEmployees(employees) {
  * Employee access tab — searchable list with batched role loading per page.
  */
 export function EmployeeRoleAssignmentsPanel() {
+  const isMobileLayout = useIsMobileLayout();
   const { can } = useAuthorization();
   const { data: roles = [], isLoading: rolesLoading } = useRbacRoles();
   const { data: employees = [], isLoading: employeesLoading } = useQuery({
@@ -177,7 +182,7 @@ export function EmployeeRoleAssignmentsPanel() {
             setPage(0);
           }}
           size="small"
-          sx={{ minWidth: 220 }}
+          sx={{ minWidth: { xs: 0, md: 220 }, width: { xs: '100%', md: 'auto' } }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -186,7 +191,7 @@ export function EmployeeRoleAssignmentsPanel() {
             ),
           }}
         />
-        <FormControl size="small" sx={{ minWidth: 180 }}>
+        <FormControl size="small" sx={{ minWidth: { xs: 0, md: 180 }, width: { xs: '100%', md: 'auto' } }}>
           <InputLabel id="role-filter">Filter by role</InputLabel>
           <Select
             labelId="role-filter"
@@ -206,7 +211,7 @@ export function EmployeeRoleAssignmentsPanel() {
             ))}
           </Select>
         </FormControl>
-        <FormControl size="small" sx={{ minWidth: 180 }}>
+        <FormControl size="small" sx={{ minWidth: { xs: 0, md: 180 }, width: { xs: '100%', md: 'auto' } }}>
           <InputLabel id="dept-filter">Department</InputLabel>
           <Select
             labelId="dept-filter"
@@ -249,6 +254,26 @@ export function EmployeeRoleAssignmentsPanel() {
             : `Showing ${rangeStart}–${rangeEnd} of ${filteredEmployees.length} employees`}
       </Typography>
 
+      {isMobileLayout ? (
+        <Stack spacing={1.5} sx={{ mb: 2 }}>
+          {filteredEmployees.length === 0 && !assignmentsLoading && (
+            <Typography color="text.secondary" variant="body2">
+              {unassignedOnly
+                ? 'All matching employees have roles assigned.'
+                : 'No employees match your search.'}
+            </Typography>
+          )}
+          {pageEmployees.map((emp) => (
+            <EmployeeAssignmentCard
+              key={emp.id}
+              employee={emp}
+              assignments={assignmentsForRow[emp.id]}
+              isLoading={assignmentsLoading && !assignmentsForRow[emp.id]}
+              onEdit={() => setDrawerEmployee(emp)}
+            />
+          ))}
+        </Stack>
+      ) : (
       <Box sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
@@ -286,6 +311,7 @@ export function EmployeeRoleAssignmentsPanel() {
           </TableBody>
         </Table>
       </Box>
+      )}
 
       <TablePagination
         component="div"

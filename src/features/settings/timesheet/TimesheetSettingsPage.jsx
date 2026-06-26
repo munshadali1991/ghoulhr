@@ -10,11 +10,15 @@ import { TIMESHEET_TABS } from './timesheetTabs';
 import { GeneralSettingsTab } from './GeneralSettingsTab';
 import { CategoryTab } from './category/CategoryTab';
 import { CategoryFormPage } from './category/CategoryFormPage';
+import { useSettingsSectionAccess } from '@/features/settings/hooks/useSettingsSectionAccess';
+import { SETTINGS_ACCESS } from '@/features/auth/config/accessRegistry';
 
 /**
  * @param {{ organizationId: string }} props
  */
 export function TimesheetSettingsPage({ organizationId }) {
+  const { canWrite } = useSettingsSectionAccess('timesheet');
+  const timesheetTabs = SETTINGS_ACCESS.timesheet.tabs ?? [];
   const [activeTab, setActiveTab] = useState(TIMESHEET_TABS.general);
   const [categoryFormView, setCategoryFormView] = useState(null);
   const form = useTimesheetSettingsForm(organizationId);
@@ -63,8 +67,9 @@ export function TimesheetSettingsPage({ organizationId }) {
     <Box>
       <TimesheetSettingsToolbar
         activeTab={activeTab}
+        tabs={timesheetTabs}
         onTabChange={handleTabChange}
-        showAddCategory={activeTab === TIMESHEET_TABS.category}
+        showAddCategory={activeTab === TIMESHEET_TABS.category && canWrite}
         onAddCategory={() => {
           categories.clearActionError();
           setCategoryFormView({});
@@ -80,7 +85,7 @@ export function TimesheetSettingsPage({ organizationId }) {
             onDismissFormError={form.dismissFormError}
             successMessage={form.successMessage}
           />
-          <GeneralSettingsTab form={form} />
+          <GeneralSettingsTab form={form} readOnly={!canWrite} />
         </>
       ) : (
         <>
@@ -95,11 +100,15 @@ export function TimesheetSettingsPage({ organizationId }) {
             isSaving={categories.isSaving}
             actionError={categories.actionError}
             onClearActionError={categories.clearActionError}
-            onEdit={(row) => {
-              categories.clearActionError();
-              setCategoryFormView(row);
-            }}
-            onDelete={categories.removeCategory}
+            onEdit={
+              canWrite
+                ? (row) => {
+                    categories.clearActionError();
+                    setCategoryFormView(row);
+                  }
+                : undefined
+            }
+            onDelete={canWrite ? categories.removeCategory : undefined}
           />
         </>
       )}

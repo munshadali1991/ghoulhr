@@ -26,7 +26,7 @@ export function HolidayCalendarPage() {
     <>
       <PageToolbar
         right={
-          <FormControl size="small" sx={{ minWidth: 100 }}>
+          <FormControl size="small" sx={{ minWidth: { sm: 100 } }}>
             <InputLabel>Year</InputLabel>
             <Select label="Year" value={year} onChange={(e) => setYear(Number(e.target.value))}>
               {yearOptions.map((y) => (

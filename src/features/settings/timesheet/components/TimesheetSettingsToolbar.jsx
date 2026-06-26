@@ -12,6 +12,7 @@ import { TIMESHEET_TABS } from '../timesheetTabs';
  */
 export function TimesheetSettingsToolbar({
   activeTab,
+  tabs = [],
   onTabChange,
   onAddCategory,
   showAddCategory = false,
@@ -40,8 +41,12 @@ export function TimesheetSettingsToolbar({
           sx={{ mt: 2, minHeight: 40 }}
           aria-label="Timesheet settings tabs"
         >
-          <Tab label="General" value={TIMESHEET_TABS.general} sx={{ minHeight: 40 }} />
-          <Tab label="Category" value={TIMESHEET_TABS.category} sx={{ minHeight: 40 }} />
+          {(tabs.length ? tabs : [
+            { key: TIMESHEET_TABS.general, label: 'General' },
+            { key: TIMESHEET_TABS.category, label: 'Category' },
+          ]).map((tab) => (
+            <Tab key={tab.key} label={tab.label} value={tab.key} sx={{ minHeight: 40 }} />
+          ))}
         </Tabs>
       </Box>
 

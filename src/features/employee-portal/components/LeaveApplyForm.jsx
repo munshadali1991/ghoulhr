@@ -184,7 +184,19 @@ export function LeaveApplyForm({
         <Alert
           severity="warning"
           variant="outlined"
-          sx={{ mb: 3, borderRadius: 2 }}
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            '& .MuiAlert-action': {
+              pt: { xs: 0.5, sm: 0 },
+              pl: { xs: 0, sm: 2 },
+              mr: 0,
+              alignSelf: { xs: 'flex-start', sm: 'center' },
+            },
+            '& .MuiAlert-message': { minWidth: 0 },
+          }}
           action={
             <Link component="button" variant="body2" onClick={() => setPolicyOpen(false)} sx={{ whiteSpace: 'nowrap' }}>
               Hide
@@ -201,7 +213,11 @@ export function LeaveApplyForm({
       </Collapse>
 
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" fontWeight={700} sx={{ letterSpacing: '-0.01em' }}>
+        <Typography
+          variant="h5"
+          fontWeight={700}
+          sx={{ letterSpacing: '-0.01em', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
+        >
           Applying for Leave
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -242,7 +258,7 @@ export function LeaveApplyForm({
             hint="Select dates and sessions for half-day leave"
           >
             <Grid container spacing={2} alignItems="stretch">
-              <Grid size={{ xs: 12, lg: 7 }}>
+              <Grid size={{ xs: 12, md: 7 }}>
                 <Stack spacing={2.5}>
                   <Box>
                     <Typography
@@ -350,7 +366,7 @@ export function LeaveApplyForm({
                 </Stack>
               </Grid>
 
-              <Grid size={{ xs: 12, lg: 5 }}>
+              <Grid size={{ xs: 12, md: 5 }}>
                 <LeavePreviewSummary
                   balance={remainingBalance}
                   loading={balanceLoading}
@@ -464,6 +480,7 @@ export function LeaveApplyForm({
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
+                    flexWrap: 'wrap',
                     gap: 1,
                     px: 1.5,
                     py: 1,
@@ -474,7 +491,11 @@ export function LeaveApplyForm({
                   }}
                 >
                   <AttachFileOutlinedIcon fontSize="small" color="action" />
-                  <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }} noWrap title={attachment.fileName}>
+                  <Typography
+                    variant="body2"
+                    sx={{ flex: '1 1 120px', minWidth: 0, wordBreak: 'break-word' }}
+                    title={attachment.fileName}
+                  >
                     {attachment.fileName}
                   </Typography>
                   <IconButton size="small" aria-label="Remove attachment" onClick={handleRemoveAttachment}>
@@ -538,10 +559,23 @@ export function LeaveApplyForm({
         justifyContent="flex-end"
         alignItems={{ xs: 'stretch', sm: 'center' }}
       >
-        <Button type="button" variant="outlined" color="inherit" onClick={handleReset} disabled={submitting}>
+        <Button
+          type="button"
+          variant="outlined"
+          color="inherit"
+          onClick={handleReset}
+          disabled={submitting}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           Cancel
         </Button>
-        <Button type="submit" variant="contained" color="secondary" disabled={submitting} sx={{ minWidth: { sm: 140 } }}>
+        <Button
+          type="submit"
+          variant="contained"
+          color="secondary"
+          disabled={submitting}
+          sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 140 } }}
+        >
           Submit request
         </Button>
       </Stack>

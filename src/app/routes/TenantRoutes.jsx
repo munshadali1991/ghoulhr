@@ -15,6 +15,9 @@ import { ModulePlaceholderPage } from '@/features/org-admin/pages/ModulePlacehol
 import { EmployeesPage } from '@/features/employees';
 import { SettingsPage } from '@/features/settings';
 import { RequireAccess } from '@/features/auth/components/RequireAccess';
+import { DashboardRouteGuard } from '@/features/auth/components/DashboardRouteGuard';
+import { getDefaultDashboardPath } from '@/features/auth/config/dashboardRegistry';
+import { SettingsRouteGuard } from '@/features/settings/shell/SettingsRouteGuard';
 import { useAuth } from '@/app/providers/useAuth';
 
 /**
@@ -38,6 +41,7 @@ export function TenantRoutes({
   const organizationId = user?.organizationId;
   const { session } = useAuth();
   const landingPath = getDefaultLandingPath(session);
+  const defaultDashboardPath = getDefaultDashboardPath(session);
 
   return (
     <TenantLayout
@@ -52,24 +56,17 @@ export function TenantRoutes({
         <Route
           path="/home"
           element={
-            <RequireAccess
-              permissions={['ess.leave:read', 'ess.attendance:read', 'ess.timesheet:read']}
-              fallbackTo="/dashboard"
-            >
+            <DashboardRouteGuard dashboardKey="ess">
               <EmployeeHomePage userName={userName} />
-            </RequireAccess>
+            </DashboardRouteGuard>
           }
         />
         <Route
           path="/dashboard"
           element={
-            <RequireAccess
-              permissions={['employees:read', 'settings.organization:read', 'payroll:read']}
-              permissionsMode="any"
-              fallbackTo="/home"
-            >
+            <DashboardRouteGuard dashboardKey="hr">
               <TenantAdminDashboardPage user={user} userName={userName} />
-            </RequireAccess>
+            </DashboardRouteGuard>
           }
         />
         <Route path="/" element={<Navigate to={landingPath} replace />} />
@@ -154,9 +151,9 @@ export function TenantRoutes({
         <Route
           path="/settings/*"
           element={
-            <RequireAccess module="settings">
+            <SettingsRouteGuard>
               <SettingsPage organizationId={organizationId} />
-            </RequireAccess>
+            </SettingsRouteGuard>
           }
         />
         <Route
@@ -167,7 +164,7 @@ export function TenantRoutes({
             </RequireAccess>
           }
         />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to={defaultDashboardPath} replace />} />
       </Routes>
     </TenantLayout>
   );

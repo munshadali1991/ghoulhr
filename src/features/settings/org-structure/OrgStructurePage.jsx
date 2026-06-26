@@ -1,17 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Box, Skeleton } from '@mui/material';
 import { FormStatusAlerts } from '@/shared/components/feedback/FormStatusAlerts';
 import { PageCard } from '@/shared/components/ui/PageCard';
+import { useTabAccess } from '@/features/auth/hooks/useAuthorization';
+import { ORG_STRUCTURE_TAB_DEFS } from './orgStructureTabs';
 import { useOrgStructure } from './hooks/useOrgStructure';
 import { OrgStructureToolbar } from './OrgStructureToolbar';
-import { ORG_STRUCTURE_TABS } from './orgStructureTabs';
 import { DepartmentTab } from './departments/DepartmentTab';
 import { DepartmentFormPage } from './departments/DepartmentFormPage';
 import { DesignationTab } from './designations/DesignationTab';
 import { DesignationFormPage } from './designations/DesignationFormPage';
 
 export function OrgStructurePage({ organizationId }) {
-  const [activeTab, setActiveTab] = useState(ORG_STRUCTURE_TABS.departments);
+  const { allowedTabs, firstAllowedKey, canWriteTab, isTabAllowed } =
+    useTabAccess(ORG_STRUCTURE_TAB_DEFS);
+  const [activeTab, setActiveTab] = useState(firstAllowedKey ?? 'departments');
   const [formView, setFormView] = useState(null);
 
   const {
@@ -28,6 +31,15 @@ export function OrgStructurePage({ organizationId }) {
     deleteDesignation,
   } = useOrgStructure(organizationId);
 
+  useEffect(() => {
+    if (!isTabAllowed(activeTab) && firstAllowedKey) {
+      setActiveTab(firstAllowedKey);
+    }
+  }, [activeTab, firstAllowedKey, isTabAllowed]);
+
+  const activeTabDef = allowedTabs.find((t) => t.key === activeTab) ?? allowedTabs[0];
+  const canWriteActive = activeTabDef ? canWriteTab(activeTabDef) : false;
+
   const closeForm = () => {
     clearActionError();
     setFormView(null);
@@ -39,8 +51,9 @@ export function OrgStructurePage({ organizationId }) {
   };
 
   const handleAdd = () => {
+    if (!canWriteActive) return;
     clearActionError();
-    if (activeTab === ORG_STRUCTURE_TABS.departments) {
+    if (activeTab === 'departments') {
       setFormView({ type: 'department', record: null });
       return;
     }
@@ -48,14 +61,24 @@ export function OrgStructurePage({ organizationId }) {
   };
 
   const openDepartmentEdit = (record) => {
+    if (!canWriteTab(ORG_STRUCTURE_TAB_DEFS[0])) return;
     clearActionError();
     setFormView({ type: 'department', record });
   };
 
   const openDesignationEdit = (record) => {
+    if (!canWriteTab(ORG_STRUCTURE_TAB_DEFS[1])) return;
     clearActionError();
     setFormView({ type: 'designation', record });
   };
+
+  if (!allowedTabs.length) {
+    return (
+      <Alert severity="warning">
+        You do not have permission to view departments or designations.
+      </Alert>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -80,6 +103,7 @@ export function OrgStructurePage({ organizationId }) {
           onClearActionError={clearActionError}
           onBack={closeForm}
           onSave={saveDepartment}
+          readOnly={!canWriteTab(ORG_STRUCTURE_TAB_DEFS[0])}
         />
       </Box>
     );
@@ -100,6 +124,7 @@ export function OrgStructurePage({ organizationId }) {
           onClearActionError={clearActionError}
           onBack={closeForm}
           onSave={saveDesignation}
+          readOnly={!canWriteTab(ORG_STRUCTURE_TAB_DEFS[1])}
         />
       </Box>
     );
@@ -114,16 +139,18 @@ export function OrgStructurePage({ organizationId }) {
 
       <OrgStructureToolbar
         activeTab={activeTab}
+        allowedTabs={allowedTabs}
         onTabChange={handleTabChange}
         onAdd={handleAdd}
+        canWrite={canWriteActive}
         addDisabled={
-          activeTab === ORG_STRUCTURE_TABS.designations && departments.length === 0
+          activeTab === 'designations' && departments.length === 0
         }
       />
 
       <PageCard>
         <Box sx={{ p: { xs: 2, md: 3 } }}>
-          {activeTab === ORG_STRUCTURE_TABS.departments ? (
+          {activeTab === 'departments' ? (
             <DepartmentTab
               departments={departments}
               isLoading={isLoading}
@@ -132,6 +159,7 @@ export function OrgStructurePage({ organizationId }) {
               onClearActionError={clearActionError}
               onEdit={openDepartmentEdit}
               onDelete={deleteDepartment}
+              readOnly={!canWriteTab(ORG_STRUCTURE_TAB_DEFS[0])}
             />
           ) : (
             <DesignationTab
@@ -143,6 +171,7 @@ export function OrgStructurePage({ organizationId }) {
               onClearActionError={clearActionError}
               onEdit={openDesignationEdit}
               onDelete={deleteDesignation}
+              readOnly={!canWriteTab(ORG_STRUCTURE_TAB_DEFS[1])}
             />
           )}
         </Box>

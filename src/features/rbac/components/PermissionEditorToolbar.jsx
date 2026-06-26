@@ -45,7 +45,8 @@ export function PermissionEditorToolbar({
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           size="small"
-          sx={{ minWidth: 200 }}
+          fullWidth
+          sx={{ minWidth: { xs: 0, sm: 200 }, width: { xs: '100%', sm: 'auto' } }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">

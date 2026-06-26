@@ -4,12 +4,14 @@ import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { BrandedButton } from '@/shared/components/ui/BrandedButton';
 import { TimesheetStatusChip } from './TimesheetStatusChip';
+import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
 
 /**
  * @param {{ timesheet: object | undefined }} props
  */
 export function TimesheetHomeWidget({ timesheet }) {
   const navigate = useNavigate();
+  const { can } = useAuthorization();
 
   if (!timesheet) return null;
 
@@ -23,6 +25,12 @@ export function TimesheetHomeWidget({ timesheet }) {
   }
 
   const workDate = timesheet.workDate;
+  const canWrite = can('ess.timesheet:write');
+  const canRead = can('ess.timesheet:read');
+  const showViewOnlyCta =
+    !canWrite &&
+    canRead &&
+    (status === 'SUBMITTED' || status === 'APPROVED' || status === 'REJECTED');
 
   return (
     <PageCard sx={{ height: '100%' }}>
@@ -53,12 +61,22 @@ export function TimesheetHomeWidget({ timesheet }) {
           </Alert>
         ) : null}
 
-        <BrandedButton
-          fullWidth
-          onClick={() => navigate(`/timesheet?date=${workDate}`)}
-        >
-          {ctaLabel}
-        </BrandedButton>
+        {canWrite ? (
+          <BrandedButton
+            fullWidth
+            onClick={() => navigate(`/timesheet?date=${workDate}`)}
+          >
+            {ctaLabel}
+          </BrandedButton>
+        ) : showViewOnlyCta ? (
+          <BrandedButton
+            fullWidth
+            variant="outlined"
+            onClick={() => navigate(`/timesheet?date=${workDate}`)}
+          >
+            {ctaLabel}
+          </BrandedButton>
+        ) : null}
       </Stack>
     </PageCard>
   );

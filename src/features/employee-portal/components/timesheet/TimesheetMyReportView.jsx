@@ -33,6 +33,8 @@ import TableChartRoundedIcon from '@mui/icons-material/TableChartRounded';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { PageCard } from '@/shared/components/ui/PageCard';
+import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 import { TimesheetStatusChip } from './TimesheetStatusChip';
 import {
   useTimesheetDay,
@@ -133,6 +135,7 @@ export function TimesheetMyReportView({
   const [fullscreen, setFullscreen] = useState(false);
   const [orderBy, setOrderBy] = useState(showAllRecords ? 'workDate' : 'category');
   const [order, setOrder] = useState(showAllRecords ? 'desc' : 'asc');
+  const isMobileLayout = useIsMobileLayout();
 
   const rangeFilterKey = showAllRecords
     ? 'all'
@@ -389,8 +392,54 @@ export function TimesheetMyReportView({
         </Alert>
       ) : (
         <>
-          <TableContainer>
-            <Table size="small" sx={{ minWidth: 960 }}>
+          {isMobileLayout ? (
+            <Stack spacing={1.5} sx={{ p: 2 }}>
+              {paged.length === 0 ? (
+                <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+                  No entries for {rangeLabel}.
+                </Typography>
+              ) : (
+                paged.map((row) => (
+                  <MobileDataCard
+                    key={`${row.workDate}-${row.entryId}`}
+                    fields={[
+                      ...(showDateColumn ? [{ label: 'Date', value: row.dateLabel }] : []),
+                      { label: 'Category', value: row.categoryLabel },
+                      { label: 'Work Area/Description', value: row.workAreaDescription },
+                      { label: 'Hours', value: Number(row.hoursSpent).toFixed(0) },
+                      { label: 'Ref #', value: row.refNumber || '—' },
+                    ]}
+                    actions={
+                      <Stack direction="row" spacing={0.5}>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="success"
+                          startIcon={<EditOutlinedIcon />}
+                          onClick={() => onEdit(row)}
+                          disabled={!row.canModify}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="error"
+                          startIcon={<DeleteOutlineIcon />}
+                          onClick={() => onDelete(row)}
+                          disabled={!row.canModify}
+                        >
+                          Delete
+                        </Button>
+                      </Stack>
+                    }
+                  />
+                ))
+              )}
+            </Stack>
+          ) : (
+          <TableContainer sx={{ overflowX: 'auto' }}>
+            <Table size="small" sx={{ minWidth: { xs: 0, md: 960 } }}>
               <TableHead>
                 <TableRow sx={{ bgcolor: 'grey.100' }}>
                   {showDateColumn ? sortableHead('workDate', 'Date') : null}
@@ -462,6 +511,7 @@ export function TimesheetMyReportView({
               </TableBody>
             </Table>
           </TableContainer>
+          )}
 
           <Stack
             direction="row"

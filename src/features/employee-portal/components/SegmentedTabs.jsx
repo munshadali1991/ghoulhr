@@ -18,15 +18,19 @@ export function SegmentedTabs({ value, options, onChange, sx }) {
       }}
       sx={[
         {
+          width: '100%',
+          display: 'flex',
           bgcolor: 'background.paper',
           border: '1px solid',
           borderColor: 'divider',
           borderRadius: 1,
           '& .MuiToggleButton-root': {
-            px: 3,
+            flex: 1,
+            px: { xs: 1, sm: 3 },
             py: 0.75,
             textTransform: 'none',
             fontWeight: 600,
+            fontSize: { xs: '0.75rem', sm: 'inherit' },
             border: 'none',
             borderRadius: '4px !important',
             color: 'text.secondary',

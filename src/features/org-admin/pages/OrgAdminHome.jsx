@@ -17,6 +17,7 @@ import { useAuth } from '@/app/providers/useAuth';
 import { HeroBanner } from '@/shared/components/ui/HeroBanner';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { DEFAULT_SETTINGS_PATH } from '@/features/settings/shell/settingsNav';
+import { Can } from '@/features/auth/components/Can';
 
 /**
  * @param {{ user: object, userName: string }} props
@@ -53,77 +54,85 @@ export function OrgAdminHome({ user, userName }) {
       </HeroBanner>
 
       <Grid container spacing={2}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <PageCard>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Employees
-                  </Typography>
-                  <Typography variant="h4" fontWeight={700}>
-                    0
-                  </Typography>
-                </Box>
-                <PeopleRoundedIcon sx={{ fontSize: 48, color: 'primary.main', opacity: 0.3 }} />
-              </Stack>
-            </CardContent>
-          </PageCard>
-        </Grid>
+        <Can permission="employees:read">
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <PageCard>
+              <CardContent>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Total Employees
+                    </Typography>
+                    <Typography variant="h4" fontWeight={700}>
+                      0
+                    </Typography>
+                  </Box>
+                  <PeopleRoundedIcon sx={{ fontSize: 48, color: 'primary.main', opacity: 0.3 }} />
+                </Stack>
+              </CardContent>
+            </PageCard>
+          </Grid>
+        </Can>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <PageCard>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Present Today
-                  </Typography>
-                  <Typography variant="h4" fontWeight={700} color="success.main">
-                    0
-                  </Typography>
-                </Box>
-                <EventNoteRoundedIcon sx={{ fontSize: 48, color: 'success.main', opacity: 0.3 }} />
-              </Stack>
-            </CardContent>
-          </PageCard>
-        </Grid>
+        <Can permission="employees:read">
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <PageCard>
+              <CardContent>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Present Today
+                    </Typography>
+                    <Typography variant="h4" fontWeight={700} color="success.main">
+                      0
+                    </Typography>
+                  </Box>
+                  <EventNoteRoundedIcon sx={{ fontSize: 48, color: 'success.main', opacity: 0.3 }} />
+                </Stack>
+              </CardContent>
+            </PageCard>
+          </Grid>
+        </Can>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <PageCard>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Pending Payroll
-                  </Typography>
-                  <Typography variant="h4" fontWeight={700} color="warning.main">
-                    0
-                  </Typography>
-                </Box>
-                <AttachMoneyRoundedIcon sx={{ fontSize: 48, color: 'warning.main', opacity: 0.3 }} />
-              </Stack>
-            </CardContent>
-          </PageCard>
-        </Grid>
+        <Can permission="payroll:read">
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <PageCard>
+              <CardContent>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Pending Payroll
+                    </Typography>
+                    <Typography variant="h4" fontWeight={700} color="warning.main">
+                      0
+                    </Typography>
+                  </Box>
+                  <AttachMoneyRoundedIcon sx={{ fontSize: 48, color: 'warning.main', opacity: 0.3 }} />
+                </Stack>
+              </CardContent>
+            </PageCard>
+          </Grid>
+        </Can>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <PageCard>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Active Departments
-                  </Typography>
-                  <Typography variant="h4" fontWeight={700}>
-                    0
-                  </Typography>
-                </Box>
-                <ApartmentRoundedIcon sx={{ fontSize: 48, color: 'info.main', opacity: 0.3 }} />
-              </Stack>
-            </CardContent>
-          </PageCard>
-        </Grid>
+        <Can permissions={['settings.organization:read', 'settings.employees:read']}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <PageCard>
+              <CardContent>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Active Departments
+                    </Typography>
+                    <Typography variant="h4" fontWeight={700}>
+                      0
+                    </Typography>
+                  </Box>
+                  <ApartmentRoundedIcon sx={{ fontSize: 48, color: 'info.main', opacity: 0.3 }} />
+                </Stack>
+              </CardContent>
+            </PageCard>
+          </Grid>
+        </Can>
       </Grid>
 
       <Grid container spacing={2} sx={{ mt: 0.5 }}>
@@ -134,66 +143,74 @@ export function OrgAdminHome({ user, userName }) {
                 Quick Actions
               </Typography>
               <Grid container spacing={1.5}>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Paper
-                    variant="outlined"
-                    sx={{ ...quickActionSx, '&:hover': { ...quickActionSx['&:hover'], borderColor: 'primary.main' } }}
-                    onClick={() => navigate('/employees')}
-                  >
-                    <PeopleRoundedIcon color="primary" sx={{ mb: 1 }} />
-                    <Typography variant="body2" fontWeight={600}>
-                      Add Employee
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Create new employee profile
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Paper
-                    variant="outlined"
-                    sx={{ ...quickActionSx, '&:hover': { ...quickActionSx['&:hover'], borderColor: 'success.main' } }}
-                    onClick={() => navigate('/attendance')}
-                  >
-                    <EventNoteRoundedIcon color="success" sx={{ mb: 1 }} />
-                    <Typography variant="body2" fontWeight={600}>
-                      Mark Attendance
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Update today&apos;s attendance
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Paper
-                    variant="outlined"
-                    sx={{ ...quickActionSx, '&:hover': { ...quickActionSx['&:hover'], borderColor: 'warning.main' } }}
-                    onClick={() => navigate('/payroll')}
-                  >
-                    <AttachMoneyRoundedIcon color="warning" sx={{ mb: 1 }} />
-                    <Typography variant="body2" fontWeight={600}>
-                      Process Payroll
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Run monthly payroll
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Paper
-                    variant="outlined"
-                    sx={{ ...quickActionSx, '&:hover': { ...quickActionSx['&:hover'], borderColor: 'info.main' } }}
-                    onClick={() => navigate(DEFAULT_SETTINGS_PATH)}
-                  >
-                    <ApartmentRoundedIcon color="info" sx={{ mb: 1 }} />
-                    <Typography variant="body2" fontWeight={600}>
-                      Org Settings
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Update organization details
-                    </Typography>
-                  </Paper>
-                </Grid>
+                <Can permission="employees:read">
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Paper
+                      variant="outlined"
+                      sx={{ ...quickActionSx, '&:hover': { ...quickActionSx['&:hover'], borderColor: 'primary.main' } }}
+                      onClick={() => navigate('/employees')}
+                    >
+                      <PeopleRoundedIcon color="primary" sx={{ mb: 1 }} />
+                      <Typography variant="body2" fontWeight={600}>
+                        Add Employee
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Create new employee profile
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Can>
+                <Can permission="employees:read">
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Paper
+                      variant="outlined"
+                      sx={{ ...quickActionSx, '&:hover': { ...quickActionSx['&:hover'], borderColor: 'success.main' } }}
+                      onClick={() => navigate('/attendance')}
+                    >
+                      <EventNoteRoundedIcon color="success" sx={{ mb: 1 }} />
+                      <Typography variant="body2" fontWeight={600}>
+                        Mark Attendance
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Update today&apos;s attendance
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Can>
+                <Can permission="payroll:read">
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Paper
+                      variant="outlined"
+                      sx={{ ...quickActionSx, '&:hover': { ...quickActionSx['&:hover'], borderColor: 'warning.main' } }}
+                      onClick={() => navigate('/payroll')}
+                    >
+                      <AttachMoneyRoundedIcon color="warning" sx={{ mb: 1 }} />
+                      <Typography variant="body2" fontWeight={600}>
+                        Process Payroll
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Run monthly payroll
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Can>
+                <Can permissions={['settings.organization:read', 'settings.employees:read']}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Paper
+                      variant="outlined"
+                      sx={{ ...quickActionSx, '&:hover': { ...quickActionSx['&:hover'], borderColor: 'info.main' } }}
+                      onClick={() => navigate(DEFAULT_SETTINGS_PATH)}
+                    >
+                      <ApartmentRoundedIcon color="info" sx={{ mb: 1 }} />
+                      <Typography variant="body2" fontWeight={600}>
+                        Org Settings
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Update organization details
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Can>
               </Grid>
             </CardContent>
           </PageCard>

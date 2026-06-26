@@ -163,13 +163,15 @@ export function OrganizationCalendarTab({ organizationId }) {
             ))}
           </Select>
         </FormControl>
-        <Stack direction="row" spacing={1}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
           {isDraft ? (
             <Button
               variant="outlined"
               startIcon={<PublishRoundedIcon />}
               onClick={handlePublish}
               disabled={publishMutation.isPending || holidays.length === 0}
+              fullWidth
+              sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}
             >
               Publish calendar
             </Button>
@@ -181,6 +183,8 @@ export function OrganizationCalendarTab({ organizationId }) {
               setEditRow(null);
               setDialogOpen(true);
             }}
+            fullWidth
+            sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}
           >
             Add holiday
           </Button>
