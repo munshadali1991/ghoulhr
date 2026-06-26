@@ -5,7 +5,6 @@ import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import {
-  Alert,
   Box,
   Button,
   Card,
@@ -28,13 +27,19 @@ import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
 import { checkEmployeeDuplicate, submitHrOnboarding, updateHrOnboarding } from '@/features/employees/api/employeesApi';
 import { STEP_LABELS } from './constants';
 import {
+  buildFullOnboardingSchema,
   buildHrOnboardingPayload,
-  fullOnboardingSchema,
   getDefaultOnboardingValues,
+  getStepIndexFromIssuePath,
   validateOnboardingStep,
 } from './onboardingSchema';
 import { useBeforeUnloadDirty } from './hooks/useBeforeUnloadDirty';
 import { useOnboardingDraft } from './hooks/useOnboardingDraft';
+import { useEmploymentLocationShifts } from './hooks/useEmploymentLocationShifts';
+import {
+  getShiftsForLocation,
+  resolveBusinessUnitToLocationId,
+} from './utils/employmentLocationShift';
 import { StepBasicInfo } from './steps/StepBasicInfo';
 import { StepEmployment } from './steps/StepEmployment';
 import { StepExperience } from './steps/StepExperience';
@@ -47,7 +52,16 @@ import { useEmployeeSettings } from '@/features/settings/employees';
 function applyZodIssues(setError, issues) {
   issues.forEach((issue) => {
     const path = issue.path.join('.');
-    if (path) setError(path, { type: 'manual', message: issue.message });
+    if (path) {
+      setError(path, { type: 'manual', message: issue.message }, { shouldFocus: issues[0] === issue });
+    }
+  });
+}
+
+function scrollToFirstError() {
+  requestAnimationFrame(() => {
+    const el = document.querySelector('.Mui-error, [aria-invalid="true"]');
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 }
 
@@ -67,6 +81,7 @@ export function EmployeeOnboardingWizard({
   const { snackbar, show: showSnackbar, close: closeSnackbar } = useAppSnackbar();
   const [duplicateResult, setDuplicateResult] = useState(null);
   const { settings: employeeSettings } = useEmployeeSettings(organizationId);
+  const { activeLocations, shifts } = useEmploymentLocationShifts(organizationId);
 
   const methods = useForm({
     defaultValues: initialValues || getDefaultOnboardingValues(),
@@ -132,18 +147,56 @@ export function EmployeeOnboardingWizard({
       }));
   }, [employees]);
 
+  const validationOptions = useCallback(() => {
+    const values = getValues();
+    const locationId = resolveBusinessUnitToLocationId(values.employment?.businessUnit, activeLocations);
+    const shiftsForLocation = getShiftsForLocation(shifts, locationId);
+    const requireShift = Boolean(locationId && shiftsForLocation.length > 0);
+
+    return {
+      requiredFields: employeeSettings?.required_fields,
+      employmentContext: { requireShift },
+    };
+  }, [activeLocations, employeeSettings?.required_fields, getValues, shifts]);
+
   const progress = ((activeStep + 1) / STEP_LABELS.length) * 100;
 
   const goNext = useCallback(async () => {
     clearErrors();
-    const r = validateOnboardingStep(activeStep, getValues());
+    const options = validationOptions();
+    const r = validateOnboardingStep(activeStep, getValues(), options);
     if (!r.success) {
       applyZodIssues(setError, r.error.issues);
       showSnackbar('Please fix the highlighted fields.', 'warning');
+      scrollToFirstError();
       return;
     }
+
+    if (activeStep === 0 && duplicateResult) {
+      let blocked = false;
+      if (duplicateResult.emailTaken) {
+        setError('basic.personalEmail', {
+          type: 'manual',
+          message: 'This email is already registered in your organization',
+        });
+        blocked = true;
+      }
+      if (duplicateResult.mobileTaken) {
+        setError('basic.mobileNumber', {
+          type: 'manual',
+          message: 'This mobile number is already registered in your organization',
+        });
+        blocked = true;
+      }
+      if (blocked) {
+        showSnackbar('Resolve duplicate contact details before continuing.', 'warning');
+        scrollToFirstError();
+        return;
+      }
+    }
+
     setActiveStep((s) => Math.min(s + 1, STEP_LABELS.length - 1));
-  }, [activeStep, clearErrors, getValues, setError]);
+  }, [activeStep, clearErrors, duplicateResult, getValues, setError, showSnackbar, validationOptions]);
 
   const goBack = useCallback(() => {
     clearErrors();
@@ -153,10 +206,17 @@ export function EmployeeOnboardingWizard({
   const finalizeSubmit = async () => {
     clearErrors();
     const values = getValues();
-    const r = fullOnboardingSchema.safeParse(values);
+    const options = validationOptions();
+    const schema = buildFullOnboardingSchema(options);
+    const r = schema.safeParse(values);
     if (!r.success) {
       applyZodIssues(setError, r.error.issues);
+      const firstIssue = r.error.issues[0];
+      if (firstIssue?.path) {
+        setActiveStep(getStepIndexFromIssuePath(firstIssue.path));
+      }
       showSnackbar('Review validation errors before submitting.', 'warning');
+      scrollToFirstError();
       return;
     }
     setSubmitting(true);

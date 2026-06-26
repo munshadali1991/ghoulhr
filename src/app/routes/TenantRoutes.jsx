@@ -9,6 +9,7 @@ import { LeaveBalancesPage } from '@/features/employee-portal/pages/leave/LeaveB
 import { LeaveBalanceDetailPage } from '@/features/employee-portal/pages/leave/LeaveBalanceDetailPage';
 import { LeaveCalendarPage } from '@/features/employee-portal/pages/leave/LeaveCalendarPage';
 import { HolidayCalendarPage } from '@/features/employee-portal/pages/leave/HolidayCalendarPage';
+import { LeaveRequestsPage } from '@/features/approvals/pages/leave/LeaveRequestsPage';
 import { TimesheetDayPage } from '@/features/employee-portal/pages/timesheet/TimesheetDayPage';
 import { TimesheetReportsPage } from '@/features/employee-portal/pages/timesheet/TimesheetReportsPage';
 import { ModulePlaceholderPage } from '@/features/org-admin/pages/ModulePlaceholderPage';
@@ -120,6 +121,16 @@ export function TenantRoutes({
             </RequireAccess>
           }
         />
+
+        <Route
+          path="/leave/requests"
+          element={
+            <RequireAccess module="leave" permission="approvals.leave:read">
+              <LeaveRequestsPage />
+            </RequireAccess>
+          }
+        />
+        <Route path="/approvals/leave" element={<Navigate to="/leave/requests" replace />} />
 
         <Route
           path="/timesheet"

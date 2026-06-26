@@ -295,6 +295,24 @@ export function EmployeeHomePage({ userName }) {
           </Grid>
         </Can>
 
+        <Can permission="approvals.leave:read">
+          <Grid size={{ xs: 12, md: 4 }}>
+            <PageCard
+              sx={{ cursor: 'pointer' }}
+              onClick={() => navigate('/leave/requests')}
+            >
+              <CardContent>
+                <Typography variant="h4" fontWeight={700}>
+                  {String(data.pendingApprovalLeaveCount ?? 0).padStart(2, '0')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Awaiting my approval
+                </Typography>
+              </CardContent>
+            </PageCard>
+          </Grid>
+        </Can>
+
         <Grid size={{ xs: 12, md: 6 }}>
           <PageCard>
             <CardContent>

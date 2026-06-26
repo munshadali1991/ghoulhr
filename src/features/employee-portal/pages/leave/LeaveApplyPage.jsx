@@ -48,7 +48,14 @@ export function LeaveApplyPage() {
   const withdrawMutation = useWithdrawLeaveRequest();
 
   const pendingQuery = useLeaveRequests('PENDING');
-  const historyQuery = useLeaveRequests('APPROVED');
+  const approvedHistoryQuery = useLeaveRequests('APPROVED');
+  const rejectedHistoryQuery = useLeaveRequests('REJECTED');
+
+  const historyItems = [...(approvedHistoryQuery.data ?? []), ...(rejectedHistoryQuery.data ?? [])].sort(
+    (a, b) => dayjs(b.appliedOn).valueOf() - dayjs(a.appliedOn).valueOf(),
+  );
+  const historyLoading = approvedHistoryQuery.isLoading || rejectedHistoryQuery.isLoading;
+  const historyError = approvedHistoryQuery.error ?? rejectedHistoryQuery.error;
 
   const setTab = (value) => {
     setSearchParams({ tab: value });
@@ -144,14 +151,14 @@ export function LeaveApplyPage() {
 
       {tab === 'history' && (
         <Box>
-          {historyQuery.isLoading ? (
+          {historyLoading ? (
             <CircularProgress size={32} />
-          ) : historyQuery.error ? (
-            <Alert severity="error">{historyQuery.error.message}</Alert>
-          ) : historyQuery.data?.length === 0 ? (
+          ) : historyError ? (
+            <Alert severity="error">{historyError.message}</Alert>
+          ) : historyItems.length === 0 ? (
             <EmptyStatePanel title="No leave history" />
           ) : (
-            historyQuery.data.map((req) => (
+            historyItems.map((req) => (
               <LeaveRequestAccordionCard key={req.id} request={req} mode="history" />
             ))
           )}

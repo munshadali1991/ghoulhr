@@ -25,6 +25,7 @@ import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
 import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 import {
   listReportingManagers,
+  listReportingManagerCandidates,
   removeReportingManager,
 } from '@/features/employees/api/reportingManagersApi';
 import { listEmployees } from '@/features/employees/api/employeesApi';
@@ -40,6 +41,7 @@ export function ReportingManagersTab({ showSnackbar }) {
   const canAssign = can('employees:reporting-manager:assign');
   const [rows, setRows] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [managerCandidates, setManagerCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -55,12 +57,14 @@ export function ReportingManagersTab({ showSnackbar }) {
   const fetchRows = useCallback(async () => {
     setLoading(true);
     try {
-      const [data, empList] = await Promise.all([
+      const [data, empList, candidates] = await Promise.all([
         listReportingManagers({ search, filter }),
         listEmployees(),
+        listReportingManagerCandidates(),
       ]);
       setRows(Array.isArray(data) ? data : []);
       setEmployees(Array.isArray(empList) ? empList : []);
+      setManagerCandidates(Array.isArray(candidates) ? candidates : []);
     } catch (e) {
       showSnackbar(e.message || 'Failed to load reporting managers', 'error');
       setRows([]);
@@ -411,6 +415,7 @@ export function ReportingManagersTab({ showSnackbar }) {
         onClose={handleDialogClose}
         onSuccess={handleDialogSuccess}
         employees={employees}
+        managerCandidates={managerCandidates}
         selectedEmployees={bulkTargets}
         initialEmployee={dialogTarget?.employee ?? null}
         initialManager={dialogTarget?.manager ?? null}

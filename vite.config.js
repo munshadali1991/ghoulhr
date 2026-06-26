@@ -11,6 +11,10 @@ export default defineConfig(({ mode }) => ({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.js'],
+  },
   server: {
     host: true,
     port: 5173,

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Badge,
   Box,
@@ -21,6 +22,7 @@ import {
 } from '../hooks/useEmployeePortalQueries';
 
 export function EmployeeNotificationsMenu() {
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
@@ -47,6 +49,11 @@ export function EmployeeNotificationsMenu() {
       } catch {
         /* ignore */
       }
+    }
+
+    if (item.type === 'LEAVE_PENDING_APPROVAL' && item.leaveRequestId) {
+      handleClose();
+      navigate('/leave/requests');
     }
   };
 

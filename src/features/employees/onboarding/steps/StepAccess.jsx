@@ -2,12 +2,14 @@ import {
   Box,
   FormControlLabel,
   Grid,
+  MenuItem,
   Stack,
   Switch,
   TextField,
   Typography,
 } from '@mui/material';
 import { Controller, useFormContext } from 'react-hook-form';
+import { PORTAL_ROLE_OPTIONS } from '../constants';
 
 export function StepAccess() {
   const {
@@ -25,11 +27,34 @@ export function StepAccess() {
           System access
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          System security toggles. Temporary password is optional — one is generated if left blank.
+          Portal role and security toggles. Temporary password is optional — one is generated if left blank.
         </Typography>
       </Box>
 
       <Grid container spacing={2}>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Controller
+            name="access.portalRoleLabel"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                select
+                fullWidth
+                required
+                label="Portal role"
+                error={!!errors.access?.portalRoleLabel}
+                helperText={errors.access?.portalRoleLabel?.message}
+              >
+                {PORTAL_ROLE_OPTIONS.map((o) => (
+                  <MenuItem key={o.value} value={o.value}>
+                    {o.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+        </Grid>
         <Grid size={12}>
           <Controller
             name="access.hrmsAccessEnabled"
@@ -76,7 +101,10 @@ export function StepAccess() {
                 fullWidth
                 type="password"
                 label="Temporary password (optional)"
-                helperText="Min 12 chars if set; complexity rules apply on save."
+                helperText={
+                  errors.access?.temporaryPassword?.message ||
+                  'Min 12 chars with upper, lower, number, and special character if set.'
+                }
                 error={!!errors.access?.temporaryPassword}
               />
             )}

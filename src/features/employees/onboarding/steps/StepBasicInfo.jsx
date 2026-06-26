@@ -63,7 +63,7 @@ export function StepBasicInfo({ duplicateResult }) {
             name="basic.middleName"
             control={control}
             render={({ field }) => (
-              <TextField {...field} fullWidth label="Middle name" error={!!errors.basic?.middleName} />
+              <TextField {...field} fullWidth label="Middle name" error={!!errors.basic?.middleName} helperText={errors.basic?.middleName?.message} />
             )}
           />
         </Grid>
@@ -88,7 +88,7 @@ export function StepBasicInfo({ duplicateResult }) {
             name="basic.gender"
             control={control}
             render={({ field }) => (
-              <TextField {...field} select fullWidth label="Gender">
+              <TextField {...field} select fullWidth label="Gender" error={!!errors.basic?.gender} helperText={errors.basic?.gender?.message}>
                 {GENDER_OPTIONS.map((o) => (
                   <MenuItem key={o.value} value={o.value}>
                     {o.label}
@@ -110,6 +110,7 @@ export function StepBasicInfo({ duplicateResult }) {
                 label="Date of birth"
                 InputLabelProps={{ shrink: true }}
                 error={!!errors.basic?.dateOfBirth}
+                helperText={errors.basic?.dateOfBirth?.message}
               />
             )}
           />
@@ -141,6 +142,8 @@ export function StepBasicInfo({ duplicateResult }) {
                 fullWidth
                 required
                 label="Mobile number"
+                type="tel"
+                inputMode="tel"
                 error={!!errors.basic?.mobileNumber}
                 helperText={errors.basic?.mobileNumber?.message}
               />
@@ -152,7 +155,15 @@ export function StepBasicInfo({ duplicateResult }) {
             name="basic.alternateMobile"
             control={control}
             render={({ field }) => (
-              <TextField {...field} fullWidth label="Alternate mobile" error={!!errors.basic?.alternateMobile} />
+              <TextField
+                {...field}
+                fullWidth
+                label="Alternate mobile"
+                type="tel"
+                inputMode="tel"
+                error={!!errors.basic?.alternateMobile}
+                helperText={errors.basic?.alternateMobile?.message}
+              />
             )}
           />
         </Grid>
@@ -166,7 +177,8 @@ export function StepBasicInfo({ duplicateResult }) {
                 fullWidth
                 label="Profile photo URL"
                 placeholder="https://… (file storage integration coming next)"
-                helperText="Upload to secure storage first, then paste URL — or leave blank."
+                helperText={errors.basic?.profilePhotoUrl?.message || 'Upload to secure storage first, then paste URL — or leave blank.'}
+                error={!!errors.basic?.profilePhotoUrl}
               />
             )}
           />
@@ -207,6 +219,8 @@ export function StepBasicInfo({ duplicateResult }) {
                   {...field}
                   fullWidth
                   label="Contact number"
+                  type="tel"
+                  inputMode="tel"
                   placeholder="Phone with country code if needed"
                   error={!!errors.emergency?.contactPhone}
                   helperText={errors.emergency?.contactPhone?.message}

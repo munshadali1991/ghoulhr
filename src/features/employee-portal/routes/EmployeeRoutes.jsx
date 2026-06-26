@@ -6,6 +6,7 @@ import { LeaveBalancesPage } from '../pages/leave/LeaveBalancesPage';
 import { LeaveBalanceDetailPage } from '../pages/leave/LeaveBalanceDetailPage';
 import { LeaveCalendarPage } from '../pages/leave/LeaveCalendarPage';
 import { HolidayCalendarPage } from '../pages/leave/HolidayCalendarPage';
+import { LeaveRequestsPage } from '@/features/approvals/pages/leave/LeaveRequestsPage';
 import { AttendanceInfoPage } from '../pages/attendance/AttendanceInfoPage';
 import { TimesheetDayPage } from '../pages/timesheet/TimesheetDayPage';
 import { TimesheetReportsPage } from '../pages/timesheet/TimesheetReportsPage';
@@ -91,6 +92,15 @@ export function EmployeeRoutes({
             </RequireAccess>
           }
         />
+        <Route
+          path="/leave/requests"
+          element={
+            <RequireAccess module="leave" permission="approvals.leave:read">
+              <LeaveRequestsPage />
+            </RequireAccess>
+          }
+        />
+        <Route path="/approvals/leave" element={<Navigate to="/leave/requests" replace />} />
         <Route
           path="/attendance"
           element={

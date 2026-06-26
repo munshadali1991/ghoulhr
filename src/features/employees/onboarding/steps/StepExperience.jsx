@@ -1,25 +1,37 @@
 import UploadFileRoundedIcon from '@mui/icons-material/UploadFileRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
-import { Box, Button, Grid, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Grid, Paper, Stack, TextField, Typography } from '@mui/material';
+import { useState } from 'react';
 import { Controller, useFieldArray, useFormContext } from 'react-hook-form';
+import { MAX_DOCUMENT_BYTES } from '../onboardingSchema';
 
 const ACCEPT = '.pdf,.png,.jpg,.jpeg,.doc,.docx';
-const MAX_BYTES = 4 * 1024 * 1024;
+
+function fieldError(errors, index, field) {
+  return errors?.experience?.experiences?.[index]?.[field];
+}
 
 export function StepExperience() {
-  const { control } = useFormContext();
+  const {
+    control,
+    formState: { errors },
+  } = useFormContext();
   const { append } = useFieldArray({ control, name: 'documents' });
   const { fields, append: appendExperience, remove: removeExperience } = useFieldArray({
     control,
     name: 'experience.experiences',
   });
+  const [uploadError, setUploadError] = useState('');
 
   const onFiles = async (fileList) => {
+    setUploadError('');
     const files = Array.from(fileList || []);
     for (const file of files) {
-      if (file.size > MAX_BYTES) continue;
+      if (file.size > MAX_DOCUMENT_BYTES) {
+        setUploadError(`File "${file.name}" exceeds ${MAX_DOCUMENT_BYTES / (1024 * 1024)} MB`);
+        continue;
+      }
       const reader = new FileReader();
-      // Keep onboarding upload flow identical to the main Documents step.
       await new Promise((resolve, reject) => {
         reader.onload = () => {
           const result = String(reader.result || '');
@@ -50,9 +62,11 @@ export function StepExperience() {
           Experience
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Previous employment background and experience proofs.
+          Previous employment background and experience proofs. Leave blank if not applicable.
         </Typography>
       </Box>
+
+      {uploadError && <Alert severity="error">{uploadError}</Alert>}
 
       <Stack spacing={2}>
         {fields.map((fieldItem, index) => (
@@ -77,28 +91,60 @@ export function StepExperience() {
                   <Controller
                     name={`experience.experiences.${index}.previousCompanyName`}
                     control={control}
-                    render={({ field }) => <TextField {...field} fullWidth label="Previous company name" />}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Previous company name"
+                        error={!!fieldError(errors, index, 'previousCompanyName')}
+                        helperText={fieldError(errors, index, 'previousCompanyName')?.message}
+                      />
+                    )}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Controller
                     name={`experience.experiences.${index}.previousDesignation`}
                     control={control}
-                    render={({ field }) => <TextField {...field} fullWidth label="Previous designation" />}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Previous designation"
+                        error={!!fieldError(errors, index, 'previousDesignation')}
+                        helperText={fieldError(errors, index, 'previousDesignation')?.message}
+                      />
+                    )}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Controller
                     name={`experience.experiences.${index}.totalExperienceYears`}
                     control={control}
-                    render={({ field }) => <TextField {...field} fullWidth label="Total experience (years)" />}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Total experience (years)"
+                        error={!!fieldError(errors, index, 'totalExperienceYears')}
+                        helperText={fieldError(errors, index, 'totalExperienceYears')?.message}
+                      />
+                    )}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Controller
                     name={`experience.experiences.${index}.lastDrawnCtc`}
                     control={control}
-                    render={({ field }) => <TextField {...field} fullWidth label="Last drawn CTC" />}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Last drawn CTC"
+                        error={!!fieldError(errors, index, 'lastDrawnCtc')}
+                        helperText={fieldError(errors, index, 'lastDrawnCtc')?.message}
+                      />
+                    )}
                   />
                 </Grid>
                 <Grid size={12}>
@@ -106,7 +152,15 @@ export function StepExperience() {
                     name={`experience.experiences.${index}.experienceSummary`}
                     control={control}
                     render={({ field }) => (
-                      <TextField {...field} fullWidth multiline minRows={3} label="Experience summary" />
+                      <TextField
+                        {...field}
+                        fullWidth
+                        multiline
+                        minRows={3}
+                        label="Experience summary"
+                        error={!!fieldError(errors, index, 'experienceSummary')}
+                        helperText={fieldError(errors, index, 'experienceSummary')?.message}
+                      />
                     )}
                   />
                 </Grid>

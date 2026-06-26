@@ -81,6 +81,17 @@ export function LeaveRequestAccordionCard({ request, mode, onWithdraw, withdrawi
           <Stack spacing={1.5}>
             <Field label="Duration" value={formatDuration()} fullWidth />
             <Field label="Reason" value={request.reason || '—'} fullWidth />
+            {request.rejectionReason ? (
+              <Field
+                label="Manager feedback"
+                value={request.rejectionReason}
+                fullWidth
+                valueSx={{ color: 'error.main' }}
+              />
+            ) : null}
+            {request.approvalNotes ? (
+              <Field label="Approver notes" value={request.approvalNotes} fullWidth />
+            ) : null}
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
               justifyContent="space-between"

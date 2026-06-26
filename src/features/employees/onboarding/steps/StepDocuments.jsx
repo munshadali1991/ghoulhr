@@ -17,11 +17,17 @@ import { useCallback, useState } from 'react';
 import { Controller, useFieldArray, useFormContext } from 'react-hook-form';
 import { DOCUMENT_TYPE_OPTIONS, documentTypeLabel } from '../constants';
 
-const MAX_BYTES = 4 * 1024 * 1024;
+import { MAX_DOCUMENT_BYTES } from '../onboardingSchema';
+
+const MAX_BYTES = MAX_DOCUMENT_BYTES;
 const ACCEPT = '.pdf,.png,.jpg,.jpeg,.doc,.docx';
 
 export function StepDocuments() {
-  const { control, watch } = useFormContext();
+  const {
+    control,
+    watch,
+    formState: { errors },
+  } = useFormContext();
   const { fields, append, remove } = useFieldArray({ control, name: 'documents' });
   const [uploadError, setUploadError] = useState('');
   const [progress, setProgress] = useState(0);
@@ -225,6 +231,17 @@ export function StepDocuments() {
                     Tagged as {documentTypeLabel(rowType)} · {(watch(`documents.${index}.sizeBytes`) / 1024).toFixed(1)}{' '}
                     KB · Pending verification
                   </Typography>
+                  {(errors.documents?.[index]?.documentType ||
+                    errors.documents?.[index]?.fileName ||
+                    errors.documents?.[index]?.sizeBytes ||
+                    errors.documents?.[index]?.mimeType) && (
+                    <Typography variant="caption" color="error" display="block">
+                      {errors.documents?.[index]?.documentType?.message ||
+                        errors.documents?.[index]?.fileName?.message ||
+                        errors.documents?.[index]?.sizeBytes?.message ||
+                        errors.documents?.[index]?.mimeType?.message}
+                    </Typography>
+                  )}
                 </Box>
                 <IconButton edge="end" onClick={() => remove(index)} aria-label="Remove">
                   <DeleteOutlineRoundedIcon />
