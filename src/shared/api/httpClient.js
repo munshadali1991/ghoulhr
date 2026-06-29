@@ -42,7 +42,14 @@ export async function apiFetch(path, options = {}) {
   const headers = {
     ...(rest.headers || {}),
   };
-  if (rest.body !== undefined && rest.body !== null && !headers['Content-Type']) {
+  const isFormData =
+    typeof FormData !== 'undefined' && rest.body instanceof FormData;
+  if (
+    rest.body !== undefined &&
+    rest.body !== null &&
+    !headers['Content-Type'] &&
+    !isFormData
+  ) {
     headers['Content-Type'] = 'application/json';
   }
 

@@ -26,8 +26,6 @@ import {
 import {
   fetchTimesheetCategories,
   fetchTimesheetDay,
-  fetchTimesheetReportEntries,
-  fetchTimesheetReports,
   reopenTimesheetDay,
   upsertTimesheetDay,
 } from '../api/timesheetApi';
@@ -261,32 +259,6 @@ export function useTimesheetCategories() {
   });
 }
 
-/**
- * @param {{ granularity: string, from: string, to: string }} params
- */
-export function useTimesheetReports(params) {
-  return useQuery({
-    queryKey: employeePortalKeys.timesheetReports(
-      params.granularity,
-      params.from,
-      params.to,
-    ),
-    queryFn: () => fetchTimesheetReports(params),
-    enabled: Boolean(params.from && params.to),
-  });
-}
-
-/**
- * @param {{ from: string, to: string }} params
- */
-export function useTimesheetReportEntries(params) {
-  return useQuery({
-    queryKey: employeePortalKeys.timesheetReportEntries(params.from, params.to),
-    queryFn: () => fetchTimesheetReportEntries(params),
-    enabled: Boolean(params.from && params.to),
-  });
-}
-
 export function useUpsertTimesheetDay() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -296,10 +268,6 @@ export function useUpsertTimesheetDay() {
         queryKey: employeePortalKeys.timesheetDay(variables.date),
       });
       queryClient.invalidateQueries({ queryKey: employeePortalKeys.home() });
-      queryClient.invalidateQueries({ queryKey: [...employeePortalKeys.all, 'timesheet-reports'] });
-      queryClient.invalidateQueries({
-        queryKey: [...employeePortalKeys.all, 'timesheet-report-entries'],
-      });
       queryClient.invalidateQueries({
         queryKey: employeePortalKeys.timesheetCategories(),
       });
@@ -316,10 +284,6 @@ export function useReopenTimesheetDay() {
         queryKey: employeePortalKeys.timesheetDay(date),
       });
       queryClient.invalidateQueries({ queryKey: employeePortalKeys.home() });
-      queryClient.invalidateQueries({ queryKey: [...employeePortalKeys.all, 'timesheet-reports'] });
-      queryClient.invalidateQueries({
-        queryKey: [...employeePortalKeys.all, 'timesheet-report-entries'],
-      });
       queryClient.invalidateQueries({
         queryKey: employeePortalKeys.timesheetCategories(),
       });

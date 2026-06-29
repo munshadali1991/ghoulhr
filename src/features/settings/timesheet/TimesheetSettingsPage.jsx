@@ -64,7 +64,7 @@ export function TimesheetSettingsPage({ organizationId }) {
   }
 
   return (
-    <Box>
+    <Box data-testid="settings-timesheet-page">
       <TimesheetSettingsToolbar
         activeTab={activeTab}
         tabs={timesheetTabs}

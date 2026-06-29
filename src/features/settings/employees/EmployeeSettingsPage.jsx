@@ -19,7 +19,7 @@ export function EmployeeSettingsPage({ organizationId }) {
   }
 
   return (
-    <Box>
+    <Box data-testid="settings-employees-page">
       <FormStatusAlerts
         loadError={form.error}
         loadErrorMessage="Failed to load employee settings. Please try again."

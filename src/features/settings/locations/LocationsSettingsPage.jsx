@@ -24,7 +24,7 @@ export function LocationsSettingsPage({ organizationId }) {
   }
 
   return (
-    <Box>
+    <Box data-testid="settings-locations-page">
       <FormStatusAlerts
         loadError={form.error}
         loadErrorMessage="Failed to load locations."

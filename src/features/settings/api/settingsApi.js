@@ -42,6 +42,10 @@ export function getOrgProfile(organizationId) {
   });
 }
 
+export function getOrgBranding(organizationId) {
+  return settingsFetch('/settings/branding', organizationId);
+}
+
 export function getEmployeeSettings(organizationId) {
   return settingsFetch('/settings/employee', organizationId);
 }

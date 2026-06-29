@@ -27,6 +27,8 @@ import { LeaveCcEmployeePicker } from './LeaveCcEmployeePicker';
 import { LeavePreviewSummary } from './LeavePreviewSummary';
 import { MOCK_SESSIONS } from '../mocks/employeePortalMocks';
 import { useLeaveBalances, useLeavePreview } from '../hooks/useEmployeePortalQueries';
+import { useAuth } from '@/app/providers/useAuth';
+import { uploadStorageFile } from '@/shared/api/storageApi';
 
 const ACCEPTED_FILE_TYPES =
   '.pdf,.xls,.xlsx,.doc,.docx,.txt,.ppt,.pptx,.gif,.jpg,.jpeg,.png';
@@ -76,7 +78,11 @@ export function LeaveApplyForm({
 
   const [policyOpen, setPolicyOpen] = useState(true);
   const [attachment, setAttachment] = useState(null);
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
+  const [attachmentError, setAttachmentError] = useState('');
   const fileInputRef = useRef(null);
+  const { session } = useAuth();
+  const employeeId = session?.user?.id;
   const fromDate = watch('fromDate');
   const toDate = watch('toDate');
   const fromSession = watch('fromSession');
@@ -139,24 +145,41 @@ export function LeaveApplyForm({
       : ['Leave requests require manager approval. Half-day leaves count as 0.5 days against your balance.'];
   }, [selectedRule]);
 
-  const handleFileChange = (event) => {
+  const handleFileChange = async (event) => {
     const file = event.target.files?.[0];
     if (!file) {
       setAttachment(null);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : '';
-      const base64 = result.includes(',') ? result.split(',')[1] : result;
+    if (!employeeId) {
+      setAttachmentError('Sign in again to attach a document.');
+      return;
+    }
+
+    setAttachmentError('');
+    try {
+      setAttachmentUploading(true);
+      const result = await uploadStorageFile({
+        file,
+        category: 'employee-documents',
+        module: 'leave',
+        documentType: 'LEAVE_SUPPORTING',
+        employeeId,
+      });
       setAttachment({
         documentType: 'LEAVE_SUPPORTING',
-        fileName: file.name,
-        mimeType: file.type || 'application/octet-stream',
-        dataBase64: base64,
+        fileName: result.fileName,
+        mimeType: result.mimeType,
+        sizeBytes: result.sizeBytes,
+        storageKey: result.storageKey,
       });
-    };
-    reader.readAsDataURL(file);
+    } catch (e) {
+      setAttachmentError(e.message || 'Failed to upload attachment');
+      setAttachment(null);
+    } finally {
+      setAttachmentUploading(false);
+      event.target.value = '';
+    }
   };
 
   const handleRemoveAttachment = () => {
@@ -537,6 +560,12 @@ export function LeaveApplyForm({
                   </Typography>
                 </Box>
               )}
+
+              {attachmentError ? (
+                <Typography variant="caption" color="error" display="block" sx={{ mt: 1 }}>
+                  {attachmentError}
+                </Typography>
+              ) : null}
 
               {selectedRule?.requiresSupportingDocument ? (
                 <Typography variant="caption" color="warning.main" display="block" sx={{ mt: 1 }}>

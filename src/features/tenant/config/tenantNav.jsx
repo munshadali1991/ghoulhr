@@ -68,7 +68,12 @@ export const TENANT_NAV_CONFIG = [
     permission: 'ess.timesheet:read',
     children: [
       { key: 'timesheet-my', label: 'My Timesheet', path: '/timesheet', permission: 'ess.timesheet:read' },
-      { key: 'timesheet-reports', label: 'My Reports', path: '/timesheet/reports', permission: 'ess.timesheet:read' },
+      {
+        key: 'timesheet-team',
+        label: 'Team Timesheets',
+        path: '/timesheet/team',
+        permission: 'approvals.timesheet:read',
+      },
     ],
   },
   { key: 'employees', label: 'Employees', path: '/employees', module: 'employees', permission: 'employees:read' },
@@ -180,11 +185,26 @@ export function buildTenantNavItems(pathname, session) {
 
 /**
  * @param {string} pathname
+ * @param {import('@/app/providers/authContext').AuthSession | null | undefined} [session]
  * @returns {string}
  */
-export function getTenantPageTitle(pathname) {
+export function getTenantPageTitle(pathname, session) {
   const dashboard = getDashboardByPath(pathname);
   if (dashboard) return dashboard.label;
+
+  if (pathname.startsWith('/settings')) {
+    if (pathname.startsWith('/settings/organization/calendar')) {
+      return 'Calendar';
+    }
+    for (const child of settingsNavChildren(session)) {
+      if (pathname === child.path || pathname.startsWith(`${child.path}/`)) {
+        return child.label;
+      }
+    }
+    if (pathname.startsWith('/settings/organization')) {
+      return 'Organization';
+    }
+  }
 
   for (const item of TENANT_NAV_CONFIG) {
     if (item.path && isNavPathActive(pathname, item.path, item.expandPathPrefix) && !item.children) {
@@ -197,6 +217,9 @@ export function getTenantPageTitle(pathname) {
     }
   }
   if (pathname.startsWith('/leave/requests')) return 'Leave Requests';
+  if (pathname.startsWith('/timesheet/team') || pathname.startsWith('/timesheet/requests')) {
+    return 'Team Timesheets';
+  }
   if (pathname.startsWith('/employees')) return 'Employees';
   if (pathname.startsWith('/payroll')) return 'Payroll';
   return 'Dashboard';

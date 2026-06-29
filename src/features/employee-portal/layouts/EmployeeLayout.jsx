@@ -11,10 +11,11 @@ import {
 } from '@mui/material';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { APP_NAME } from '@/app/config/appConfig';
 import { useAuth } from '@/app/providers/useAuth';
 import { SidebarContent } from '@/shared/components/layout/SidebarContent';
+import { useOrganizationBranding } from '@/features/settings/organization/hooks/useOrganizationBranding';
 import { buildEmployeeNavItems, getEmployeePageTitle } from '../config/employeeNav';
 import { EmployeeNotificationsMenu } from '../components/EmployeeNotificationsMenu';
 
@@ -28,7 +29,6 @@ const DRAWER_WIDTH = 280;
  *   onOpenMobileDrawer: () => void,
  *   onCloseMobileDrawer: () => void,
  *   onLogout: () => void,
- *   children: import('react').ReactNode,
  * }} props
  */
 export function EmployeeLayout({
@@ -38,7 +38,6 @@ export function EmployeeLayout({
   onOpenMobileDrawer,
   onCloseMobileDrawer,
   onLogout,
-  children,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -47,17 +46,20 @@ export function EmployeeLayout({
 
   const sidebarNavItems = buildEmployeeNavItems(pathname, session);
   const pageTitle = getEmployeePageTitle(pathname);
+  const branding = useOrganizationBranding(user?.organizationId);
+
+  const headerSubtitle = branding.hasCustomName
+    ? branding.displayName
+    : user?.organizationSubdomain ?? APP_NAME;
 
   const handleNavItemClick = (item) => {
     if (item.path) {
-      navigate(item.path);
-      onCloseMobileDrawer?.();
       return;
     }
-    if (item.children?.length && item.children[0].path) {
+    if (item.children?.[0]?.path) {
       navigate(item.children[0].path);
-      onCloseMobileDrawer?.();
     }
+    onCloseMobileDrawer?.();
   };
 
   const sidebar = (
@@ -66,6 +68,10 @@ export function EmployeeLayout({
       navItems={sidebarNavItems}
       onItemClick={handleNavItemClick}
       pathname={pathname}
+      onNavigate={onCloseMobileDrawer}
+      brandName={branding.displayName}
+      brandLogo={branding.logo}
+      brandInitials={branding.initials}
     />
   );
 
@@ -92,7 +98,7 @@ export function EmployeeLayout({
               {pageTitle}
             </Typography>
             <Typography variant="body2" color="text.secondary" noWrap>
-              Hi {userName}
+              {headerSubtitle}
             </Typography>
           </Box>
           <Stack direction="row" spacing={1} alignItems="center">
@@ -142,7 +148,9 @@ export function EmployeeLayout({
           minHeight: 'calc(100vh - 72px)',
         }}
       >
-        <Box sx={{ flexGrow: 1 }}>{children}</Box>
+        <Box sx={{ flexGrow: 1 }}>
+          <Outlet />
+        </Box>
         <Typography
           variant="caption"
           color="text.secondary"

@@ -12,8 +12,9 @@ export default defineConfig(({ mode }) => ({
     },
   },
   test: {
-    environment: 'node',
-    include: ['src/**/*.test.js'],
+    environment: 'jsdom',
+    include: ['src/**/*.test.js', 'src/**/*.test.jsx'],
+    setupFiles: ['src/test/setup.js'],
   },
   server: {
     host: true,

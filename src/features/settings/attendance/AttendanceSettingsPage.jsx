@@ -127,7 +127,7 @@ export function AttendanceSettingsPage({ organizationId }) {
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', width: '100%' }}>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', width: '100%' }} data-testid="settings-attendance-page">
       <FormStatusAlerts
         loadError={error}
         loadErrorMessage="Failed to load attendance settings. Please try again."

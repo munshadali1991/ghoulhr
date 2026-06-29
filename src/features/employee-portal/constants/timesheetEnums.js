@@ -1,4 +1,5 @@
 export const TIMESHEET_DAY_STATUS = {
+  PENDING: 'PENDING',
   DRAFT: 'DRAFT',
   SUBMITTED: 'SUBMITTED',
   APPROVED: 'APPROVED',
@@ -21,20 +22,28 @@ export const PRIORITIES = [
 ];
 
 export const STATUS_CHIP_COLOR = {
+  PENDING: 'warning',
   DRAFT: 'warning',
   SUBMITTED: 'info',
   APPROVED: 'success',
   REJECTED: 'error',
-  MISSING: 'default',
+  MISSING: 'warning',
 };
 
 export const STATUS_LABELS = {
-  DRAFT: 'Draft',
+  PENDING: 'Pending',
+  DRAFT: 'Pending',
   SUBMITTED: 'Submitted',
   APPROVED: 'Approved',
   REJECTED: 'Rejected',
-  MISSING: 'Missing',
+  MISSING: 'Pending',
 };
+
+/** Normalize API/DB status to a display chip key. */
+export function normalizeTimesheetStatus(status) {
+  if (status == null || status === 'MISSING' || status === 'DRAFT') return 'PENDING';
+  return status;
+}
 
 export const DEFAULT_INLINE_ROW = {
   workDate: '',

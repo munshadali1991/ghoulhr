@@ -30,4 +30,36 @@
  * }} LeaveApprovalDetail
  */
 
+/**
+ * @typedef {{
+ *   id: string,
+ *   workDate: string,
+ *   status: string,
+ *   totalHours: number,
+ *   employeeId: string,
+ *   employeeName: string,
+ *   employeeCode?: string,
+ *   submittedAt: string | null,
+ * }} TimesheetApprovalRequest
+ */
+
+/**
+ * @typedef {{
+ *   employee: { id: string, name: string, employeeCode?: string, departmentName?: string, designationName?: string },
+ *   day: {
+ *     id: string,
+ *     workDate: string,
+ *     status: string,
+ *     totalHours: number,
+ *     submittedAt: string | null,
+ *     approvedAt: string | null,
+ *     rejectedAt: string | null,
+ *     rejectionReason: string | null,
+ *     approverName: string | null,
+ *     entries: object[],
+ *   },
+ *   canAct: boolean,
+ * }} TimesheetApprovalDetail
+ */
+
 export {};

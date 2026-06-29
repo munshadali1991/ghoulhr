@@ -29,7 +29,7 @@ export function LeaveConfigSettingsPage({ organizationId }) {
   };
 
   return (
-    <Box sx={{ width: '100%', maxWidth: '100%' }}>
+    <Box sx={{ width: '100%', maxWidth: '100%' }} data-testid="settings-leave-page">
       {form.error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {form.error.message || 'Failed to load leave policies.'}

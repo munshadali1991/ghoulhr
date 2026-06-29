@@ -10,15 +10,14 @@ import { LeaveBalanceDetailPage } from '@/features/employee-portal/pages/leave/L
 import { LeaveCalendarPage } from '@/features/employee-portal/pages/leave/LeaveCalendarPage';
 import { HolidayCalendarPage } from '@/features/employee-portal/pages/leave/HolidayCalendarPage';
 import { LeaveRequestsPage } from '@/features/approvals/pages/leave/LeaveRequestsPage';
+import { TeamTimesheetsPage } from '@/features/approvals/pages/timesheet/TeamTimesheetsPage';
 import { TimesheetDayPage } from '@/features/employee-portal/pages/timesheet/TimesheetDayPage';
-import { TimesheetReportsPage } from '@/features/employee-portal/pages/timesheet/TimesheetReportsPage';
 import { ModulePlaceholderPage } from '@/features/org-admin/pages/ModulePlaceholderPage';
 import { EmployeesPage } from '@/features/employees';
-import { SettingsPage } from '@/features/settings';
 import { RequireAccess } from '@/features/auth/components/RequireAccess';
 import { DashboardRouteGuard } from '@/features/auth/components/DashboardRouteGuard';
 import { getDefaultDashboardPath } from '@/features/auth/config/dashboardRegistry';
-import { SettingsRouteGuard } from '@/features/settings/shell/SettingsRouteGuard';
+import { settingsFlatRoutes } from '@/features/settings/shell/settingsRouteConfig';
 import { useAuth } from '@/app/providers/useAuth';
 
 /**
@@ -45,15 +44,19 @@ export function TenantRoutes({
   const defaultDashboardPath = getDefaultDashboardPath(session);
 
   return (
-    <TenantLayout
-      user={user}
-      userName={userName}
-      mobileDrawerOpen={mobileDrawerOpen}
-      onOpenMobileDrawer={onOpenMobileDrawer}
-      onCloseMobileDrawer={onCloseMobileDrawer}
-      onLogout={onLogout}
-    >
-      <Routes>
+    <Routes>
+      <Route
+        element={
+          <TenantLayout
+            user={user}
+            userName={userName}
+            mobileDrawerOpen={mobileDrawerOpen}
+            onOpenMobileDrawer={onOpenMobileDrawer}
+            onCloseMobileDrawer={onCloseMobileDrawer}
+            onLogout={onLogout}
+          />
+        }
+      >
         <Route
           path="/home"
           element={
@@ -142,13 +145,22 @@ export function TenantRoutes({
         />
         <Route path="/timesheet/add" element={<Navigate to="/timesheet" replace />} />
         <Route path="/timesheet/edit" element={<Navigate to="/timesheet" replace />} />
+        <Route path="/timesheet/reports" element={<Navigate to="/timesheet" replace />} />
         <Route
-          path="/timesheet/reports"
+          path="/timesheet/team"
           element={
-            <RequireAccess module="timesheet" permission="ess.timesheet:read">
-              <TimesheetReportsPage />
+            <RequireAccess module="timesheet" permission="approvals.timesheet:read">
+              <TeamTimesheetsPage />
             </RequireAccess>
           }
+        />
+        <Route
+          path="/timesheet/requests"
+          element={<Navigate to="/timesheet/team?status=SUBMITTED" replace />}
+        />
+        <Route
+          path="/approvals/timesheet"
+          element={<Navigate to="/timesheet/team?status=SUBMITTED" replace />}
         />
 
         <Route
@@ -159,14 +171,7 @@ export function TenantRoutes({
             </RequireAccess>
           }
         />
-        <Route
-          path="/settings/*"
-          element={
-            <SettingsRouteGuard>
-              <SettingsPage organizationId={organizationId} />
-            </SettingsRouteGuard>
-          }
-        />
+        {settingsFlatRoutes(organizationId)}
         <Route
           path="/payroll"
           element={
@@ -176,7 +181,7 @@ export function TenantRoutes({
           }
         />
         <Route path="*" element={<Navigate to={defaultDashboardPath} replace />} />
-      </Routes>
-    </TenantLayout>
+      </Route>
+    </Routes>
   );
 }

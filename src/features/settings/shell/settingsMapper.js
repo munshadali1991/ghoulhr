@@ -11,6 +11,7 @@ export function mapSettingsToForm(settingsArray) {
     'org.currency': 'currency',
     'org.date_format': 'dateFormat',
     'org.language': 'language',
+    'org.financial_year_start_month': 'financialYearStartMonth',
   };
 
   const formData = {};
@@ -38,6 +39,7 @@ export function mapFormToSettings(formData) {
     currency: 'org.currency',
     dateFormat: 'org.date_format',
     language: 'org.language',
+    financialYearStartMonth: 'org.financial_year_start_month',
   };
 
   const settingsArray = [];

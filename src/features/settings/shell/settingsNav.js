@@ -73,8 +73,16 @@ export function isValidSettingsSlug(slug) {
 }
 
 export function currentSettingsSlugFromPath(pathname) {
-  const m = pathname.match(/^\/settings\/([^/]+)\/?/);
+  const m = pathname.match(/^\/settings\/([^/]+)/);
   return m?.[1] ?? null;
+}
+
+/** True for /settings/organization and /settings/organization/calendar (etc.). */
+export function isOrganizationSettingsPath(pathname) {
+  return (
+    pathname === '/settings/organization' ||
+    pathname.startsWith('/settings/organization/')
+  );
 }
 
 /** Settings tabs that use a wider content column (tables / dense forms). */

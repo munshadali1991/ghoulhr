@@ -313,6 +313,24 @@ export function EmployeeHomePage({ userName }) {
           </Grid>
         </Can>
 
+        <Can permission="approvals.timesheet:read">
+          <Grid size={{ xs: 12, md: 4 }}>
+            <PageCard
+              sx={{ cursor: 'pointer' }}
+              onClick={() => navigate('/timesheet/team?status=SUBMITTED')}
+            >
+              <CardContent>
+                <Typography variant="h4" fontWeight={700}>
+                  {String(data.pendingApprovalTimesheetCount ?? 0).padStart(2, '0')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Timesheets awaiting approval
+                </Typography>
+              </CardContent>
+            </PageCard>
+          </Grid>
+        </Can>
+
         <Grid size={{ xs: 12, md: 6 }}>
           <PageCard>
             <CardContent>

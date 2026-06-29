@@ -2,7 +2,7 @@ import { AppBar, Box, Button, CssBaseline, Drawer, IconButton, Toolbar, Typograp
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import { SidebarContent } from '@/shared/components/layout/SidebarContent';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 const DRAWER_WIDTH = 280;
 
@@ -16,7 +16,6 @@ export function DashboardLayout({
   children,
 }) {
   const location = useLocation();
-  const navigate = useNavigate();
   const userName = user?.email?.split('@')[0] || 'User';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
@@ -27,8 +26,7 @@ export function DashboardLayout({
 
   const handleItemClick = (item) => {
     if (item.path) {
-      navigate(item.path);
-      onCloseMobileDrawer?.();
+      return;
     }
   };
 
@@ -37,6 +35,8 @@ export function DashboardLayout({
       user={user}
       navItems={computedNavItems}
       onItemClick={handleItemClick}
+      pathname={location.pathname}
+      onNavigate={onCloseMobileDrawer}
     />
   );
 

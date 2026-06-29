@@ -208,6 +208,9 @@ export const basicStepSchema = z
     mobileNumber: z.string().min(1, 'Mobile number is required'),
     alternateMobile: optStr,
     profilePhotoUrl: optStr,
+    profilePhotoStorageKey: optStr,
+    profilePhotoFileName: optStr,
+    profilePhotoPreviewUrl: optStr,
   })
   .superRefine((data, zctx) => {
     if (!isValidPersonName(data.firstName)) {
@@ -707,21 +710,66 @@ export function createEmergencyStepSchema(requireAll = false) {
 
 export const emergencyStepSchema = createEmergencyStepSchema(false);
 
+export function createEmptyDocumentRow(overrides = {}) {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    documentType: 'OFFER_LETTER',
+    fileName: '',
+    mimeType: '',
+    sizeBytes: 0,
+    dataBase64: undefined,
+    storageKey: undefined,
+    serverDocumentId: undefined,
+    verificationStatus: undefined,
+    ...overrides,
+  };
+}
+
+export function isDocumentRowFilled(row) {
+  return Boolean(row?.serverDocumentId || row?.storageKey || row?.dataBase64);
+}
+
+export function filterActiveDocumentRows(rows) {
+  return (rows || []).filter(isDocumentRowFilled);
+}
+
+export function getDeletedDocumentIds(initialIds, currentDocuments) {
+  const currentServerIds = new Set(
+    filterActiveDocumentRows(currentDocuments)
+      .filter((d) => d.serverDocumentId)
+      .map((d) => d.serverDocumentId),
+  );
+  return (initialIds || []).filter((id) => !currentServerIds.has(id));
+}
+
 export const documentRowSchema = z
   .object({
     id: z.string(),
+    serverDocumentId: z.string().optional(),
     documentType: z.string(),
     fileName: z.string(),
     mimeType: z.string(),
     sizeBytes: z.number(),
     dataBase64: z.string().optional(),
+    storageKey: z.string().optional(),
+    verificationStatus: z.string().optional(),
   })
   .superRefine((row, zctx) => {
-    if (!trimOrEmpty(row.fileName)) {
-      zctx.addIssue({ code: z.ZodIssueCode.custom, path: ['fileName'], message: 'File name is required' });
-    }
     if (!DOCUMENT_TYPE_VALUES.includes(row.documentType)) {
       zctx.addIssue({ code: z.ZodIssueCode.custom, path: ['documentType'], message: 'Select a valid document type' });
+    }
+    if (row.serverDocumentId) {
+      if (!trimOrEmpty(row.fileName)) {
+        zctx.addIssue({ code: z.ZodIssueCode.custom, path: ['fileName'], message: 'File name is required' });
+      }
+      return;
+    }
+    if (!trimOrEmpty(row.fileName)) {
+      zctx.addIssue({ code: z.ZodIssueCode.custom, path: ['fileName'], message: 'Choose a file to upload' });
+    }
+    if (!row.storageKey && !row.dataBase64) {
+      zctx.addIssue({ code: z.ZodIssueCode.custom, path: ['fileName'], message: 'Choose a file to upload' });
+      return;
     }
     if (row.sizeBytes < 1 || row.sizeBytes > MAX_DOCUMENT_BYTES) {
       zctx.addIssue({
@@ -793,7 +841,10 @@ export function buildFullOnboardingSchema(options = {}) {
     bank: schemas.bankStepSchema,
     compliance: schemas.complianceStepSchema,
     emergency: schemas.emergencyStepSchema,
-    documents: z.array(schemas.documentRowSchema).optional(),
+    documents: z.preprocess(
+      (val) => filterActiveDocumentRows(val),
+      z.array(documentRowSchema).optional(),
+    ),
     access: schemas.accessStepSchema,
   });
 }
@@ -840,7 +891,7 @@ export function validateOnboardingStep(stepIndex, values, options = {}) {
     case 5:
       return z
         .object({ documents: z.array(schemas.documentRowSchema) })
-        .safeParse({ documents: values.documents || [] });
+        .safeParse({ documents: filterActiveDocumentRows(values.documents) });
     case 6:
       return z.object({ access: schemas.accessStepSchema }).safeParse({ access: values.access });
     default:
@@ -860,6 +911,9 @@ export function getDefaultOnboardingValues() {
       mobileNumber: '',
       alternateMobile: '',
       profilePhotoUrl: '',
+      profilePhotoStorageKey: '',
+      profilePhotoFileName: '',
+      profilePhotoPreviewUrl: '',
     },
     employment: {
       dateOfJoining: '',
@@ -919,7 +973,7 @@ export function getDefaultOnboardingValues() {
       contactPhone: '',
       relationship: '',
     },
-    documents: [],
+    documents: [createEmptyDocumentRow()],
     access: {
       portalRoleLabel: 'EMPLOYEE',
       hrmsAccessEnabled: true,
@@ -961,8 +1015,9 @@ function isFilledExperience(exp) {
 /**
  * Maps React Hook Form values → POST /employees/hr-onboarding body
  * @param {ReturnType<typeof getDefaultOnboardingValues>} v
+ * @param {{ deletedDocumentIds?: string[] }} [options]
  */
-export function buildHrOnboardingPayload(v) {
+export function buildHrOnboardingPayload(v, options = {}) {
   const allowances =
     typeof v.payroll?.allowancesJson === 'string' && v.payroll.allowancesJson.trim()
       ? (() => {
@@ -974,15 +1029,18 @@ export function buildHrOnboardingPayload(v) {
         })()
       : undefined;
 
-  const documents = (v.documents || [])
-    .filter((d) => d.dataBase64)
+  const documents = filterActiveDocumentRows(v.documents)
+    .filter((d) => d.storageKey || d.dataBase64)
     .map((d) => ({
       documentType: d.documentType,
       fileName: d.fileName,
       mimeType: d.mimeType,
       sizeBytes: d.sizeBytes,
+      storageKey: d.storageKey,
       dataBase64: d.dataBase64,
     }));
+
+  const deletedDocumentIds = (options.deletedDocumentIds || []).filter(Boolean);
 
   const ecName = v.emergency?.contactName?.trim() ?? '';
   const ecPhone = v.emergency?.contactPhone?.trim() ?? '';
@@ -1017,6 +1075,8 @@ export function buildHrOnboardingPayload(v) {
       mobileNumber: v.basic.mobileNumber.trim(),
       alternateMobile: v.basic.alternateMobile?.trim() || undefined,
       profilePhotoUrl: v.basic.profilePhotoUrl?.trim() || undefined,
+      profilePhotoStorageKey: v.basic.profilePhotoStorageKey || undefined,
+      profilePhotoFileName: v.basic.profilePhotoFileName || undefined,
     },
     employment: {
       dateOfJoining: toDateOrUndefined(v.employment.dateOfJoining),
@@ -1076,6 +1136,7 @@ export function buildHrOnboardingPayload(v) {
         }
       : {}),
     documents: documents.length ? documents : undefined,
+    ...(deletedDocumentIds.length ? { deletedDocumentIds } : {}),
     access: {
       portalRoleLabel: v.access.portalRoleLabel,
       hrmsAccessEnabled: v.access.hrmsAccessEnabled,
@@ -1109,6 +1170,9 @@ export function mapEmployeeToOnboardingValues(employee) {
       mobileNumber: employee.phoneNumber || '',
       alternateMobile: employee.alternateMobile || '',
       profilePhotoUrl: employee.profilePhotoUrl || '',
+      profilePhotoStorageKey: employee.profilePhotoStorageKey || '',
+      profilePhotoFileName: '',
+      profilePhotoPreviewUrl: employee.profilePhotoPreviewUrl || employee.profilePhotoUrl || '',
     },
     employment: {
       ...base.employment,
@@ -1180,5 +1244,19 @@ export function mapEmployeeToOnboardingValues(employee) {
       mfaEnabled: accessControl.mfaEnabled ?? false,
       temporaryPassword: '',
     },
+    documents:
+      (employee.documents || []).length > 0
+        ? employee.documents.map((doc) =>
+            createEmptyDocumentRow({
+              id: doc.id,
+              serverDocumentId: doc.id,
+              documentType: doc.documentType || 'OFFER_LETTER',
+              fileName: doc.fileName || '',
+              mimeType: doc.mimeType || '',
+              sizeBytes: doc.sizeBytes || 0,
+              verificationStatus: doc.verificationStatus || 'PENDING',
+            }),
+          )
+        : [createEmptyDocumentRow()],
   };
 }
