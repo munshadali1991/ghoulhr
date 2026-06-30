@@ -137,28 +137,44 @@ export function EmployeeOnboardingWizard({
     return () => clearTimeout(id);
   }, [isEditMode, watchedForm, formState.isDirty, saveDraftNow]);
 
-  const watchedBasic = methods.watch(['basic.personalEmail', 'employment.officialEmail', 'basic.mobileNumber']);
+  const personalEmail = useWatch({ control, name: 'basic.personalEmail' });
+  const officialEmail = useWatch({ control, name: 'employment.officialEmail' });
+  const mobileNumber = useWatch({ control, name: 'basic.mobileNumber' });
+
   useEffect(() => {
+    let cancelled = false;
     const t = setTimeout(async () => {
-      const [pe, oe, mob] = watchedBasic;
-      if (!pe && !oe && !mob) {
-        setDuplicateResult(null);
+      if (!personalEmail && !officialEmail && !mobileNumber) {
+        if (!cancelled) {
+          setDuplicateResult((prev) => (prev === null ? prev : null));
+        }
         return;
       }
       try {
         const res = await checkEmployeeDuplicate({
-          personalEmail: pe || undefined,
-          officialEmail: oe || undefined,
-          mobileNumber: mob || undefined,
+          personalEmail: personalEmail || undefined,
+          officialEmail: officialEmail || undefined,
+          mobileNumber: mobileNumber || undefined,
           ...(employeeId ? { excludeEmployeeId: employeeId } : {}),
         });
-        setDuplicateResult(res);
+        if (cancelled) return;
+        setDuplicateResult((prev) => {
+          if (prev?.emailTaken === res.emailTaken && prev?.mobileTaken === res.mobileTaken) {
+            return prev;
+          }
+          return res;
+        });
       } catch {
-        setDuplicateResult(null);
+        if (!cancelled) {
+          setDuplicateResult((prev) => (prev === null ? prev : null));
+        }
       }
     }, 650);
-    return () => clearTimeout(t);
-  }, [watchedBasic, employeeId]);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [personalEmail, officialEmail, mobileNumber, employeeId]);
 
   const hrManagerOptions = useMemo(() => {
     return (employees || [])

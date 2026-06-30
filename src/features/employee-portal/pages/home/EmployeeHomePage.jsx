@@ -9,14 +9,12 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
 import { APP_NAME } from '@/app/config/appConfig';
 import { useNavigate } from 'react-router-dom';
-import dayjs from 'dayjs';
 import { HeroBanner } from '@/shared/components/ui/HeroBanner';
 import { PageCard } from '@/shared/components/ui/PageCard';
-import { BrandedButton } from '@/shared/components/ui/BrandedButton';
-import { EmptyStatePanel } from '../../components/EmptyStatePanel';
+import { AttendanceHomeWidget } from '../../components/attendance/AttendanceHomeWidget';
+import { UpcomingHolidaysWidget } from '../../components/leave/UpcomingHolidaysWidget';
 import { TimesheetHomeWidget } from '../../components/timesheet/TimesheetHomeWidget';
 import {
   useEmployeeHome,
@@ -26,19 +24,6 @@ import {
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { Can } from '@/features/auth/components/Can';
-
-function LiveClock() {
-  const [now, setNow] = useState(dayjs());
-  useEffect(() => {
-    const id = setInterval(() => setNow(dayjs()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return (
-    <Typography variant="h4" fontWeight={700} fontFamily="monospace">
-      {now.format('HH:mm:ss')}
-    </Typography>
-  );
-}
 
 function PayslipRing() {
   return (
@@ -158,85 +143,23 @@ export function EmployeeHomePage({ userName }) {
 
         <Can permission="ess.attendance:read">
           <Grid size={{ xs: 12, md: 4 }}>
-            <PageCard sx={{ height: '100%' }}>
-              <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {data.attendance.date}
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {data.attendance.shift}
-                    </Typography>
-                    <LiveClock />
-                  </Box>
-                  <Can permission="ess.attendance:punch">
-                    <BrandedButton
-                      size="small"
-                      disabled={signInMutation.isPending || signOutMutation.isPending}
-                      onClick={handleAttendanceToggle}
-                    >
-                      {data.attendance.signedIn ? 'Sign Out' : 'Sign In'}
-                    </BrandedButton>
-                  </Can>
-                </Stack>
-                <Link
-                  component="button"
-                  variant="body2"
-                  underline="hover"
-                  sx={{ mt: 1 }}
-                  onClick={() => navigate('/attendance')}
-                >
-                  View Swipes
-                </Link>
-              </CardContent>
-            </PageCard>
+            <AttendanceHomeWidget
+              attendance={data.attendance}
+              onToggle={handleAttendanceToggle}
+              isPending={signInMutation.isPending || signOutMutation.isPending}
+            />
+          </Grid>
+        </Can>
+
+        <Can permission="ess.leave:read">
+          <Grid size={{ xs: 12, md: 4 }}>
+            <UpcomingHolidaysWidget holidays={data.upcomingHolidays} />
           </Grid>
         </Can>
 
         <Can permission="ess.leave:read">
           <Grid size={{ xs: 12, md: 4 }}>
             <PageCard sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                  Upcoming Holidays
-                </Typography>
-                {data.upcomingHolidays.map((h) => (
-                  <Stack
-                    key={h.date}
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    sx={{ py: 0.75, borderBottom: '1px solid', borderColor: 'divider' }}
-                  >
-                    <Box>
-                      <Typography variant="body2" fontWeight={600}>
-                        {h.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {dayjs(h.date).format('DD MMM')} · {h.dayOfWeek}
-                      </Typography>
-                    </Box>
-                    <Can permission="ess.leave:apply">
-                      <Link
-                        component="button"
-                        variant="body2"
-                        color="secondary"
-                        onClick={() => navigate('/leave/apply?tab=apply')}
-                      >
-                        Apply
-                      </Link>
-                    </Can>
-                  </Stack>
-                ))}
-              </CardContent>
-            </PageCard>
-          </Grid>
-        </Can>
-
-        <Can permission="ess.leave:read">
-          <Grid size={{ xs: 12, md: 4 }}>
-            <PageCard>
               <CardContent>
                 <Typography variant="subtitle2" fontWeight={700} gutterBottom>
                   Quick Access
@@ -255,7 +178,7 @@ export function EmployeeHomePage({ userName }) {
 
         <Can permission="payroll:read">
           <Grid size={{ xs: 12, md: 4 }}>
-            <PageCard>
+            <PageCard sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="subtitle2" fontWeight={700}>
                   Payslip
@@ -280,7 +203,7 @@ export function EmployeeHomePage({ userName }) {
         <Can permission="ess.leave:read">
           <Grid size={{ xs: 12, md: 4 }}>
             <PageCard
-              sx={{ cursor: 'pointer' }}
+              sx={{ height: '100%', cursor: 'pointer' }}
               onClick={() => navigate('/leave/apply?tab=pending')}
             >
               <CardContent>
@@ -298,7 +221,7 @@ export function EmployeeHomePage({ userName }) {
         <Can permission="approvals.leave:read">
           <Grid size={{ xs: 12, md: 4 }}>
             <PageCard
-              sx={{ cursor: 'pointer' }}
+              sx={{ height: '100%', cursor: 'pointer' }}
               onClick={() => navigate('/leave/requests')}
             >
               <CardContent>
@@ -316,7 +239,7 @@ export function EmployeeHomePage({ userName }) {
         <Can permission="approvals.timesheet:read">
           <Grid size={{ xs: 12, md: 4 }}>
             <PageCard
-              sx={{ cursor: 'pointer' }}
+              sx={{ height: '100%', cursor: 'pointer' }}
               onClick={() => navigate('/timesheet/team?status=SUBMITTED')}
             >
               <CardContent>
@@ -332,7 +255,7 @@ export function EmployeeHomePage({ userName }) {
         </Can>
 
         <Grid size={{ xs: 12, md: 6 }}>
-          <PageCard>
+          <PageCard sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="subtitle2" fontWeight={700} gutterBottom>
                 IT Declaration
@@ -348,7 +271,7 @@ export function EmployeeHomePage({ userName }) {
         </Grid>
 
         <Grid size={{ xs: 12, md: 6 }}>
-          <PageCard>
+          <PageCard sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="subtitle2" fontWeight={700} gutterBottom>
                 POI

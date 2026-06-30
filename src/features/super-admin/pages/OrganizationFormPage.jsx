@@ -19,6 +19,7 @@ import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import { createOrganization, getOrganizationById, updateOrganization } from '@/features/super-admin/api/organizationsApi';
 import { OrganizationModulesPanel } from '@/features/super-admin/components/OrganizationModulesPanel';
 import { OrganizationModulesPicker } from '@/features/super-admin/components/OrganizationModulesPicker';
+import { OrganizationSubscriptionPanel } from '@/features/super-admin/components/OrganizationSubscriptionPanel';
 import { ALL_PLATFORM_MODULE_CODES } from '@/shared/constants/platformModules';
 
 const emptyForm = {
@@ -549,7 +550,7 @@ export function OrganizationFormPage({ onSaved }) {
             <Accordion defaultExpanded={!isEdit}>
               <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
                 <Typography fontWeight={700}>
-                  {isEdit ? '7. Enabled Modules (RBAC)' : '6. Enabled Modules (RBAC)'}
+                  {isEdit ? '6. Enabled Modules (RBAC)' : '6. Enabled Modules (RBAC)'}
                 </Typography>
               </AccordionSummary>
               <AccordionDetails>
@@ -564,6 +565,20 @@ export function OrganizationFormPage({ onSaved }) {
                 )}
               </AccordionDetails>
             </Accordion>
+
+            {isEdit ? (
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+                  <Typography fontWeight={700}>7. Subscription Plan</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <OrganizationSubscriptionPanel
+                    organizationId={id}
+                    onSubscriptionChanged={onSaved}
+                  />
+                </AccordionDetails>
+              </Accordion>
+            ) : null}
 
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>

@@ -5,6 +5,10 @@ import {
   getUserDisplayName,
   isSuperAdminUser,
 } from '@/features/auth/utils/userRoles';
+import {
+  SESSION_EXPIRED_EVENT,
+  useSessionExpiry,
+} from '@/features/auth/hooks/useSessionExpiry';
 import { AuthContext } from './authContext';
 
 export function AuthProvider({ children }) {
@@ -23,6 +27,37 @@ export function AuthProvider({ children }) {
     }
     return sessionData;
   }, []);
+
+  const logout = useCallback(async (options = {}) => {
+    const { reason } = options;
+    const { logoutRequest } = await import('@/features/auth/api/authApi');
+    try {
+      await logoutRequest();
+    } catch {
+      /* cookies may already be cleared server-side */
+    }
+    clearSession();
+    setSession(null);
+    if (reason === 'expired' && typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('ghoulhr:session-expired-notice', {
+          detail: { message: 'Your session has expired. Please sign in again.' },
+        }),
+      );
+    }
+  }, []);
+
+  useSessionExpiry(session?.sessionExpiresAt, logout);
+
+  useEffect(() => {
+    const onSessionExpired = () => {
+      logout();
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+    return () => {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+    };
+  }, [logout]);
 
   useEffect(() => {
     let mounted = true;
@@ -69,13 +104,6 @@ export function AuthProvider({ children }) {
     return () => {
       mounted = false;
     };
-  }, []);
-
-  const logout = useCallback(async () => {
-    const { logoutRequest } = await import('@/features/auth/api/authApi');
-    await logoutRequest();
-    clearSession();
-    setSession(null);
   }, []);
 
   const value = useMemo(

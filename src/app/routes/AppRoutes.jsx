@@ -6,6 +6,8 @@ import { useMobileDrawer } from '@/shared/hooks/useMobileDrawer';
 import { useSuperAdminOrganizations } from '@/features/super-admin/hooks/useSuperAdminOrganizations';
 import { PublicRoutes } from './PublicRoutes';
 import { SuperAdminRoutes } from './SuperAdminRoutes';
+import { ChangePasswordPage } from '@/features/auth/pages/ChangePasswordPage';
+import { RequirePasswordChanged } from '@/features/auth/components/RequirePasswordChanged';
 
 export function AppRoutes() {
   const { user, isAuthenticated, isSuperAdmin, isInitializing, userName, logout } = useAuth();
@@ -32,15 +34,26 @@ export function AppRoutes() {
   }
 
   if (isAuthenticated) {
+    if (user?.mustChangePassword) {
+      return (
+        <Routes>
+          <Route path="/change-password" element={<ChangePasswordPage />} />
+          <Route path="*" element={<Navigate to="/change-password" replace />} />
+        </Routes>
+      );
+    }
+
     return (
-      <TenantRoutes
-        user={user}
-        userName={userName}
-        mobileDrawerOpen={drawer.mobileDrawerOpen}
-        onOpenMobileDrawer={drawer.openMobileDrawer}
-        onCloseMobileDrawer={drawer.closeMobileDrawer}
-        onLogout={logout}
-      />
+      <RequirePasswordChanged>
+        <TenantRoutes
+          user={user}
+          userName={userName}
+          mobileDrawerOpen={drawer.mobileDrawerOpen}
+          onOpenMobileDrawer={drawer.openMobileDrawer}
+          onCloseMobileDrawer={drawer.closeMobileDrawer}
+          onLogout={logout}
+        />
+      </RequirePasswordChanged>
     );
   }
 

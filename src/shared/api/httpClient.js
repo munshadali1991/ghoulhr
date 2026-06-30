@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '@/app/config/appConfig';
-
+import { SESSION_EXPIRED_EVENT } from '@/features/auth/hooks/useSessionExpiry';
+import { getAppBasePath } from '@/shared/utils/tenant';
 let refreshPromise = null;
 
 function isAuthPublicPath(path) {
@@ -21,6 +22,9 @@ async function refreshTokensOnce() {
     credentials: 'include',
   }).then((res) => {
     if (!res.ok) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+      }
       const err = new Error('Session expired');
       err.status = 401;
       throw err;
@@ -82,6 +86,16 @@ export async function apiFetch(path, options = {}) {
     } else if (payload?.error) {
       message = String(payload.error);
     }
+
+    if (
+      res.status === 403 &&
+      payload?.code === 'PASSWORD_CHANGE_REQUIRED' &&
+      typeof window !== 'undefined' &&
+      !window.location.pathname.endsWith('/change-password')
+    ) {
+      window.location.assign(`${getAppBasePath()}/change-password`);
+    }
+
     const error = new Error(message);
     error.status = res.status;
     throw error;
