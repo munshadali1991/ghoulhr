@@ -6,7 +6,6 @@ import {
   EMPLOYMENT_TYPE_OPTIONS,
   WORK_MODE_OPTIONS,
 } from '../constants';
-import { EmployeeAutocomplete } from '../components/EmployeeAutocomplete';
 import { useEmploymentLocationShifts } from '../hooks/useEmploymentLocationShifts';
 import {
   formatShiftOptionLabel,
@@ -16,7 +15,7 @@ import {
   resolveShiftName,
 } from '../utils/employmentLocationShift';
 
-export function StepEmployment({ organizationId, hrManagerOptions, employeeSettings }) {
+export function StepEmployment({ organizationId, employeeSettings }) {
   const {
     control,
     setValue,
@@ -290,9 +289,6 @@ export function StepEmployment({ organizationId, hrManagerOptions, employeeSetti
               />
             )}
           />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <EmployeeAutocomplete name="employment.hrManagerId" label="HR manager" options={hrManagerOptions} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller

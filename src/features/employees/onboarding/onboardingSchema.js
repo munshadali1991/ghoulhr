@@ -293,7 +293,6 @@ export function createEmploymentStepSchema(employmentContext = {}) {
       officialEmail: z.union([z.string().email('Invalid official email'), z.literal('')]).optional(),
       departmentId: z.string().uuid('Department is required'),
       designationId: z.string().uuid('Designation is required'),
-      hrManagerId: optStr,
       workMode: z.enum(WORK_MODE_VALUES).or(z.literal('')).optional(),
       shift: optStr,
       probationPeriodDays: z.union([z.string(), z.number()]).optional(),
@@ -311,14 +310,6 @@ export function createEmploymentStepSchema(employmentContext = {}) {
             path: ['dateOfJoining'],
             message: `Date of joining cannot be more than ${MAX_JOINING_FUTURE_DAYS} days in the future`,
           });
-        }
-      }
-
-      const hrId = trimOrEmpty(data.hrManagerId);
-      if (hrId) {
-        const uuidResult = z.string().uuid().safeParse(hrId);
-        if (!uuidResult.success) {
-          zctx.addIssue({ code: z.ZodIssueCode.custom, path: ['hrManagerId'], message: 'Select a valid HR manager' });
         }
       }
 
@@ -793,7 +784,6 @@ export const documentRowSchema = z
 
 export const accessStepSchema = z
   .object({
-    portalRoleLabel: z.string().min(1, 'Select a role'),
     hrmsAccessEnabled: z.boolean(),
     welcomeEmailEnabled: z.boolean(),
     mfaEnabled: z.boolean(),
@@ -922,7 +912,6 @@ export function getDefaultOnboardingValues() {
       officialEmail: '',
       departmentId: '',
       designationId: '',
-      hrManagerId: '',
       workMode: 'HYBRID',
       shift: '',
       probationPeriodDays: '',
@@ -975,7 +964,6 @@ export function getDefaultOnboardingValues() {
     },
     documents: [createEmptyDocumentRow()],
     access: {
-      portalRoleLabel: 'EMPLOYEE',
       hrmsAccessEnabled: true,
       welcomeEmailEnabled: false,
       mfaEnabled: false,
@@ -1084,7 +1072,6 @@ export function buildHrOnboardingPayload(v, options = {}) {
       employmentStatus: v.employment.employmentStatus || undefined,
       departmentId: v.employment.departmentId || undefined,
       designationId: v.employment.designationId || undefined,
-      hrManagerId: v.employment.hrManagerId || undefined,
       workMode: v.employment.workMode || undefined,
       shift: v.employment.shift || undefined,
       probationPeriodDays: intOrUndef(v.employment.probationPeriodDays),
@@ -1138,7 +1125,9 @@ export function buildHrOnboardingPayload(v, options = {}) {
     documents: documents.length ? documents : undefined,
     ...(deletedDocumentIds.length ? { deletedDocumentIds } : {}),
     access: {
-      portalRoleLabel: v.access.portalRoleLabel,
+      ...(options.isEditMode
+        ? {}
+        : { portalRoleLabel: 'EMPLOYEE' }),
       hrmsAccessEnabled: v.access.hrmsAccessEnabled,
       welcomeEmailEnabled: v.access.welcomeEmailEnabled,
       mfaEnabled: v.access.mfaEnabled,
@@ -1182,7 +1171,6 @@ export function mapEmployeeToOnboardingValues(employee) {
       employmentStatus: employmentDetail.employmentStatus || base.employment.employmentStatus,
       departmentId: employee.departmentId || '',
       designationId: employee.designationId || '',
-      hrManagerId: employmentDetail.hrManagerId || '',
       workMode: employmentDetail.workMode || base.employment.workMode,
       shift: employmentDetail.shift || '',
       probationPeriodDays:
@@ -1238,7 +1226,6 @@ export function mapEmployeeToOnboardingValues(employee) {
     },
     access: {
       ...base.access,
-      portalRoleLabel: accessControl.portalRoleLabel || 'EMPLOYEE',
       hrmsAccessEnabled: accessControl.hrmsAccessEnabled ?? true,
       welcomeEmailEnabled: accessControl.welcomeEmailEnabled ?? false,
       mfaEnabled: accessControl.mfaEnabled ?? false,

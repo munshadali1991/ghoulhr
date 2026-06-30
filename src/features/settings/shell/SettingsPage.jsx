@@ -10,8 +10,6 @@ import {
   SETTINGS_PAGE_WIDE_MAX_WIDTH,
   settingsPageContainerSx,
 } from '@/shared/components/settings/settingsLayout';
-import { RouteDebugBanner } from '@/features/settings/shell/RouteDebugBanner';
-
 /**
  * Max-width layout wrapper for flat settings routes.
  * @param {{ organizationId?: string, children: import('react').ReactNode }} props
@@ -25,7 +23,6 @@ export function SettingsShell({ children }) {
 
   return (
     <Box sx={settingsPageContainerSx(pageMaxWidth, false)} key={location.pathname}>
-      <RouteDebugBanner />
       {children}
     </Box>
   );

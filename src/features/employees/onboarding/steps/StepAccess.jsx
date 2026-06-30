@@ -2,20 +2,24 @@ import {
   Box,
   FormControlLabel,
   Grid,
-  MenuItem,
   Stack,
   Switch,
   TextField,
   Typography,
 } from '@mui/material';
 import { Controller, useFormContext } from 'react-hook-form';
-import { PORTAL_ROLE_OPTIONS } from '../constants';
 
-export function StepAccess() {
+export function StepAccess({ isEditMode = false }) {
   const {
     control,
     formState: { errors },
   } = useFormContext();
+
+  const passwordHelperText =
+    errors.access?.temporaryPassword?.message ||
+    (isEditMode
+      ? 'Leave blank to keep the current password. Min 12 chars with upper, lower, number, and special character if set.'
+      : 'Min 12 chars with upper, lower, number, and special character. One is generated if left blank.');
 
   return (
     <Stack spacing={2.5}>
@@ -27,34 +31,13 @@ export function StepAccess() {
           System access
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Portal role and security toggles. Temporary password is optional — one is generated if left blank.
+          {isEditMode
+            ? 'Security toggles and optional password reset. Assign roles in Settings → RBAC → Employees.'
+            : 'Security toggles for portal access. Assign roles in Settings → RBAC → Employees after onboarding.'}
         </Typography>
       </Box>
 
       <Grid container spacing={2}>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Controller
-            name="access.portalRoleLabel"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                select
-                fullWidth
-                required
-                label="Portal role"
-                error={!!errors.access?.portalRoleLabel}
-                helperText={errors.access?.portalRoleLabel?.message}
-              >
-                {PORTAL_ROLE_OPTIONS.map((o) => (
-                  <MenuItem key={o.value} value={o.value}>
-                    {o.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            )}
-          />
-        </Grid>
         <Grid size={12}>
           <Controller
             name="access.hrmsAccessEnabled"
@@ -100,11 +83,8 @@ export function StepAccess() {
                 {...field}
                 fullWidth
                 type="password"
-                label="Temporary password (optional)"
-                helperText={
-                  errors.access?.temporaryPassword?.message ||
-                  'Min 12 chars with upper, lower, number, and special character if set.'
-                }
+                label={isEditMode ? 'New password (optional)' : 'Temporary password (optional)'}
+                helperText={passwordHelperText}
                 error={!!errors.access?.temporaryPassword}
               />
             )}
