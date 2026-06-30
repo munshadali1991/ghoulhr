@@ -1,18 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
   Button,
-  Chip,
   CircularProgress,
   FormControl,
   InputLabel,
   MenuItem,
   Select,
   Stack,
-  Typography,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
 import EventRoundedIcon from '@mui/icons-material/EventRounded';
 import { useQuery } from '@tanstack/react-query';
@@ -33,9 +30,19 @@ const currentYear = new Date().getFullYear();
 const YEAR_OPTIONS = [currentYear - 1, currentYear, currentYear + 1];
 
 /**
- * @param {{ organizationId: string }} props
+ * @param {{
+ *   organizationId: string,
+ *   addHolidayNonce?: number,
+ *   onMetaChange?: (meta: { status: string | null, holidayCount: number }) => void,
+ *   canWrite?: boolean,
+ * }} props
  */
-export function OrganizationCalendarTab({ organizationId }) {
+export function OrganizationCalendarTab({
+  organizationId,
+  addHolidayNonce = 0,
+  onMetaChange,
+  canWrite = true,
+}) {
   const [year, setYear] = useState(currentYear);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editRow, setEditRow] = useState(null);
@@ -63,6 +70,20 @@ export function OrganizationCalendarTab({ organizationId }) {
   const holidays = data?.holidays ?? [];
   const calendar = data?.calendar;
   const isDraft = calendar?.status === 'DRAFT';
+
+  useEffect(() => {
+    onMetaChange?.({
+      status: calendar?.status ?? null,
+      holidayCount: holidays.length,
+    });
+  }, [calendar?.status, holidays.length, onMetaChange]);
+
+  useEffect(() => {
+    if (addHolidayNonce > 0 && canWrite) {
+      setEditRow(null);
+      setDialogOpen(true);
+    }
+  }, [addHolidayNonce, canWrite]);
 
   const showStatus = (msg) => {
     setStatusMessage(msg);
@@ -118,27 +139,6 @@ export function OrganizationCalendarTab({ organizationId }) {
         successMessage={statusMessage}
       />
 
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" component="h1" fontWeight={700} letterSpacing="-0.02em">
-          Organization calendar
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 640 }}>
-          Manage public and restricted holidays for your organization. Published holidays appear on
-          employee leave and holiday calendars (location-specific rules apply).
-        </Typography>
-        <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>
-          {calendar?.status ? (
-            <Chip
-              label={calendar.status === 'PUBLISHED' ? 'Published' : 'Draft'}
-              color={calendar.status === 'PUBLISHED' ? 'success' : 'warning'}
-              size="small"
-              variant="outlined"
-            />
-          ) : null}
-          <Chip label={`${holidays.length} holidays`} size="small" variant="outlined" />
-        </Stack>
-      </Box>
-
       {isDraft ? (
         <Alert severity="info" sx={{ mb: 2 }}>
           This calendar is in draft. Employees will not see these holidays until you publish the
@@ -163,28 +163,17 @@ export function OrganizationCalendarTab({ organizationId }) {
             ))}
           </Select>
         </FormControl>
-        <Stack direction="row" spacing={1}>
-          {isDraft ? (
-            <Button
-              variant="outlined"
-              startIcon={<PublishRoundedIcon />}
-              onClick={handlePublish}
-              disabled={publishMutation.isPending || holidays.length === 0}
-            >
-              Publish calendar
-            </Button>
-          ) : null}
+        {isDraft && canWrite ? (
           <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => {
-              setEditRow(null);
-              setDialogOpen(true);
-            }}
+            variant="outlined"
+            startIcon={<PublishRoundedIcon />}
+            onClick={handlePublish}
+            disabled={publishMutation.isPending || holidays.length === 0}
+            sx={{ alignSelf: { xs: 'stretch', sm: 'flex-start' } }}
           >
-            Add holiday
+            Publish calendar
           </Button>
-        </Stack>
+        ) : null}
       </Stack>
 
       <SettingsSection
@@ -201,11 +190,15 @@ export function OrganizationCalendarTab({ organizationId }) {
             <Box sx={{ p: 2 }}>
               <CalendarHolidaysTable
                 holidays={holidays}
-                onEdit={(row) => {
-                  setEditRow(row);
-                  setDialogOpen(true);
-                }}
-                onDelete={setDeleteRow}
+                onEdit={
+                  canWrite
+                    ? (row) => {
+                        setEditRow(row);
+                        setDialogOpen(true);
+                      }
+                    : undefined
+                }
+                onDelete={canWrite ? setDeleteRow : undefined}
               />
             </Box>
           )}

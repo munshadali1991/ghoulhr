@@ -9,9 +9,11 @@ import {
 } from '@mui/material';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/app/providers/useAuth';
 import { SidebarContent } from '@/shared/components/layout/SidebarContent';
+import { APP_NAME } from '@/app/config/appConfig';
+import { useOrganizationBranding } from '@/features/settings/organization/hooks/useOrganizationBranding';
 import { DEFAULT_SETTINGS_PATH } from '@/features/settings/shell/settingsNav';
 import { buildOrgAdminNavItems } from '../config/orgAdminNav';
 
@@ -25,7 +27,6 @@ const DRAWER_WIDTH = 280;
  *   onOpenMobileDrawer: () => void,
  *   onCloseMobileDrawer: () => void,
  *   onLogout: () => void,
- *   children: import('react').ReactNode,
  * }} props
  */
 export function OrgAdminLayout({
@@ -34,18 +35,20 @@ export function OrgAdminLayout({
   onOpenMobileDrawer,
   onCloseMobileDrawer,
   onLogout,
-  children,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { session } = useAuth();
 
   const sidebarNavItems = buildOrgAdminNavItems(location.pathname, session);
+  const branding = useOrganizationBranding(user?.organizationId);
+
+  const headerSubtitle = branding.hasCustomName
+    ? branding.displayName
+    : user?.organizationSubdomain ?? APP_NAME;
 
   const handleNavItemClick = (item) => {
     if (item.path) {
-      navigate(item.path);
-      onCloseMobileDrawer?.();
       return;
     }
 
@@ -61,6 +64,10 @@ export function OrgAdminLayout({
       navItems={sidebarNavItems}
       onItemClick={handleNavItemClick}
       pathname={location.pathname}
+      onNavigate={onCloseMobileDrawer}
+      brandName={branding.displayName}
+      brandLogo={branding.logo}
+      brandInitials={branding.initials}
     />
   );
 
@@ -86,8 +93,8 @@ export function OrgAdminLayout({
             <Typography variant="h6" fontWeight={700}>
               Organization Admin Panel
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {user?.organizationSubdomain}.ghoulhr.com
+            <Typography variant="body2" color="text.secondary" noWrap>
+              {headerSubtitle}
             </Typography>
           </Box>
           <Button color="inherit" startIcon={<LogoutRoundedIcon />} onClick={onLogout}>
@@ -130,7 +137,7 @@ export function OrgAdminLayout({
           mt: '72px',
         }}
       >
-        {children}
+        <Outlet />
       </Box>
     </Box>
   );

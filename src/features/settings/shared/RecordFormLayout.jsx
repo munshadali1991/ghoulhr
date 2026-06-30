@@ -22,6 +22,7 @@ export function RecordFormLayout({
   isSubmitting = false,
   submitLabel = 'Save changes',
   cancelLabel = 'Cancel',
+  readOnly = false,
   children,
 }) {
   return (
@@ -94,14 +95,16 @@ export function RecordFormLayout({
           <Button type="button" variant="outlined" onClick={onBack} disabled={isSubmitting}>
             {cancelLabel}
           </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={isSubmitting}
-            startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : null}
-          >
-            {isSubmitting ? 'Saving…' : submitLabel}
-          </Button>
+          {!readOnly ? (
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={isSubmitting}
+              startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : null}
+            >
+              {isSubmitting ? 'Saving…' : submitLabel}
+            </Button>
+          ) : null}
         </Stack>
       </PageCard>
     </Box>

@@ -18,6 +18,7 @@ export function DepartmentFormPage({
   onClearActionError,
   onBack,
   onSave,
+  readOnly = false,
 }) {
   const isEdit = Boolean(record?.id);
 
@@ -44,7 +45,6 @@ export function DepartmentFormPage({
           name: values.name,
           code: values.code,
           isActive: values.isActive,
-          createdAt: record?.createdAt ?? null,
         },
         record?.id,
       );
@@ -67,6 +67,7 @@ export function DepartmentFormPage({
       onSubmit={onSubmit}
       isSubmitting={isSaving}
       submitLabel={isEdit ? 'Save changes' : 'Create department'}
+      readOnly={readOnly}
     >
       {actionError ? (
         <Alert severity="error" sx={{ mb: 3 }} onClose={onClearActionError}>
@@ -84,6 +85,7 @@ export function DepartmentFormPage({
               {...register('name')}
               error={!!errors.name}
               autoFocus
+              disabled={readOnly}
             />
           </SettingsField>
         </Grid>
@@ -102,6 +104,7 @@ export function DepartmentFormPage({
               placeholder="What does this department do?"
               {...register('code')}
               error={!!errors.code}
+              disabled={readOnly}
             />
           </SettingsField>
         </Grid>
@@ -120,6 +123,7 @@ export function DepartmentFormPage({
                     <Switch
                       checked={!!field.value}
                       onChange={(e) => field.onChange(e.target.checked)}
+                      disabled={readOnly}
                     />
                   }
                   label={field.value ? 'Active' : 'Inactive'}

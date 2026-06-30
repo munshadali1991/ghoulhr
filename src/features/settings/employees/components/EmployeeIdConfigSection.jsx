@@ -12,7 +12,7 @@ import { ID_PREFIX_PATTERN } from '../constants';
  *   errors: import('react-hook-form').FieldErrors<Record<string, unknown>>,
  * }} props
  */
-export function EmployeeIdConfigSection({ register, control, errors }) {
+export function EmployeeIdConfigSection({ register, control, errors, readOnly = false }) {
   return (
     <SettingsSection
       icon={<BadgeIcon color="primary" />}
@@ -29,6 +29,7 @@ export function EmployeeIdConfigSection({ register, control, errors }) {
             <TextField
               fullWidth
               placeholder="EMP"
+              disabled={readOnly}
               {...register('id_prefix', {
                 maxLength: {
                   value: 10,
@@ -60,6 +61,7 @@ export function EmployeeIdConfigSection({ register, control, errors }) {
                       checked={field.value}
                       onChange={(e) => field.onChange(e.target.checked)}
                       color="primary"
+                      disabled={readOnly}
                     />
                   }
                   label={field.value ? 'Enabled' : 'Disabled'}

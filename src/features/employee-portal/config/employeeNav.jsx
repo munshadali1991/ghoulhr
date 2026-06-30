@@ -28,6 +28,12 @@ export const EMPLOYEE_NAV_CONFIG = [
     permission: 'ess.leave:read',
     children: [
       { key: 'leave-apply', label: 'Leave Apply', path: '/leave/apply', permission: 'ess.leave:apply' },
+      {
+        key: 'leave-requests',
+        label: 'Leave Requests',
+        path: '/leave/requests',
+        permission: 'approvals.leave:read',
+      },
       { key: 'leave-balances', label: 'Leave Balances', path: '/leave/balances', permission: 'ess.leave:read' },
       { key: 'leave-calendar', label: 'Leave Calendar', path: '/leave/calendar', permission: 'ess.leave:read' },
       { key: 'holiday-calendar', label: 'Holiday Calendar', path: '/leave/holidays', permission: 'ess.leave:read' },
@@ -51,7 +57,12 @@ export const EMPLOYEE_NAV_CONFIG = [
     permission: 'ess.timesheet:read',
     children: [
       { key: 'timesheet-my', label: 'My Timesheet', path: '/timesheet', permission: 'ess.timesheet:read' },
-      { key: 'timesheet-reports', label: 'My Reports', path: '/timesheet/reports', permission: 'ess.timesheet:read' },
+      {
+        key: 'timesheet-team',
+        label: 'Team Timesheets',
+        path: '/timesheet/team',
+        permission: 'approvals.timesheet:read',
+      },
     ],
   },
   { key: 'settings', label: 'Settings', path: '/settings' },
@@ -136,8 +147,11 @@ export function getEmployeePageTitle(pathname) {
       }
     }
   }
+  if (pathname.startsWith('/leave/requests')) return 'Leave Requests';
   if (pathname.startsWith('/leave/apply')) return 'Leave Apply';
-  if (pathname === '/timesheet/reports') return 'My Reports';
+  if (pathname.startsWith('/timesheet/team') || pathname.startsWith('/timesheet/requests')) {
+    return 'Team Timesheets';
+  }
   if (pathname.startsWith('/timesheet/add')) return 'Add Timesheet';
   if (pathname.startsWith('/timesheet/edit')) return 'Edit Timesheet';
   if (pathname.startsWith('/timesheet')) return 'My Timesheet';

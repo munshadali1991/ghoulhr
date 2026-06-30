@@ -33,6 +33,7 @@ import { isOnTenantSubdomain } from '@/shared/utils/tenant';
  *   onSubmit: (event: import('react').FormEvent) => void,
  *   loading: boolean,
  *   error: string,
+ *   errorKind?: 'generic' | 'subscription',
  * }} props
  */
 export function LoginPage({
@@ -42,6 +43,7 @@ export function LoginPage({
   onSubmit,
   loading,
   error,
+  errorKind = 'generic',
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const onTenantHost = isOnTenantSubdomain();
@@ -212,7 +214,11 @@ export function LoginPage({
                       }}
                     />
 
-                    {error ? <Alert severity="error">{error}</Alert> : null}
+                    {error ? (
+                      <Alert severity={errorKind === 'subscription' ? 'warning' : 'error'}>
+                        {error}
+                      </Alert>
+                    ) : null}
 
                     <BrandedButton
                       type="submit"

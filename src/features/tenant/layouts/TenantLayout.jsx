@@ -11,12 +11,12 @@ import {
 } from '@mui/material';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { APP_NAME } from '@/app/config/appConfig';
 import { useAuth } from '@/app/providers/useAuth';
 import { SidebarContent } from '@/shared/components/layout/SidebarContent';
-import { DEFAULT_SETTINGS_PATH } from '@/features/settings/shell/settingsNav';
 import { buildTenantNavItems, getTenantPageTitle } from '../config/tenantNav';
+import { useOrganizationBranding } from '@/features/settings/organization/hooks/useOrganizationBranding';
 import { EmployeeNotificationsMenu } from '@/features/employee-portal/components/EmployeeNotificationsMenu';
 
 const DRAWER_WIDTH = 280;
@@ -29,7 +29,6 @@ const DRAWER_WIDTH = 280;
  *   onOpenMobileDrawer: () => void,
  *   onCloseMobileDrawer: () => void,
  *   onLogout: () => void,
- *   children: import('react').ReactNode,
  * }} props
  */
 export function TenantLayout({
@@ -39,7 +38,6 @@ export function TenantLayout({
   onOpenMobileDrawer,
   onCloseMobileDrawer,
   onLogout,
-  children,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -47,23 +45,21 @@ export function TenantLayout({
   const pathname = location.pathname;
 
   const sidebarNavItems = buildTenantNavItems(pathname, session);
-  const pageTitle = getTenantPageTitle(pathname);
+  const pageTitle = getTenantPageTitle(pathname, session);
+  const branding = useOrganizationBranding(user?.organizationId);
+
+  const headerSubtitle = branding.hasCustomName
+    ? branding.displayName
+    : user?.organizationSubdomain ?? APP_NAME;
 
   const handleNavItemClick = (item) => {
     if (item.path) {
-      navigate(item.path);
-      onCloseMobileDrawer?.();
-      return;
-    }
-    if (item.key === 'settings') {
-      navigate(DEFAULT_SETTINGS_PATH);
-      onCloseMobileDrawer?.();
       return;
     }
     if (item.children?.length && item.children[0].path) {
       navigate(item.children[0].path);
-      onCloseMobileDrawer?.();
     }
+    onCloseMobileDrawer?.();
   };
 
   const sidebar = (
@@ -72,6 +68,10 @@ export function TenantLayout({
       navItems={sidebarNavItems}
       onItemClick={handleNavItemClick}
       pathname={pathname}
+      onNavigate={onCloseMobileDrawer}
+      brandName={branding.displayName}
+      brandLogo={branding.logo}
+      brandInitials={branding.initials}
     />
   );
 
@@ -98,8 +98,7 @@ export function TenantLayout({
               {pageTitle}
             </Typography>
             <Typography variant="body2" color="text.secondary" noWrap>
-              Hi {userName}
-              {user?.organizationSubdomain ? ` · ${user.organizationSubdomain}` : ''}
+              {headerSubtitle}
             </Typography>
           </Box>
           <Stack direction="row" spacing={1} alignItems="center">
@@ -142,13 +141,16 @@ export function TenantLayout({
           flexGrow: 1,
           p: { xs: 2, md: 3 },
           width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          minWidth: 0,
           mt: '72px',
           display: 'flex',
           flexDirection: 'column',
           minHeight: 'calc(100vh - 72px)',
         }}
       >
-        <Box sx={{ flexGrow: 1 }}>{children}</Box>
+        <Box sx={{ flexGrow: 1 }}>
+          <Outlet />
+        </Box>
         <Typography
           variant="caption"
           color="text.secondary"

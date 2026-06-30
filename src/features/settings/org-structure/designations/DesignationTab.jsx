@@ -13,6 +13,7 @@ export function DesignationTab({
   onClearActionError,
   onEdit,
   onDelete,
+  readOnly = false,
 }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const deptNames = useMemo(() => departmentNameMap(departments), [departments]);
@@ -101,6 +102,7 @@ export function DesignationTab({
         emptyDescription="Add job titles and map them to one or more departments."
         onEdit={onEdit}
         onDelete={setDeleteTarget}
+        readOnly={readOnly}
       />
 
       <ConfirmDeleteDialog

@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Chip,
   Skeleton,
@@ -8,6 +9,82 @@ import {
   Typography,
 } from '@mui/material';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+
+function RoleChips({ assignments, isLoading }) {
+  if (isLoading) {
+    return <Skeleton variant="rounded" width={120} height={24} />;
+  }
+  if (assignments.length === 0) {
+    return (
+      <Typography variant="caption" color="text.secondary">
+        No roles assigned
+      </Typography>
+    );
+  }
+  return (
+    <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+      {assignments.map((a) => (
+        <Chip
+          key={a.id ?? a.roleId}
+          label={a.role?.name ?? a.roleId}
+          size="small"
+          color={a.isPrimary ? 'primary' : 'default'}
+          variant={a.isPrimary ? 'filled' : 'outlined'}
+        />
+      ))}
+    </Stack>
+  );
+}
+
+/**
+ * @param {{
+ *   employee: { id: string, name: string, employeeCode?: string, departmentName?: string },
+ *   assignments?: import('@/features/rbac/types/rbac.types').RbacEmployeeAssignment[],
+ *   isLoading?: boolean,
+ *   onEdit: () => void,
+ * }} props
+ */
+export function EmployeeAssignmentCard({ employee, assignments = [], isLoading = false, onEdit }) {
+  const primary = assignments.find((a) => a.isPrimary) ?? assignments[0];
+
+  return (
+    <MobileDataCard
+      fields={[
+        {
+          label: 'Employee',
+          value: (
+            <Box>
+              <Typography variant="body2" fontWeight={600}>
+                {employee.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {employee.employeeCode}
+              </Typography>
+            </Box>
+          ),
+        },
+        { label: 'Department', value: employee.departmentName || '—' },
+        {
+          label: 'Primary role',
+          value: isLoading ? (
+            <Skeleton variant="text" width={80} />
+          ) : primary ? (
+            primary.role?.name ?? primary.roleId
+          ) : (
+            '—'
+          ),
+        },
+        { label: 'All roles', value: <RoleChips assignments={assignments} isLoading={isLoading} /> },
+      ]}
+      actions={
+        <Button size="small" startIcon={<EditOutlinedIcon />} onClick={onEdit}>
+          Edit
+        </Button>
+      }
+    />
+  );
+}
 
 /**
  * @param {{

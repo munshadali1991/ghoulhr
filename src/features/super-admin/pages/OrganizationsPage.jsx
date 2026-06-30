@@ -22,6 +22,25 @@ import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import RestoreFromTrashRoundedIcon from '@mui/icons-material/RestoreFromTrashRounded';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { formatSubscriptionType } from '@/features/super-admin/utils/subscriptionPeriodUtils';
+
+function subscriptionChip(org) {
+  const summary = org.subscriptionSummary;
+  if (!summary) {
+    return { label: 'No plan', color: 'warning' };
+  }
+  if (summary.isValid) {
+    const typeLabel = summary.type ? formatSubscriptionType(summary.type) : 'Active';
+    return { label: typeLabel, color: 'success' };
+  }
+  if (summary.reason === 'missing') {
+    return { label: 'No plan', color: 'warning' };
+  }
+  if (summary.reason === 'expired') {
+    return { label: 'Expired', color: 'error' };
+  }
+  return { label: 'Inactive', color: 'default' };
+}
 
 export function OrganizationsPage({
   organizations,
@@ -92,11 +111,14 @@ export function OrganizationsPage({
                         <TableCell>Name</TableCell>
                         <TableCell>Subdomain</TableCell>
                         <TableCell>Status</TableCell>
+                        <TableCell>Subscription</TableCell>
                         <TableCell align="right">Actions</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {filteredOrganizations.map((org) => (
+                      {filteredOrganizations.map((org) => {
+                        const subChip = subscriptionChip(org);
+                        return (
                         <TableRow key={org.id} hover>
                           <TableCell>{org.name}</TableCell>
                           <TableCell>{org.subdomain}.ghoulhr.com</TableCell>
@@ -105,6 +127,14 @@ export function OrganizationsPage({
                               size="small"
                               label={org.status}
                               color={org.status === 'ACTIVE' ? 'success' : 'warning'}
+                              variant="outlined"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              size="small"
+                              label={subChip.label}
+                              color={subChip.color}
                               variant="outlined"
                             />
                           </TableCell>
@@ -130,10 +160,11 @@ export function OrganizationsPage({
                             </Stack>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                       {filteredOrganizations.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} align="center">
+                          <TableCell colSpan={5} align="center">
                             No organizations found
                           </TableCell>
                         </TableRow>

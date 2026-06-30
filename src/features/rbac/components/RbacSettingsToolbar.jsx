@@ -51,6 +51,8 @@ export function RbacSettingsToolbar({
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
+          variant="scrollable"
+          allowScrollButtonsMobile
           sx={{ mt: 2, minHeight: 40 }}
           aria-label="RBAC settings tabs"
         >

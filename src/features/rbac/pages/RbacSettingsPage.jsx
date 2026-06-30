@@ -95,7 +95,7 @@ export function RbacSettingsPage() {
   }
 
   return (
-    <Box sx={{ pb: showDraftBar ? 8 : 0 }}>
+    <Box sx={{ pb: showDraftBar ? 8 : 0 }} data-testid="settings-rbac-page">
       <RbacSettingsToolbar
         activeTab={activeTab}
         onTabChange={handleTabChange}

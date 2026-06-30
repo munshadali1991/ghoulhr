@@ -22,6 +22,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import { useRbacAuditLogs } from '@/features/rbac/hooks/useRbacAdmin';
 import { AuditLogDetailDrawer } from '@/features/rbac/components/AuditLogDetailDrawer';
+import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 
 const ACTION_OPTIONS = [
   { value: '', label: 'All actions' },
@@ -52,6 +54,7 @@ function formatAction(action) {
  * Audit trail tab with filters and detail drawer.
  */
 export function AuditLogPanel() {
+  const isMobileLayout = useIsMobileLayout();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [action, setAction] = useState('');
@@ -107,7 +110,7 @@ export function AuditLogPanel() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           size="small"
-          sx={{ minWidth: 220 }}
+          sx={{ minWidth: { xs: 0, sm: 220 }, width: { xs: '100%', sm: 'auto' } }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -116,7 +119,7 @@ export function AuditLogPanel() {
             ),
           }}
         />
-        <FormControl size="small" sx={{ minWidth: 220 }}>
+        <FormControl size="small" sx={{ minWidth: { xs: 0, sm: 220 }, width: { xs: '100%', sm: 'auto' } }}>
           <InputLabel id="audit-action-filter">Action type</InputLabel>
           <Select
             labelId="audit-action-filter"
@@ -144,6 +147,46 @@ export function AuditLogPanel() {
             : `Showing ${rangeStart}–${rangeEnd} of ${total} entries`}
       </Typography>
 
+      {isMobileLayout ? (
+        <Stack spacing={1.5} sx={{ mb: 2 }}>
+          {isLoading && (
+            <Typography color="text.secondary" variant="body2">
+              Loading audit trail...
+            </Typography>
+          )}
+          {!isLoading && filteredItems.length === 0 && (
+            <Typography color="text.secondary" variant="body2">
+              No RBAC audit entries match your filters.
+            </Typography>
+          )}
+          {filteredItems.map((log) => (
+            <MobileDataCard
+              key={log.id}
+              fields={[
+                { label: 'When', value: new Date(log.createdAt).toLocaleString() },
+                { label: 'Actor', value: log.actorName ?? 'System' },
+                {
+                  label: 'Action',
+                  value: (
+                    <Chip
+                      label={formatAction(log.action)}
+                      size="small"
+                      color={ACTION_CHIP_COLOR[log.action] ?? 'default'}
+                      variant="outlined"
+                    />
+                  ),
+                },
+                { label: 'Summary', value: log.summary },
+              ]}
+              actions={
+                <IconButton size="small" onClick={() => setSelectedLog(log)}>
+                  <VisibilityOutlinedIcon fontSize="small" />
+                </IconButton>
+              }
+            />
+          ))}
+        </Stack>
+      ) : (
       <Box sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
@@ -209,6 +252,7 @@ export function AuditLogPanel() {
           </TableBody>
         </Table>
       </Box>
+      )}
 
       <TablePagination
         component="div"

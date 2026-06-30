@@ -4,31 +4,21 @@ import {
   Box,
   Button,
   CardContent,
-  Chip,
   CircularProgress,
   IconButton,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
 } from '@mui/material';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
-import AssessmentRoundedIcon from '@mui/icons-material/AssessmentRounded';
 import { useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
+import { TimesheetDayActions } from '../../components/timesheet/TimesheetDayActions';
 import { TimesheetInlineEntryRow } from '../../components/timesheet/TimesheetInlineEntryRow';
-import { TimesheetMyReportView } from '../../components/timesheet/TimesheetMyReportView';
+import { TimesheetSavedEntriesTable } from '../../components/timesheet/TimesheetSavedEntriesTable';
 import { TimesheetStatusChip } from '../../components/timesheet/TimesheetStatusChip';
-import { fetchTimesheetDay } from '../../api/timesheetApi';
 import { DEFAULT_INLINE_ROW, PRIORITIES, TASK_STATUSES } from '../../constants/timesheetEnums';
 import { timesheetInlineRowSchema } from '../../schemas/timesheetEntrySchema';
 import {
@@ -37,6 +27,7 @@ import {
   useTimesheetDay,
   useUpsertTimesheetDay,
 } from '../../hooks/useEmployeePortalQueries';
+import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
 import {
   apiEntryToDisplay,
   serializeEntriesForApi,
@@ -48,10 +39,6 @@ function sumHours(entries) {
 
 function entryKey(entry) {
   return entry.id ?? entry._localId;
-}
-
-function labelFor(options, value) {
-  return options.find((o) => o.value === value)?.label ?? value;
 }
 
 function createEmptyDraftRow(workDate, categoryId) {
@@ -72,8 +59,83 @@ function enrichWithCategory(row, categories) {
   return { ...row, categoryName: cat?.name ?? row.categoryName ?? '' };
 }
 
+function validateAndMergeDraftRows({ draftRows, entries, editingKey, workDate, categories }) {
+  const filledDrafts = draftRows.filter((row) => !isDraftRowEmpty(row));
+  const hasSavedEntries = entries.length > 0;
+
+  if (filledDrafts.length === 0 && !hasSavedEntries) {
+    return { ok: false, reason: 'empty' };
+  }
+
+  const allErrors = {};
+  const validated = [];
+
+  for (const row of filledDrafts) {
+    const parsed = timesheetInlineRowSchema.safeParse({
+      ...row,
+      workDate: row.workDate || workDate,
+    });
+    if (!parsed.success) {
+      const fieldErrors = {};
+      parsed.error.issues.forEach((issue) => {
+        const path = issue.path[0];
+        if (path) fieldErrors[path] = { message: issue.message };
+      });
+      allErrors[row._draftId] = fieldErrors;
+    } else {
+      validated.push(enrichWithCategory(apiEntryToDisplay(parsed.data), categories));
+    }
+  }
+
+  if (Object.keys(allErrors).length > 0) {
+    return { ok: false, reason: 'validation', allErrors };
+  }
+
+  let nextEntries = entries;
+
+  if (editingKey && validated.length > 0) {
+    const [updated, ...extras] = validated;
+    nextEntries = entries.map((e) =>
+      entryKey(e) === editingKey
+        ? { ...updated, id: e.id, _localId: e._localId }
+        : e,
+    );
+    if (extras.length > 0) {
+      nextEntries = [
+        ...nextEntries,
+        ...extras.map((row) => ({
+          ...row,
+          _localId: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        })),
+      ];
+    }
+  } else if (validated.length > 0) {
+    nextEntries = [
+      ...entries,
+      ...validated.map((row) => ({
+        ...row,
+        _localId: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      })),
+    ];
+  }
+
+  return { ok: true, nextEntries, validated };
+}
+
+function projectedHoursFromDrafts(draftRows, entries, editingKey) {
+  const filledDrafts = draftRows.filter((row) => !isDraftRowEmpty(row));
+  if (filledDrafts.length === 0) return sumHours(entries);
+
+  const baseEntries = editingKey
+    ? entries.filter((e) => entryKey(e) !== editingKey)
+    : entries;
+  return sumHours(baseEntries) + sumHours(filledDrafts);
+}
+
 export function TimesheetDayPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { can } = useAuthorization();
+  const canWriteTimesheet = can('ess.timesheet:write');
   const dateParam = searchParams.get('date');
   const selectedDate = useMemo(
     () => (dateParam ? dayjs(dateParam) : dayjs()),
@@ -93,17 +155,20 @@ export function TimesheetDayPage() {
   const [draftRows, setDraftRows] = useState([]);
   const [editingKey, setEditingKey] = useState(null);
   const [draftErrors, setDraftErrors] = useState({});
-  const [showMyReport, setShowMyReport] = useState(false);
-  const [pendingEditEntryId, setPendingEditEntryId] = useState(null);
 
   const maxHours = data?.settings?.maxHoursPerDay ?? 12;
   const maxPastDays = data?.settings?.maxPastDays ?? 7;
   const minDate = dayjs().subtract(maxPastDays, 'day');
   const maxDate = dayjs();
-  const isEditable = Boolean(data?.editable);
-  const canReopen = Boolean(data?.canReopen);
-  const totalHours = sumHours(entries);
-  const overLimit = totalHours > maxHours;
+  const isEditable = Boolean(data?.editable) && canWriteTimesheet;
+  const canReopen = Boolean(data?.canReopen) && canWriteTimesheet;
+  const filledDraftCount = draftRows.filter((row) => !isDraftRowEmpty(row)).length;
+  const projectedHours = projectedHoursFromDrafts(draftRows, entries, editingKey);
+  const overLimit = projectedHours > maxHours;
+  const canSubmit =
+    isEditable &&
+    (entries.length > 0 || filledDraftCount > 0) &&
+    !overLimit;
 
   useEffect(() => {
     if (data) {
@@ -128,15 +193,6 @@ export function TimesheetDayPage() {
       rows.map((row) => (row.categoryId ? row : { ...row, categoryId: defaultCategoryId })),
     );
   }, [defaultCategoryId, editingKey]);
-
-  useEffect(() => {
-    if (!pendingEditEntryId || !data?.entries) return;
-    const entry = data.entries.find((e) => e.id === pendingEditEntryId);
-    if (entry) {
-      loadEntryIntoDrafts({ ...apiEntryToDisplay(entry), id: entry.id }, workDate);
-      setPendingEditEntryId(null);
-    }
-  }, [data, pendingEditEntryId, workDate]);
 
   const handleDraftChange = (draftId, next) => {
     setDraftRows((rows) => rows.map((row) => (row._draftId === draftId ? next : row)));
@@ -170,69 +226,26 @@ export function TimesheetDayPage() {
   };
 
   const handleSaveAll = async () => {
-    const filledDrafts = draftRows.filter((row) => !isDraftRowEmpty(row));
-    const hasSavedEntries = entries.length > 0;
+    const result = validateAndMergeDraftRows({
+      draftRows,
+      entries,
+      editingKey,
+      workDate,
+      categories,
+    });
 
-    if (filledDrafts.length === 0 && !hasSavedEntries) {
-      show('Fill at least one row before saving', 'warning');
-      return;
-    }
-
-    const allErrors = {};
-    const validated = [];
-
-    for (const row of filledDrafts) {
-      const parsed = timesheetInlineRowSchema.safeParse({
-        ...row,
-        workDate: row.workDate || workDate,
-      });
-      if (!parsed.success) {
-        const fieldErrors = {};
-        parsed.error.issues.forEach((issue) => {
-          const path = issue.path[0];
-          if (path) fieldErrors[path] = { message: issue.message };
-        });
-        allErrors[row._draftId] = fieldErrors;
-      } else {
-        validated.push(enrichWithCategory(apiEntryToDisplay(parsed.data), categories));
+    if (!result.ok) {
+      if (result.reason === 'empty') {
+        show('Fill at least one row before saving', 'warning');
+        return;
       }
-    }
-
-    if (Object.keys(allErrors).length > 0) {
-      setDraftErrors(allErrors);
+      setDraftErrors(result.allErrors);
       show('Please fix the highlighted fields', 'error');
       return;
     }
 
     setDraftErrors({});
-
-    let nextEntries = entries;
-
-    if (editingKey && validated.length > 0) {
-      const [updated, ...extras] = validated;
-      nextEntries = entries.map((e) =>
-        entryKey(e) === editingKey
-          ? { ...updated, id: e.id, _localId: e._localId }
-          : e,
-      );
-      if (extras.length > 0) {
-        nextEntries = [
-          ...nextEntries,
-          ...extras.map((row) => ({
-            ...row,
-            _localId: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          })),
-        ];
-      }
-    } else if (validated.length > 0) {
-      nextEntries = [
-        ...entries,
-        ...validated.map((row) => ({
-          ...row,
-          _localId: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        })),
-      ];
-    }
+    const { nextEntries, validated } = result;
 
     if (sumHours(nextEntries) > maxHours) {
       show(`Total hours exceed the daily limit of ${maxHours}h`, 'error');
@@ -257,6 +270,48 @@ export function TimesheetDayPage() {
       refetch();
     } catch (e) {
       show(e?.message ?? 'Failed to save', 'error');
+    }
+  };
+
+  const handleSubmit = async () => {
+    const result = validateAndMergeDraftRows({
+      draftRows,
+      entries,
+      editingKey,
+      workDate,
+      categories,
+    });
+
+    if (!result.ok) {
+      if (result.reason === 'empty') {
+        show('Add at least one entry before submitting', 'warning');
+        return;
+      }
+      setDraftErrors(result.allErrors);
+      show('Please fix the highlighted fields', 'error');
+      return;
+    }
+
+    setDraftErrors({});
+    const { nextEntries } = result;
+
+    if (sumHours(nextEntries) > maxHours) {
+      show(`Total hours exceed the daily limit of ${maxHours}h`, 'error');
+      return;
+    }
+
+    try {
+      await upsertMutation.mutateAsync({
+        date: workDate,
+        payload: { status: 'SUBMITTED', entries: serializeEntriesForApi(nextEntries) },
+      });
+      show('Timesheet submitted');
+      setEntries(nextEntries);
+      setDraftRows([createEmptyDraftRow(workDate, defaultCategoryId)]);
+      setEditingKey(null);
+      refetch();
+    } catch (e) {
+      show(e?.message ?? 'Failed to submit', 'error');
     }
   };
 
@@ -292,60 +347,6 @@ export function TimesheetDayPage() {
     }
   };
 
-  const handleReportEdit = async (row) => {
-    try {
-      if (row.canReopen && row.dayStatus === 'SUBMITTED') {
-        await reopenMutation.mutateAsync(row.workDate);
-      }
-      setShowMyReport(false);
-      setSearchParams({ date: row.workDate });
-      setPendingEditEntryId(row.entryId);
-    } catch (e) {
-      show(e?.message ?? 'Could not open entry for editing', 'error');
-    }
-  };
-
-  const handleReportDelete = async (row) => {
-    if (!row.canModify) {
-      show('This entry cannot be deleted', 'warning');
-      return;
-    }
-    try {
-      if (row.canReopen && row.dayStatus === 'SUBMITTED') {
-        await reopenMutation.mutateAsync(row.workDate);
-      }
-      const day = await fetchTimesheetDay(row.workDate);
-      if (!day.editable) {
-        show('This timesheet cannot be edited', 'error');
-        return;
-      }
-      const next = (day.entries ?? []).filter((e) => e.id !== row.entryId);
-      await upsertMutation.mutateAsync({
-        date: row.workDate,
-        payload: { status: 'DRAFT', entries: serializeEntriesForApi(next) },
-      });
-      show('Record removed');
-      if (row.workDate === workDate) refetch();
-    } catch (e) {
-      show(e?.message ?? 'Failed to delete', 'error');
-    }
-  };
-
-  if (showMyReport) {
-    return (
-      <Box>
-        <TimesheetMyReportView
-          initialDate={workDate}
-          onBack={() => setShowMyReport(false)}
-          onEdit={handleReportEdit}
-          onDelete={handleReportDelete}
-          showSnackbar={show}
-        />
-        <AppSnackbar snackbar={snackbar} onClose={close} />
-      </Box>
-    );
-  }
-
   return (
     <Box>
       <Box
@@ -364,7 +365,7 @@ export function TimesheetDayPage() {
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {data?.settings?.employeeHelperText ||
-              'Use + to add rows, fill each line, then Save All to store them together.'}
+              'Use + to add rows, Save All to store them, then Submit timesheet when ready for approval.'}
           </Typography>
         </Box>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignSelf: { sm: 'flex-start' } }}>
@@ -375,13 +376,6 @@ export function TimesheetDayPage() {
             disabled={isLoading}
           >
             Refresh
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AssessmentRoundedIcon />}
-            onClick={() => setShowMyReport(true)}
-          >
-            My Report
           </Button>
         </Stack>
       </Box>
@@ -419,7 +413,7 @@ export function TimesheetDayPage() {
 
       {overLimit ? (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Total {totalHours.toFixed(1)}h exceeds the daily limit of {maxHours}h.
+          Total {projectedHours.toFixed(1)}h exceeds the daily limit of {maxHours}h.
         </Alert>
       ) : null}
 
@@ -433,7 +427,7 @@ export function TimesheetDayPage() {
           >
             <TimesheetStatusChip status={data?.status} size="medium" />
             <Typography variant="body2" fontWeight={600}>
-              {entries.length} record(s) · {totalHours.toFixed(1)}h / {maxHours}h max
+              {entries.length} record(s) · {projectedHours.toFixed(1)}h / {maxHours}h max
             </Typography>
           </Stack>
         </CardContent>
@@ -484,159 +478,30 @@ export function TimesheetDayPage() {
                 categories={categories}
               />
             </Stack>
+            <TimesheetDayActions
+              editable={isEditable}
+              isSaving={upsertMutation.isPending}
+              canSubmit={canSubmit}
+              onSaveDraft={handleSaveAll}
+              onSubmit={handleSubmit}
+            />
           </CardContent>
         </PageCard>
       ) : null}
 
       <PageCard>
-        <TableContainer sx={{ overflowX: 'auto' }}>
-          <Table size="small" sx={{ minWidth: 900 }}>
-            <TableHead>
-              <TableRow sx={{ bgcolor: 'background.default' }}>
-                <TableCell>
-                  <strong>#</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Category</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Work Area/Description</strong>
-                </TableCell>
-                <TableCell align="right">
-                  <strong>Hours</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Task status</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Priority</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Ref #</strong>
-                </TableCell>
-                {isEditable ? (
-                  <TableCell align="right">
-                    <strong>Actions</strong>
-                  </TableCell>
-                ) : null}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={isEditable ? 8 : 7} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={40} />
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                      Loading records...
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : error ? (
-                <TableRow>
-                  <TableCell colSpan={isEditable ? 8 : 7}>
-                    <Alert severity="error">{error.message}</Alert>
-                  </TableCell>
-                </TableRow>
-              ) : entries.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={isEditable ? 8 : 7} align="center" sx={{ py: 6 }}>
-                    <Typography variant="body1" color="text.secondary">
-                      No records for this date. Use the form above to add your first entry.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                entries.map((entry, index) => (
-                  <TableRow
-                    key={entryKey(entry)}
-                    hover
-                    sx={{
-                      cursor: isEditable ? 'pointer' : 'default',
-                      bgcolor: editingKey === entryKey(entry) ? 'action.hover' : undefined,
-                    }}
-                    onClick={() => isEditable && loadEntryIntoDrafts(entry)}
-                  >
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={entry.categoryName || '—'}
-                        size="small"
-                        color="secondary"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          maxWidth: 400,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {entry.workAreaDescription}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography fontWeight={600}>
-                        {Number(entry.hoursSpent).toFixed(1)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={labelFor(TASK_STATUSES, entry.taskStatus)}
-                        size="small"
-                        color="info"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={labelFor(PRIORITIES, entry.priority)}
-                        size="small"
-                        color={
-                          entry.priority === 'CRITICAL' || entry.priority === 'HIGH'
-                            ? 'error'
-                            : entry.priority === 'LOW'
-                              ? 'default'
-                              : 'warning'
-                        }
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {entry.refNumber || '—'}
-                      </Typography>
-                    </TableCell>
-                    {isEditable ? (
-                      <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                        <Stack direction="row" justifyContent="flex-end" spacing={0.5}>
-                          <IconButton
-                            size="small"
-                            aria-label="Edit"
-                            onClick={() => loadEntryIntoDrafts(entry)}
-                          >
-                            <EditOutlinedIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            aria-label="Delete"
-                            onClick={() => handleDelete(entry)}
-                          >
-                            <DeleteOutlineIcon fontSize="small" />
-                          </IconButton>
-                        </Stack>
-                      </TableCell>
-                    ) : null}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <TimesheetSavedEntriesTable
+          entries={entries}
+          isLoading={isLoading}
+          error={error}
+          isEditable={isEditable}
+          editingKey={editingKey}
+          entryKey={entryKey}
+          taskStatuses={TASK_STATUSES}
+          priorities={PRIORITIES}
+          onRowClick={loadEntryIntoDrafts}
+          onDelete={handleDelete}
+        />
       </PageCard>
 
       <AppSnackbar snackbar={snackbar} onClose={close} />

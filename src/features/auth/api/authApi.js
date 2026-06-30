@@ -1,4 +1,5 @@
 import { API_BASE_URL, DEFAULT_BOOTSTRAP_KEY } from '@/app/config/appConfig';
+import { SESSION_EXPIRED_EVENT } from '@/features/auth/hooks/useSessionExpiry';
 
 async function parseJsonResponse(response) {
   let payload = null;
@@ -24,9 +25,14 @@ async function authPost(path, body, extraHeaders = {}) {
   const payload = await parseJsonResponse(response);
 
   if (!response.ok) {
-    const message =
-      (payload && (payload.message?.[0] ?? payload.message ?? payload.error)) ||
-      'Request failed. Please try again.';
+    let message = 'Request failed. Please try again.';
+    if (payload?.message) {
+      message = Array.isArray(payload.message)
+        ? payload.message.join(', ')
+        : String(payload.message);
+    } else if (payload?.error) {
+      message = String(payload.error);
+    }
     const error = new Error(message);
     error.status = response.status;
     throw error;
@@ -46,6 +52,9 @@ async function loadSessionFromApi() {
       credentials: 'include',
     });
     if (!r2.ok) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+      }
       return null;
     }
     res = await fetch(`${API_BASE_URL}/auth/session`, {
@@ -67,6 +76,7 @@ async function loadSessionFromApi() {
     entitledModules: data.entitledModules ?? [],
     permissions: data.permissions ?? [],
     roles: data.roles ?? [],
+    sessionExpiresAt: data.sessionExpiresAt ?? null,
   };
 }
 

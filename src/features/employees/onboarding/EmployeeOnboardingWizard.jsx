@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import {
-  Alert,
   Box,
   Button,
   Card,
@@ -28,13 +27,20 @@ import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
 import { checkEmployeeDuplicate, submitHrOnboarding, updateHrOnboarding } from '@/features/employees/api/employeesApi';
 import { STEP_LABELS } from './constants';
 import {
+  buildFullOnboardingSchema,
   buildHrOnboardingPayload,
-  fullOnboardingSchema,
   getDefaultOnboardingValues,
+  getDeletedDocumentIds,
+  getStepIndexFromIssuePath,
   validateOnboardingStep,
 } from './onboardingSchema';
 import { useBeforeUnloadDirty } from './hooks/useBeforeUnloadDirty';
 import { useOnboardingDraft } from './hooks/useOnboardingDraft';
+import { useEmploymentLocationShifts } from './hooks/useEmploymentLocationShifts';
+import {
+  getShiftsForLocation,
+  resolveBusinessUnitToLocationId,
+} from './utils/employmentLocationShift';
 import { StepBasicInfo } from './steps/StepBasicInfo';
 import { StepEmployment } from './steps/StepEmployment';
 import { StepExperience } from './steps/StepExperience';
@@ -47,7 +53,16 @@ import { useEmployeeSettings } from '@/features/settings/employees';
 function applyZodIssues(setError, issues) {
   issues.forEach((issue) => {
     const path = issue.path.join('.');
-    if (path) setError(path, { type: 'manual', message: issue.message });
+    if (path) {
+      setError(path, { type: 'manual', message: issue.message }, { shouldFocus: issues[0] === issue });
+    }
+  });
+}
+
+function scrollToFirstError() {
+  requestAnimationFrame(() => {
+    const el = document.querySelector('.Mui-error, [aria-invalid="true"]');
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 }
 
@@ -66,7 +81,15 @@ export function EmployeeOnboardingWizard({
   const [submitting, setSubmitting] = useState(false);
   const { snackbar, show: showSnackbar, close: closeSnackbar } = useAppSnackbar();
   const [duplicateResult, setDuplicateResult] = useState(null);
+  const initialContactRef = useRef(null);
+  const initialDocumentIdsRef = useRef([]);
+  const uploadBatchIdRef = useRef(
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
   const { settings: employeeSettings } = useEmployeeSettings(organizationId);
+  const { activeLocations, shifts } = useEmploymentLocationShifts(organizationId);
 
   const methods = useForm({
     defaultValues: initialValues || getDefaultOnboardingValues(),
@@ -75,11 +98,24 @@ export function EmployeeOnboardingWizard({
 
   const { getValues, reset, setError, clearErrors, formState, control } = methods;
 
+  const initialContact = useMemo(() => {
+    if (!isEditMode || !initialValues) return null;
+    return {
+      personalEmail: initialValues.basic?.personalEmail || '',
+      officialEmail: initialValues.employment?.officialEmail || '',
+      mobileNumber: initialValues.basic?.mobileNumber || '',
+    };
+  }, [isEditMode, initialValues]);
+
   useEffect(() => {
     if (initialValues) {
       reset(initialValues);
+      initialContactRef.current = initialContact;
+      initialDocumentIdsRef.current = (initialValues.documents || [])
+        .filter((d) => d.serverDocumentId)
+        .map((d) => d.serverDocumentId);
     }
-  }, [initialValues, reset]);
+  }, [initialValues, reset, initialContact]);
 
   const { saveDraftNow, resumeDraft, clearDraft } = useOnboardingDraft(organizationId, getValues, reset);
 
@@ -101,27 +137,44 @@ export function EmployeeOnboardingWizard({
     return () => clearTimeout(id);
   }, [isEditMode, watchedForm, formState.isDirty, saveDraftNow]);
 
-  const watchedBasic = methods.watch(['basic.personalEmail', 'employment.officialEmail', 'basic.mobileNumber']);
+  const personalEmail = useWatch({ control, name: 'basic.personalEmail' });
+  const officialEmail = useWatch({ control, name: 'employment.officialEmail' });
+  const mobileNumber = useWatch({ control, name: 'basic.mobileNumber' });
+
   useEffect(() => {
+    let cancelled = false;
     const t = setTimeout(async () => {
-      const [pe, oe, mob] = watchedBasic;
-      if (!pe && !oe && !mob) {
-        setDuplicateResult(null);
+      if (!personalEmail && !officialEmail && !mobileNumber) {
+        if (!cancelled) {
+          setDuplicateResult((prev) => (prev === null ? prev : null));
+        }
         return;
       }
       try {
         const res = await checkEmployeeDuplicate({
-          personalEmail: pe || undefined,
-          officialEmail: oe || undefined,
-          mobileNumber: mob || undefined,
+          personalEmail: personalEmail || undefined,
+          officialEmail: officialEmail || undefined,
+          mobileNumber: mobileNumber || undefined,
+          ...(employeeId ? { excludeEmployeeId: employeeId } : {}),
         });
-        setDuplicateResult(res);
+        if (cancelled) return;
+        setDuplicateResult((prev) => {
+          if (prev?.emailTaken === res.emailTaken && prev?.mobileTaken === res.mobileTaken) {
+            return prev;
+          }
+          return res;
+        });
       } catch {
-        setDuplicateResult(null);
+        if (!cancelled) {
+          setDuplicateResult((prev) => (prev === null ? prev : null));
+        }
       }
     }, 650);
-    return () => clearTimeout(t);
-  }, [watchedBasic]);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [personalEmail, officialEmail, mobileNumber, employeeId]);
 
   const hrManagerOptions = useMemo(() => {
     return (employees || [])
@@ -132,18 +185,65 @@ export function EmployeeOnboardingWizard({
       }));
   }, [employees]);
 
+  const validationOptions = useCallback(() => {
+    const values = getValues();
+    const locationId = resolveBusinessUnitToLocationId(values.employment?.businessUnit, activeLocations);
+    const shiftsForLocation = getShiftsForLocation(shifts, locationId);
+    const requireShift = Boolean(locationId && shiftsForLocation.length > 0);
+
+    return {
+      requiredFields: employeeSettings?.required_fields,
+      employmentContext: { requireShift },
+    };
+  }, [activeLocations, employeeSettings?.required_fields, getValues, shifts]);
+
   const progress = ((activeStep + 1) / STEP_LABELS.length) * 100;
 
   const goNext = useCallback(async () => {
     clearErrors();
-    const r = validateOnboardingStep(activeStep, getValues());
+    const options = validationOptions();
+    const r = validateOnboardingStep(activeStep, getValues(), options);
     if (!r.success) {
       applyZodIssues(setError, r.error.issues);
       showSnackbar('Please fix the highlighted fields.', 'warning');
+      scrollToFirstError();
       return;
     }
+
+    if (activeStep === 0 && duplicateResult) {
+      const initial = initialContactRef.current ?? initialContact;
+      const pe = getValues('basic.personalEmail');
+      const oe = getValues('employment.officialEmail');
+      const mob = getValues('basic.mobileNumber');
+      const emailChanged = initial
+        ? pe !== initial.personalEmail || oe !== initial.officialEmail
+        : true;
+      const mobileChanged = initial ? mob !== initial.mobileNumber : true;
+
+      let blocked = false;
+      if (duplicateResult.emailTaken && emailChanged) {
+        setError('basic.personalEmail', {
+          type: 'manual',
+          message: 'This email is already registered in your organization',
+        });
+        blocked = true;
+      }
+      if (duplicateResult.mobileTaken && mobileChanged) {
+        setError('basic.mobileNumber', {
+          type: 'manual',
+          message: 'This mobile number is already registered in your organization',
+        });
+        blocked = true;
+      }
+      if (blocked) {
+        showSnackbar('Resolve duplicate contact details before continuing.', 'warning');
+        scrollToFirstError();
+        return;
+      }
+    }
+
     setActiveStep((s) => Math.min(s + 1, STEP_LABELS.length - 1));
-  }, [activeStep, clearErrors, getValues, setError]);
+  }, [activeStep, clearErrors, duplicateResult, getValues, initialContact, setError, showSnackbar, validationOptions]);
 
   const goBack = useCallback(() => {
     clearErrors();
@@ -153,15 +253,26 @@ export function EmployeeOnboardingWizard({
   const finalizeSubmit = async () => {
     clearErrors();
     const values = getValues();
-    const r = fullOnboardingSchema.safeParse(values);
+    const options = validationOptions();
+    const schema = buildFullOnboardingSchema(options);
+    const r = schema.safeParse(values);
     if (!r.success) {
       applyZodIssues(setError, r.error.issues);
+      const firstIssue = r.error.issues[0];
+      if (firstIssue?.path) {
+        setActiveStep(getStepIndexFromIssuePath(firstIssue.path));
+      }
       showSnackbar('Review validation errors before submitting.', 'warning');
+      scrollToFirstError();
       return;
     }
     setSubmitting(true);
     try {
-      const payload = buildHrOnboardingPayload(r.data);
+      const payload = buildHrOnboardingPayload(r.data, {
+        deletedDocumentIds: employeeId
+          ? getDeletedDocumentIds(initialDocumentIdsRef.current, r.data.documents)
+          : undefined,
+      });
       const approxJsonBytes = new Blob([JSON.stringify(payload)]).size;
       if (approxJsonBytes > 6 * 1024 * 1024) {
         showSnackbar(
@@ -192,7 +303,15 @@ export function EmployeeOnboardingWizard({
   const stepPanel = () => {
     switch (activeStep) {
       case 0:
-        return <StepBasicInfo duplicateResult={duplicateResult} />;
+        return (
+          <StepBasicInfo
+            duplicateResult={duplicateResult}
+            isEditMode={isEditMode}
+            initialContact={initialContact}
+            uploadBatchId={uploadBatchIdRef.current}
+            employeeId={employeeId}
+          />
+        );
       case 1:
         return (
           <StepEmployment
@@ -208,7 +327,9 @@ export function EmployeeOnboardingWizard({
       case 4:
         return <StepCompliance />;
       case 5:
-        return <StepDocuments />;
+        return (
+          <StepDocuments uploadBatchId={uploadBatchIdRef.current} employeeId={employeeId} />
+        );
       case 6:
         return <StepAccess />;
       default:

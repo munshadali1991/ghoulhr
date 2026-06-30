@@ -1,6 +1,8 @@
 import {
+  Box,
   IconButton,
   Paper,
+  Stack,
   Switch,
   Table,
   TableBody,
@@ -14,6 +16,8 @@ import {
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { Controller } from 'react-hook-form';
+import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
+import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
 import {
   LOCATION_TABLE_COLUMNS,
   LOCATION_TABLE_CONTAINER_SX,
@@ -52,9 +56,81 @@ export function LocationsTable({
   onEdit,
   onRemove,
 }) {
+  const isMobileLayout = useIsMobileLayout();
+
+  if (isMobileLayout) {
+    return (
+      <Stack spacing={1.5}>
+        {fields.map((field, index) => {
+          const row = watchedLocations?.[index] ?? {};
+          const actions = (
+            <>
+              <IconButton size="small" aria-label="Edit location" onClick={() => onEdit(index)} type="button">
+                <EditOutlinedIcon fontSize="small" />
+              </IconButton>
+              <Tooltip title={fields.length <= 1 ? 'At least one location is required' : 'Remove'}>
+                <span>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    aria-label="Remove location"
+                    disabled={fields.length <= 1}
+                    onClick={() => onRemove(index)}
+                    type="button"
+                  >
+                    <DeleteOutlineIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </>
+          );
+
+          return (
+            <MobileDataCard
+              key={field.id}
+              sx={{
+                bgcolor: editingIndex === index && dialogOpen ? 'action.hover' : 'background.default',
+              }}
+              fields={[
+                { label: '#', value: index + 1 },
+                { label: 'Name', value: row.name || '—' },
+                { label: 'Code', value: row.code || '—' },
+                { label: 'Country', value: row.country || '—' },
+                { label: 'State', value: row.region || '—' },
+                { label: 'City', value: row.city || '—' },
+                { label: 'Postal', value: row.postalCode || '—' },
+                { label: 'Street', value: row.addressLine1 || '—' },
+                { label: 'Lat', value: formatCoordinateCell(row.latitude) },
+                { label: 'Lng', value: formatCoordinateCell(row.longitude) },
+                {
+                  label: 'Active',
+                  value: (
+                    <Controller
+                      name={`locations.${index}.isActive`}
+                      control={control}
+                      render={({ field: f }) => (
+                        <Switch
+                          checked={!!f.value}
+                          onChange={(e) => f.onChange(e.target.checked)}
+                          size="small"
+                          inputProps={{ 'aria-label': `Active for location ${index + 1}` }}
+                        />
+                      )}
+                    />
+                  ),
+                },
+              ]}
+              actions={actions}
+            />
+          );
+        })}
+      </Stack>
+    );
+  }
+
   return (
     <TableContainer component={Paper} variant="outlined" sx={LOCATION_TABLE_CONTAINER_SX}>
-      <Table size="small" stickyHeader sx={{ minWidth: 960 }}>
+      <Table size="small" stickyHeader sx={{ minWidth: { xs: 0, md: 960 } }}>
         <TableHead>
           <TableRow>
             {LOCATION_TABLE_COLUMNS.map((col) => (

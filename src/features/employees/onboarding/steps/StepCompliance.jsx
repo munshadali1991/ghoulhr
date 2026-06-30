@@ -58,28 +58,60 @@ export function StepCompliance() {
           <Controller
             name="compliance.uanNumber"
             control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="UAN" />}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                label="UAN"
+                error={!!errors.compliance?.uanNumber}
+                helperText={errors.compliance?.uanNumber?.message}
+              />
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
             name="compliance.esicNumber"
             control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="ESIC number" />}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                label="ESIC number"
+                error={!!errors.compliance?.esicNumber}
+                helperText={errors.compliance?.esicNumber?.message}
+              />
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
             name="compliance.pfNumber"
             control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="PF number" />}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                label="PF number"
+                error={!!errors.compliance?.pfNumber}
+                helperText={errors.compliance?.pfNumber?.message}
+              />
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
             name="compliance.passportNumber"
             control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="Passport number" />}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                label="Passport number"
+                error={!!errors.compliance?.passportNumber}
+                helperText={errors.compliance?.passportNumber?.message}
+              />
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
@@ -87,7 +119,15 @@ export function StepCompliance() {
             name="compliance.passportExpiry"
             control={control}
             render={({ field }) => (
-              <TextField {...field} fullWidth type="date" label="Passport expiry" InputLabelProps={{ shrink: true }} />
+              <TextField
+                {...field}
+                fullWidth
+                type="date"
+                label="Passport expiry"
+                InputLabelProps={{ shrink: true }}
+                error={!!errors.compliance?.passportExpiry}
+                helperText={errors.compliance?.passportExpiry?.message}
+              />
             )}
           />
         </Grid>

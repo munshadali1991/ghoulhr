@@ -1,7 +1,9 @@
-import { Box, Button, Grid, Typography } from '@mui/material';
+import { Box, Button, Grid, IconButton, Typography, useMediaQuery, useTheme } from '@mui/material';
 import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
+
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAYS_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 /**
  * @param {dayjs.Dayjs} month
@@ -41,41 +43,75 @@ export function MonthCalendarGrid({
   renderCell,
   legend,
 }) {
+  const theme = useTheme();
+  const isCompact = useMediaQuery(theme.breakpoints.down('sm'));
   const cells = buildCalendarCells(month);
+  const weekdayLabels = isCompact ? WEEKDAYS_SHORT : WEEKDAYS;
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Button
-          size="small"
-          startIcon={<ChevronLeftRoundedIcon />}
-          onClick={() => onMonthChange(month.subtract(1, 'month'))}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, gap: 1 }}>
+        {isCompact ? (
+          <IconButton
+            size="small"
+            onClick={() => onMonthChange(month.subtract(1, 'month'))}
+            aria-label="Previous month"
+          >
+            <ChevronLeftRoundedIcon />
+          </IconButton>
+        ) : (
+          <Button
+            size="small"
+            startIcon={<ChevronLeftRoundedIcon />}
+            onClick={() => onMonthChange(month.subtract(1, 'month'))}
+          >
+            Prev
+          </Button>
+        )}
+        <Typography
+          variant="subtitle1"
+          fontWeight={700}
+          sx={{ fontSize: { xs: '0.875rem', sm: '1rem' }, textAlign: 'center' }}
         >
-          Prev
-        </Button>
-        <Typography variant="subtitle1" fontWeight={700}>
           {month.format('MMMM YYYY')}
         </Typography>
-        <Button
-          size="small"
-          endIcon={<ChevronRightRoundedIcon />}
-          onClick={() => onMonthChange(month.add(1, 'month'))}
-        >
-          Next
-        </Button>
+        {isCompact ? (
+          <IconButton
+            size="small"
+            onClick={() => onMonthChange(month.add(1, 'month'))}
+            aria-label="Next month"
+          >
+            <ChevronRightRoundedIcon />
+          </IconButton>
+        ) : (
+          <Button
+            size="small"
+            endIcon={<ChevronRightRoundedIcon />}
+            onClick={() => onMonthChange(month.add(1, 'month'))}
+          >
+            Next
+          </Button>
+        )}
       </Box>
 
-      <Grid container columns={7} spacing={0.5} sx={{ mb: 1 }}>
-        {WEEKDAYS.map((d) => (
-          <Grid key={d} size={1}>
-            <Typography variant="caption" color="text.secondary" fontWeight={600} align="center" display="block">
+      <Grid container columns={7} spacing={{ xs: 0.25, sm: 0.5 }} sx={{ mb: 1 }}>
+        {weekdayLabels.map((d, i) => (
+          <Grid key={`${d}-${i}`} size={1}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              fontWeight={600}
+              align="center"
+              display="block"
+              sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+            >
               {d}
             </Typography>
           </Grid>
         ))}
       </Grid>
 
-      <Grid container columns={7} spacing={0.5}>
+      <Grid container columns={7} spacing={{ xs: 0.25, sm: 0.5 }}>
         {cells.map(({ date, inMonth }) => {
           const selected = selectedDate ? date.isSame(selectedDate, 'day') : false;
           const iso = date.format('YYYY-MM-DD');
@@ -85,8 +121,8 @@ export function MonthCalendarGrid({
               <Box
                 onClick={() => onDateSelect(date)}
                 sx={{
-                  minHeight: 72,
-                  p: 0.75,
+                  minHeight: { xs: 52, sm: 64, md: 72 },
+                  p: { xs: 0.5, sm: 0.75 },
                   borderRadius: 1,
                   border: '1px solid',
                   borderColor: selected ? 'secondary.main' : 'divider',
@@ -104,11 +140,12 @@ export function MonthCalendarGrid({
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 22,
-                    height: 22,
+                    width: { xs: 20, sm: 22 },
+                    height: { xs: 20, sm: 22 },
                     borderRadius: '50%',
                     bgcolor: selected ? 'secondary.main' : 'transparent',
                     color: selected ? 'secondary.contrastText' : 'text.primary',
+                    fontSize: { xs: '0.65rem', sm: '0.75rem' },
                   }}
                 >
                   {date.date()}

@@ -13,16 +13,80 @@ import {
 } from '@mui/material';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+import { Link } from 'react-router-dom';
 import { APP_BRAND_INITIALS, APP_NAME } from '@/app/config/appConfig';
 
-export function SidebarContent({ user, navItems, onItemClick, pathname = '' }) {
+const navLinkStyle = {
+  textDecoration: 'none',
+  color: 'inherit',
+  display: 'block',
+};
+
+function userInitials(user) {
+  const name = user?.name?.trim();
+  if (name) {
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  const email = user?.email?.trim();
+  return email ? email[0].toUpperCase() : 'U';
+}
+
+/**
+ * @param {{
+ *   item: object,
+ *   onNavigate?: () => void,
+ *   onItemClick?: (item: object) => void,
+ *   children: import('react').ReactNode,
+ * }} props
+ */
+function SidebarNavWrapper({ item, onNavigate, onItemClick, children }) {
+  if (item.path) {
+    return (
+      <Link to={item.path} style={navLinkStyle} onClick={() => onNavigate?.()}>
+        {children}
+      </Link>
+    );
+  }
+
+  return (
+    <Box
+      component="div"
+      onClick={() => onItemClick?.(item)}
+      sx={{ display: 'block' }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+export function SidebarContent({
+  user,
+  navItems,
+  onItemClick,
+  pathname = '',
+  onNavigate,
+  brandName = APP_NAME,
+  brandLogo = null,
+  brandInitials = APP_BRAND_INITIALS,
+}) {
+  const headerAvatarSrc = user?.profilePhotoUrl || brandLogo || undefined;
+  const headerInitials = headerAvatarSrc ? null : userInitials(user) || brandInitials;
+
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
         <Stack direction="row" spacing={1.5} alignItems="center">
-          <Avatar sx={{ bgcolor: 'primary.main' }}>{APP_BRAND_INITIALS}</Avatar>
-          <Box>
-            <Typography fontWeight={700}>{APP_NAME}</Typography>
+          <Avatar src={headerAvatarSrc} sx={{ bgcolor: 'primary.main' }}>
+            {headerInitials}
+          </Avatar>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography fontWeight={700} noWrap>
+              {brandName}
+            </Typography>
             <Typography variant="caption" color="text.secondary">
               Smart Workforce Platform
             </Typography>
@@ -41,43 +105,64 @@ export function SidebarContent({ user, navItems, onItemClick, pathname = '' }) {
 
           if (!hasChildren) {
             return (
-              <ListItemButton
+              <SidebarNavWrapper
                 key={item.key ?? item.label}
-                selected={Boolean(item.active)}
-                sx={{ borderRadius: 2, mb: 0.75 }}
-                onClick={() => onItemClick?.(item)}
+                item={item}
+                onNavigate={onNavigate}
+                onItemClick={onItemClick}
               >
-                <ListItemIcon sx={{ minWidth: 38 }}>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.label} />
-              </ListItemButton>
+                <ListItemButton
+                  component="div"
+                  selected={Boolean(item.active)}
+                  sx={{ borderRadius: 2, mb: 0.75 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 38 }}>{item.icon}</ListItemIcon>
+                  <ListItemText primary={item.label} />
+                </ListItemButton>
+              </SidebarNavWrapper>
             );
           }
 
           return (
             <Box key={item.key ?? item.label} sx={{ mb: 0.5 }}>
-              <ListItemButton
-                selected={Boolean(item.active)}
-                sx={{ borderRadius: 2, mb: 0.25 }}
-                onClick={() => onItemClick?.(item)}
-              >
-                <ListItemIcon sx={{ minWidth: 38 }}>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.label} />
-                {submenuOpen ? <ExpandLess sx={{ color: 'text.secondary' }} /> : <ExpandMore sx={{ color: 'text.secondary' }} />}
-              </ListItemButton>
+              <SidebarNavWrapper item={item} onNavigate={onNavigate} onItemClick={onItemClick}>
+                <ListItemButton
+                  component="div"
+                  selected={Boolean(item.active)}
+                  sx={{ borderRadius: 2, mb: 0.25 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 38 }}>{item.icon}</ListItemIcon>
+                  <ListItemText primary={item.label} />
+                  {submenuOpen ? (
+                    <ExpandLess sx={{ color: 'text.secondary' }} />
+                  ) : (
+                    <ExpandMore sx={{ color: 'text.secondary' }} />
+                  )}
+                </ListItemButton>
+              </SidebarNavWrapper>
               <Collapse in={submenuOpen} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding sx={{ pl: 1, pb: 0.5 }}>
                   {item.children.map((child) => (
-                    <ListItemButton
+                    <SidebarNavWrapper
                       key={child.key ?? child.path ?? child.label}
-                      selected={Boolean(child.path) && pathname === child.path}
-                      sx={{ borderRadius: 2, py: 0.75, pl: 5 }}
-                      onClick={() => onItemClick?.(child)}
+                      item={child}
+                      onNavigate={onNavigate}
+                      onItemClick={onItemClick}
                     >
-                      <ListItemText
-                        primary={child.label}
-                        primaryTypographyProps={{ variant: 'body2', fontWeight: pathname === child.path ? 600 : 500 }}
-                      />
-                    </ListItemButton>
+                      <ListItemButton
+                        component="div"
+                        selected={Boolean(child.active)}
+                        sx={{ borderRadius: 2, py: 0.75, pl: 5 }}
+                      >
+                        <ListItemText
+                          primary={child.label}
+                          primaryTypographyProps={{
+                            variant: 'body2',
+                            fontWeight: child.active ? 600 : 500,
+                          }}
+                        />
+                      </ListItemButton>
+                    </SidebarNavWrapper>
                   ))}
                 </List>
               </Collapse>

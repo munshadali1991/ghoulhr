@@ -1,9 +1,15 @@
 import { Box, Button, Tab, Tabs, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { ORG_STRUCTURE_TABS } from './orgStructureTabs';
 
-export function OrgStructureToolbar({ activeTab, onTabChange, onAdd, addDisabled = false }) {
-  const isDepartments = activeTab === ORG_STRUCTURE_TABS.departments;
+export function OrgStructureToolbar({
+  activeTab,
+  allowedTabs = [],
+  onTabChange,
+  onAdd,
+  canWrite = false,
+  addDisabled = false,
+}) {
+  const isDepartments = activeTab === 'departments';
 
   return (
     <Box
@@ -29,20 +35,28 @@ export function OrgStructureToolbar({ activeTab, onTabChange, onAdd, addDisabled
           sx={{ mt: 2, minHeight: 40 }}
           aria-label="Department and designation tabs"
         >
-          <Tab label="Departments" value={ORG_STRUCTURE_TABS.departments} sx={{ minHeight: 40 }} />
-          <Tab label="Designations" value={ORG_STRUCTURE_TABS.designations} sx={{ minHeight: 40 }} />
+          {allowedTabs.map((tab) => (
+            <Tab
+              key={tab.key}
+              label={tab.label}
+              value={tab.key}
+              sx={{ minHeight: 40 }}
+            />
+          ))}
         </Tabs>
       </Box>
 
-      <Button
-        variant="contained"
-        startIcon={<AddIcon />}
-        onClick={onAdd}
-        disabled={addDisabled}
-        sx={{ alignSelf: { xs: 'stretch', sm: 'flex-start' }, flexShrink: 0 }}
-      >
-        {isDepartments ? 'Add Department' : 'Add Designation'}
-      </Button>
+      {canWrite ? (
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={onAdd}
+          disabled={addDisabled}
+          sx={{ alignSelf: { xs: 'stretch', sm: 'flex-start' }, flexShrink: 0 }}
+        >
+          {isDepartments ? 'Add Department' : 'Add Designation'}
+        </Button>
+      ) : null}
     </Box>
   );
 }

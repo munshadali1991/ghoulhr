@@ -1,9 +1,19 @@
+/** Vite BASE_URL without trailing slash; empty for production (`/`). */
+export function getAppBasePath() {
+  const base = import.meta.env.BASE_URL ?? '/';
+  if (base === '/') {
+    return '';
+  }
+  return base.endsWith('/') ? base.slice(0, -1) : base;
+}
+
 export function getTenantRedirectUrl(organizationSubdomain) {
   if (!organizationSubdomain || typeof window === 'undefined') {
     return null;
   }
 
   const { protocol, hostname, port } = window.location;
+  const appBasePath = getAppBasePath();
   const currentSubdomain = hostname.split('.')[0];
   if (currentSubdomain === organizationSubdomain) {
     return null;
@@ -30,7 +40,7 @@ export function getTenantRedirectUrl(organizationSubdomain) {
     }
   }
 
-  return `${protocol}//${targetHost}${portPart}`;
+  return `${protocol}//${targetHost}${portPart}${appBasePath}`;
 }
 
 /** True when the app is served on a tenant subdomain (not bare localhost / apex). */

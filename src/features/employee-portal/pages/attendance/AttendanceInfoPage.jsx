@@ -1,10 +1,10 @@
-import { Alert, Box, Button, CircularProgress, Grid, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import LocalCafeRoundedIcon from '@mui/icons-material/LocalCafeRounded';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageCard } from '@/shared/components/ui/PageCard';
-import { PageToolbar } from '../../components/PageToolbar';
+import { PageToolbar, ToolbarButtonGroup } from '../../components/PageToolbar';
 import { MonthCalendarGrid } from '../../components/MonthCalendarGrid';
 import { toDateKey } from '../../utils/calendarUtils';
 import { AttendanceMetricsRow } from '../../components/AttendanceMetricsRow';
@@ -19,6 +19,7 @@ import {
 } from '../../hooks/useEmployeePortalQueries';
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
+import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
 
 const STATUS_BG = {
   P: 'success.light',
@@ -26,8 +27,36 @@ const STATUS_BG = {
   R: 'background.paper',
 };
 
+const EMPTY_DETAIL = {
+  date: '',
+  dayOfWeek: '',
+  shiftName: '—',
+  shiftTime: '—',
+  scheme: '—',
+  schemeLabel: 'Attendance Scheme',
+  firstIn: '-',
+  lastOut: '-',
+  lateIn: '-',
+  earlyOut: '-',
+  totalWorkHrs: '-',
+  breakHrs: '-',
+  actualWork: '-',
+  workHoursInShift: '-',
+  shortfallHrs: '-',
+  excessHrs: '-',
+  progressPercent: 0,
+  processedAt: null,
+  status: '-',
+  remarks: '-',
+  sessions: [],
+  permissions: [],
+  swipes: [],
+};
+
 export function AttendanceInfoPage() {
   const navigate = useNavigate();
+  const { can } = useAuthorization();
+  const canPunch = can('ess.attendance:punch');
   const [month, setMonth] = useState(dayjs());
   const [selectedDate, setSelectedDate] = useState(dayjs());
 
@@ -93,15 +122,33 @@ export function AttendanceInfoPage() {
               textAlign: 'center',
               bgcolor: STATUS_BG[marker.status] ?? 'transparent',
               borderRadius: 0.5,
+              fontSize: { xs: '0.6rem', sm: '0.75rem' },
+              lineHeight: 1.2,
             }}
           >
             {marker.status}
           </Typography>
         ) : null}
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          {marker.hasBreak ? <LocalCafeRoundedIcon sx={{ fontSize: 12, opacity: 0.5 }} /> : <span />}
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          justifyContent="space-between"
+          alignItems="center"
+          spacing={0.25}
+        >
+          {marker.hasBreak ? (
+            <LocalCafeRoundedIcon sx={{ fontSize: { xs: 10, sm: 12 }, opacity: 0.5 }} />
+          ) : (
+            <span />
+          )}
           {marker.shiftCode ? (
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                fontSize: { xs: '0.55rem', sm: '0.65rem' },
+                display: { xs: 'none', sm: 'block' },
+              }}
+            >
               {marker.shiftCode}
             </Typography>
           ) : null}
@@ -110,14 +157,17 @@ export function AttendanceInfoPage() {
     );
   };
 
+  const detailData = detailQuery.data ?? { ...EMPTY_DETAIL, date: dateKey, dayOfWeek: selectedDate.format('ddd') };
+
   return (
     <>
       <PageToolbar
         right={
-          <>
+          <ToolbarButtonGroup>
             <Button variant="outlined" color="secondary" size="small">
               My Regularizations
             </Button>
+            {canPunch ? (
             <Button
               variant="contained"
               color="secondary"
@@ -127,7 +177,8 @@ export function AttendanceInfoPage() {
             >
               {signedIn ? 'Sign Out' : 'Sign In'}
             </Button>
-          </>
+            ) : null}
+          </ToolbarButtonGroup>
         }
       />
 
@@ -139,53 +190,40 @@ export function AttendanceInfoPage() {
         <AttendanceMetricsRow summary={summaryQuery.data} />
       ) : null}
 
-      <PageCard sx={{ p: 2, mb: 2 }}>
-        {daysQuery.isLoading ? (
-          <CircularProgress size={32} />
-        ) : daysQuery.error ? (
-          <Alert severity="error">{daysQuery.error.message}</Alert>
-        ) : (
-          <MonthCalendarGrid
-            month={month}
-            selectedDate={selectedDate}
-            onMonthChange={setMonth}
-            onDateSelect={handleDateSelect}
-            renderCell={renderCell}
-          />
-        )}
-      </PageCard>
+      <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} alignItems="flex-start">
+        <PageCard sx={{ flex: { lg: 2 }, width: '100%', p: { xs: 1.5, sm: 2 } }}>
+          {daysQuery.isLoading ? (
+            <CircularProgress size={32} />
+          ) : daysQuery.error ? (
+            <Alert severity="error">{daysQuery.error.message}</Alert>
+          ) : (
+            <MonthCalendarGrid
+              month={month}
+              selectedDate={selectedDate}
+              onMonthChange={setMonth}
+              onDateSelect={handleDateSelect}
+              renderCell={renderCell}
+            />
+          )}
+        </PageCard>
 
-      <AttendanceDayDetailPanel
-        detail={
-          detailQuery.data ?? {
-            date: dateKey,
-            dayOfWeek: selectedDate.format('ddd'),
-            shiftName: '—',
-            shiftTime: '—',
-            scheme: '—',
-            schemeLabel: 'Attendance Scheme',
-            firstIn: '-',
-            lastOut: '-',
-            lateIn: '-',
-            earlyOut: '-',
-            totalWorkHrs: '-',
-            breakHrs: '-',
-            actualWork: '-',
-            workHoursInShift: '-',
-            shortfallHrs: '-',
-            excessHrs: '-',
-            progressPercent: 0,
-            processedAt: null,
-            status: '-',
-            remarks: '-',
-            sessions: [],
-            permissions: [],
-            swipes: [],
-          }
-        }
-        loading={detailQuery.isLoading}
-        error={detailQuery.error}
-      />
+        <Box
+          sx={{
+            flex: { lg: 1 },
+            width: '100%',
+            minWidth: { lg: 320 },
+            position: { lg: 'sticky' },
+            top: { lg: 16 },
+            alignSelf: { lg: 'flex-start' },
+          }}
+        >
+          <AttendanceDayDetailPanel
+            detail={detailData}
+            loading={detailQuery.isLoading}
+            error={detailQuery.error}
+          />
+        </Box>
+      </Stack>
 
       <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={close} />
     </>

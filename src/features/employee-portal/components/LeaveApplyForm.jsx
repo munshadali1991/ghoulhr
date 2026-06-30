@@ -27,6 +27,8 @@ import { LeaveCcEmployeePicker } from './LeaveCcEmployeePicker';
 import { LeavePreviewSummary } from './LeavePreviewSummary';
 import { MOCK_SESSIONS } from '../mocks/employeePortalMocks';
 import { useLeaveBalances, useLeavePreview } from '../hooks/useEmployeePortalQueries';
+import { useAuth } from '@/app/providers/useAuth';
+import { uploadStorageFile } from '@/shared/api/storageApi';
 
 const ACCEPTED_FILE_TYPES =
   '.pdf,.xls,.xlsx,.doc,.docx,.txt,.ppt,.pptx,.gif,.jpg,.jpeg,.png';
@@ -76,7 +78,11 @@ export function LeaveApplyForm({
 
   const [policyOpen, setPolicyOpen] = useState(true);
   const [attachment, setAttachment] = useState(null);
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
+  const [attachmentError, setAttachmentError] = useState('');
   const fileInputRef = useRef(null);
+  const { session } = useAuth();
+  const employeeId = session?.user?.id;
   const fromDate = watch('fromDate');
   const toDate = watch('toDate');
   const fromSession = watch('fromSession');
@@ -139,24 +145,41 @@ export function LeaveApplyForm({
       : ['Leave requests require manager approval. Half-day leaves count as 0.5 days against your balance.'];
   }, [selectedRule]);
 
-  const handleFileChange = (event) => {
+  const handleFileChange = async (event) => {
     const file = event.target.files?.[0];
     if (!file) {
       setAttachment(null);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : '';
-      const base64 = result.includes(',') ? result.split(',')[1] : result;
+    if (!employeeId) {
+      setAttachmentError('Sign in again to attach a document.');
+      return;
+    }
+
+    setAttachmentError('');
+    try {
+      setAttachmentUploading(true);
+      const result = await uploadStorageFile({
+        file,
+        category: 'employee-documents',
+        module: 'leave',
+        documentType: 'LEAVE_SUPPORTING',
+        employeeId,
+      });
       setAttachment({
         documentType: 'LEAVE_SUPPORTING',
-        fileName: file.name,
-        mimeType: file.type || 'application/octet-stream',
-        dataBase64: base64,
+        fileName: result.fileName,
+        mimeType: result.mimeType,
+        sizeBytes: result.sizeBytes,
+        storageKey: result.storageKey,
       });
-    };
-    reader.readAsDataURL(file);
+    } catch (e) {
+      setAttachmentError(e.message || 'Failed to upload attachment');
+      setAttachment(null);
+    } finally {
+      setAttachmentUploading(false);
+      event.target.value = '';
+    }
   };
 
   const handleRemoveAttachment = () => {
@@ -184,7 +207,19 @@ export function LeaveApplyForm({
         <Alert
           severity="warning"
           variant="outlined"
-          sx={{ mb: 3, borderRadius: 2 }}
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            '& .MuiAlert-action': {
+              pt: { xs: 0.5, sm: 0 },
+              pl: { xs: 0, sm: 2 },
+              mr: 0,
+              alignSelf: { xs: 'flex-start', sm: 'center' },
+            },
+            '& .MuiAlert-message': { minWidth: 0 },
+          }}
           action={
             <Link component="button" variant="body2" onClick={() => setPolicyOpen(false)} sx={{ whiteSpace: 'nowrap' }}>
               Hide
@@ -201,7 +236,11 @@ export function LeaveApplyForm({
       </Collapse>
 
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" fontWeight={700} sx={{ letterSpacing: '-0.01em' }}>
+        <Typography
+          variant="h5"
+          fontWeight={700}
+          sx={{ letterSpacing: '-0.01em', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
+        >
           Applying for Leave
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -242,7 +281,7 @@ export function LeaveApplyForm({
             hint="Select dates and sessions for half-day leave"
           >
             <Grid container spacing={2} alignItems="stretch">
-              <Grid size={{ xs: 12, lg: 7 }}>
+              <Grid size={{ xs: 12, md: 7 }}>
                 <Stack spacing={2.5}>
                   <Box>
                     <Typography
@@ -350,7 +389,7 @@ export function LeaveApplyForm({
                 </Stack>
               </Grid>
 
-              <Grid size={{ xs: 12, lg: 5 }}>
+              <Grid size={{ xs: 12, md: 5 }}>
                 <LeavePreviewSummary
                   balance={remainingBalance}
                   loading={balanceLoading}
@@ -464,6 +503,7 @@ export function LeaveApplyForm({
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
+                    flexWrap: 'wrap',
                     gap: 1,
                     px: 1.5,
                     py: 1,
@@ -474,7 +514,11 @@ export function LeaveApplyForm({
                   }}
                 >
                   <AttachFileOutlinedIcon fontSize="small" color="action" />
-                  <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }} noWrap title={attachment.fileName}>
+                  <Typography
+                    variant="body2"
+                    sx={{ flex: '1 1 120px', minWidth: 0, wordBreak: 'break-word' }}
+                    title={attachment.fileName}
+                  >
                     {attachment.fileName}
                   </Typography>
                   <IconButton size="small" aria-label="Remove attachment" onClick={handleRemoveAttachment}>
@@ -517,6 +561,12 @@ export function LeaveApplyForm({
                 </Box>
               )}
 
+              {attachmentError ? (
+                <Typography variant="caption" color="error" display="block" sx={{ mt: 1 }}>
+                  {attachmentError}
+                </Typography>
+              ) : null}
+
               {selectedRule?.requiresSupportingDocument ? (
                 <Typography variant="caption" color="warning.main" display="block" sx={{ mt: 1 }}>
                   Supporting document may be required based on leave duration (HR policy).
@@ -538,10 +588,23 @@ export function LeaveApplyForm({
         justifyContent="flex-end"
         alignItems={{ xs: 'stretch', sm: 'center' }}
       >
-        <Button type="button" variant="outlined" color="inherit" onClick={handleReset} disabled={submitting}>
+        <Button
+          type="button"
+          variant="outlined"
+          color="inherit"
+          onClick={handleReset}
+          disabled={submitting}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           Cancel
         </Button>
-        <Button type="submit" variant="contained" color="secondary" disabled={submitting} sx={{ minWidth: { sm: 140 } }}>
+        <Button
+          type="submit"
+          variant="contained"
+          color="secondary"
+          disabled={submitting}
+          sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 140 } }}
+        >
           Submit request
         </Button>
       </Stack>

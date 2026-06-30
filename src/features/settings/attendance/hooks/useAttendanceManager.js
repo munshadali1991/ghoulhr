@@ -57,10 +57,11 @@ export function useAttendanceManager(organizationId) {
 
   const persist = useCallback(
     async (patch) => {
-      await updateSettings({
-        ...settings,
-        ...patch,
-      });
+      const payload = { ...settings, ...patch };
+      if (Array.isArray(payload.shifts)) {
+        payload.shifts = payload.shifts.map(serializeShiftForApi);
+      }
+      await updateSettings(payload);
     },
     [settings, updateSettings],
   );

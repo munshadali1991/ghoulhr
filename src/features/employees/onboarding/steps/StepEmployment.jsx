@@ -353,7 +353,8 @@ export function StepEmployment({ organizationId, hrManagerOptions, employeeSetti
                 fullWidth
                 label="Shift"
                 disabled={!selectedLocationId || shiftOptions.length === 0}
-                helperText={shiftHelper}
+                helperText={errors.employment?.shift?.message || shiftHelper}
+                error={!!errors.employment?.shift}
               >
                 {shiftOptions.map((o) => (
                   <MenuItem key={o.value} value={o.value}>
@@ -369,7 +370,15 @@ export function StepEmployment({ organizationId, hrManagerOptions, employeeSetti
             name="employment.probationPeriodDays"
             control={control}
             render={({ field }) => (
-              <TextField {...field} fullWidth type="number" label="Probation (days)" inputProps={{ min: 0 }} />
+              <TextField
+                {...field}
+                fullWidth
+                type="number"
+                label="Probation (days)"
+                inputProps={{ min: 0 }}
+                error={!!errors.employment?.probationPeriodDays}
+                helperText={errors.employment?.probationPeriodDays?.message}
+              />
             )}
           />
         </Grid>
@@ -378,7 +387,15 @@ export function StepEmployment({ organizationId, hrManagerOptions, employeeSetti
             name="employment.noticePeriodDays"
             control={control}
             render={({ field }) => (
-              <TextField {...field} fullWidth type="number" label="Notice period (days)" inputProps={{ min: 0 }} />
+              <TextField
+                {...field}
+                fullWidth
+                type="number"
+                label="Notice period (days)"
+                inputProps={{ min: 0 }}
+                error={!!errors.employment?.noticePeriodDays}
+                helperText={errors.employment?.noticePeriodDays?.message}
+              />
             )}
           />
         </Grid>

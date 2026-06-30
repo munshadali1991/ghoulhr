@@ -44,6 +44,26 @@ export function sanitizeMasterData(rawDepartments, rawDesignations) {
   return { departments, designations };
 }
 
+/** Fields accepted by POST /settings/employee for department rows. */
+export function toApiDepartment(department) {
+  return {
+    id: department.id,
+    name: department.name,
+    code: department.code?.trim() || '',
+    isActive: department.isActive !== false,
+  };
+}
+
+/** Fields accepted by POST /settings/employee for designation rows. */
+export function toApiDesignation(designation) {
+  return {
+    id: designation.id,
+    name: designation.name,
+    departmentIds: designation.departmentIds || [],
+    isActive: designation.isActive !== false,
+  };
+}
+
 export function validateDepartments(departments) {
   const names = new Set();
   for (const department of departments) {

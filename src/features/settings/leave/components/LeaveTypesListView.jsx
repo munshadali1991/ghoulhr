@@ -22,6 +22,8 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PolicyOutlinedIcon from '@mui/icons-material/PolicyOutlined';
 import { BrandedButton } from '@/shared/components/ui/BrandedButton';
 import { PageCard } from '@/shared/components/ui/PageCard';
+import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 import { accrualLabel, workflowLabel } from '../utils/leaveMappers';
 
 /**
@@ -38,6 +40,7 @@ import { accrualLabel, workflowLabel } from '../utils/leaveMappers';
  *   onAdd: () => void,
  *   onRowClick: (index: number) => void,
  *   onRemove: (index: number) => void,
+ *   readOnly?: boolean,
  * }} props
  */
 export function LeaveTypesListView({
@@ -53,7 +56,110 @@ export function LeaveTypesListView({
   onAdd,
   onRowClick,
   onRemove,
+  readOnly = false,
 }) {
+  const isMobileLayout = useIsMobileLayout();
+
+  const renderLeaveRow = (fieldIndex) => {
+    const r = watchedLeaves[fieldIndex] || {};
+    const locName = locationNameById.get(r.locationId) || '—';
+    const deleteAction = readOnly || !onRemove ? null : (
+      <Tooltip title="Delete">
+        <span>
+          <IconButton
+            size="small"
+            color="error"
+            disabled={fields.length <= 1}
+            onClick={() => onRemove(fieldIndex)}
+          >
+            <DeleteOutlineIcon fontSize="small" />
+          </IconButton>
+        </span>
+      </Tooltip>
+    );
+
+    if (isMobileLayout) {
+      return (
+        <MobileDataCard
+          key={fields[fieldIndex].id}
+          onClick={() => onRowClick(fieldIndex)}
+          fields={[
+            { label: 'Location', value: locName },
+            { label: 'Leave name', value: r.name?.trim() || 'Untitled' },
+            { label: 'Code', value: r.code?.trim() || '—' },
+            { label: 'Days / yr', value: r.annualEntitlementDays ?? 0 },
+            { label: 'Accrual', value: accrualLabel(r.accrualType) },
+            {
+              label: 'Paid',
+              value: (
+                <Chip
+                  size="small"
+                  label={r.isPaid !== false ? 'Yes' : 'No'}
+                  color={r.isPaid !== false ? 'primary' : 'default'}
+                  variant={r.isPaid !== false ? 'filled' : 'outlined'}
+                />
+              ),
+            },
+            {
+              label: 'Active',
+              value: (
+                <Chip
+                  size="small"
+                  label={r.isActive !== false ? 'Yes' : 'No'}
+                  color={r.isActive !== false ? 'success' : 'default'}
+                  variant="outlined"
+                />
+              ),
+            },
+            { label: 'Approval', value: workflowLabel(r.approvalWorkflowPreset) },
+          ]}
+          actions={deleteAction}
+        />
+      );
+    }
+
+    return (
+      <TableRow
+        key={fields[fieldIndex].id}
+        hover
+        sx={{ cursor: 'pointer' }}
+        onClick={() => onRowClick(fieldIndex)}
+      >
+        <TableCell>{locName}</TableCell>
+        <TableCell>
+          <Typography variant="body2" fontWeight={600}>
+            {r.name?.trim() || 'Untitled'}
+          </Typography>
+        </TableCell>
+        <TableCell>{r.code?.trim() || '—'}</TableCell>
+        <TableCell align="right">{r.annualEntitlementDays ?? 0}</TableCell>
+        <TableCell>{accrualLabel(r.accrualType)}</TableCell>
+        <TableCell>
+          <Chip
+            size="small"
+            label={r.isPaid !== false ? 'Yes' : 'No'}
+            color={r.isPaid !== false ? 'primary' : 'default'}
+            variant={r.isPaid !== false ? 'filled' : 'outlined'}
+          />
+        </TableCell>
+        <TableCell>
+          <Chip
+            size="small"
+            label={r.isActive !== false ? 'Yes' : 'No'}
+            color={r.isActive !== false ? 'success' : 'default'}
+            variant="outlined"
+          />
+        </TableCell>
+        <TableCell sx={{ maxWidth: 200 }} noWrap>
+          {workflowLabel(r.approvalWorkflowPreset)}
+        </TableCell>
+        <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+          {deleteAction}
+        </TableCell>
+      </TableRow>
+    );
+  };
+
   return (
     <>
       <Box
@@ -75,9 +181,11 @@ export function LeaveTypesListView({
             {locationCount === 1 ? '' : 's'}. Click a row to edit details.
           </Typography>
         </Box>
-        <BrandedButton startIcon={<AddRoundedIcon />} onClick={onAdd} sx={{ alignSelf: { sm: 'center' } }}>
-          Add leave type
-        </BrandedButton>
+        {onAdd && !readOnly ? (
+          <BrandedButton startIcon={<AddRoundedIcon />} onClick={onAdd} sx={{ alignSelf: { sm: 'center' } }}>
+            Add leave type
+          </BrandedButton>
+        ) : null}
       </Box>
 
       <PageCard sx={{ mb: 3 }}>
@@ -100,8 +208,26 @@ export function LeaveTypesListView({
       </PageCard>
 
       <PageCard>
+        {filteredDisplayIndices.length === 0 ? (
+          <Box sx={{ py: 6, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {searchQuery.trim()
+                ? 'No leave types match your search'
+                : 'No leave types yet — add your first policy.'}
+            </Typography>
+            {!searchQuery.trim() && onAdd && !readOnly ? (
+              <Button variant="outlined" startIcon={<AddRoundedIcon />} sx={{ mt: 2 }} onClick={onAdd}>
+                Add leave type
+              </Button>
+            ) : null}
+          </Box>
+        ) : isMobileLayout ? (
+          <Stack spacing={1.5} sx={{ p: 2 }}>
+            {filteredDisplayIndices.map((fieldIndex) => renderLeaveRow(fieldIndex))}
+          </Stack>
+        ) : (
         <TableContainer sx={{ overflowX: 'auto' }}>
-          <Table size="small" sx={{ minWidth: 880 }}>
+          <Table size="small" sx={{ minWidth: { xs: 0, md: 880 } }}>
             <TableHead>
               <TableRow sx={{ bgcolor: 'background.default' }}>
                 <TableCell>
@@ -134,81 +260,11 @@ export function LeaveTypesListView({
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredDisplayIndices.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {searchQuery.trim()
-                        ? 'No leave types match your search'
-                        : 'No leave types yet — add your first policy.'}
-                    </Typography>
-                    {!searchQuery.trim() ? (
-                      <Button variant="outlined" startIcon={<AddRoundedIcon />} sx={{ mt: 2 }} onClick={onAdd}>
-                        Add leave type
-                      </Button>
-                    ) : null}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredDisplayIndices.map((fieldIndex) => {
-                  const r = watchedLeaves[fieldIndex] || {};
-                  const locName = locationNameById.get(r.locationId) || '—';
-                  return (
-                    <TableRow
-                      key={fields[fieldIndex].id}
-                      hover
-                      sx={{ cursor: 'pointer' }}
-                      onClick={() => onRowClick(fieldIndex)}
-                    >
-                      <TableCell>{locName}</TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={600}>
-                          {r.name?.trim() || 'Untitled'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{r.code?.trim() || '—'}</TableCell>
-                      <TableCell align="right">{r.annualEntitlementDays ?? 0}</TableCell>
-                      <TableCell>{accrualLabel(r.accrualType)}</TableCell>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          label={r.isPaid !== false ? 'Yes' : 'No'}
-                          color={r.isPaid !== false ? 'primary' : 'default'}
-                          variant={r.isPaid !== false ? 'filled' : 'outlined'}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          label={r.isActive !== false ? 'Yes' : 'No'}
-                          color={r.isActive !== false ? 'success' : 'default'}
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell sx={{ maxWidth: 200 }} noWrap>
-                        {workflowLabel(r.approvalWorkflowPreset)}
-                      </TableCell>
-                      <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                        <Tooltip title="Delete">
-                          <span>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              disabled={fields.length <= 1}
-                              onClick={() => onRemove(fieldIndex)}
-                            >
-                              <DeleteOutlineIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
+              {filteredDisplayIndices.map((fieldIndex) => renderLeaveRow(fieldIndex))}
             </TableBody>
           </Table>
         </TableContainer>
+        )}
       </PageCard>
 
       <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 2 }}>

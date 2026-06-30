@@ -3,6 +3,7 @@ import {
   loginRequest,
 } from '@/features/auth/api/authApi';
 import { getTenantRedirectUrl } from '@/shared/utils/tenant';
+import { getAppBasePath } from '@/shared/utils/tenant';
 
 /**
  * @param {{ role?: string, organizationSubdomain?: string } | null | undefined} user
@@ -32,6 +33,28 @@ export async function applyAuthResult(authResult, setSession) {
   };
 
   setSession(session);
+
+  const mustChangePassword =
+    authResult.requiresPasswordChange ||
+    authResult.user?.mustChangePassword ||
+    session.user?.mustChangePassword;
+
+  if (mustChangePassword) {
+    const redirectUrl = resolvePostAuthRedirect(authResult.user);
+    if (redirectUrl) {
+      const url = new URL(redirectUrl);
+      url.pathname = '/change-password';
+      if (authResult.handoff) {
+        url.searchParams.set('handoff', authResult.handoff);
+      }
+      window.location.assign(url.toString());
+      return true;
+    }
+    const base = getAppBasePath();
+    window.location.assign(`${base}/change-password`);
+    return true;
+  }
+
   const redirectUrl = resolvePostAuthRedirect(authResult.user);
   if (redirectUrl) {
     const url = new URL(redirectUrl);

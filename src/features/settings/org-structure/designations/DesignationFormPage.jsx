@@ -27,6 +27,7 @@ export function DesignationFormPage({
   onClearActionError,
   onBack,
   onSave,
+  readOnly = false,
 }) {
   const isEdit = Boolean(record?.id);
   const deptNames = departmentNameMap(departments);
@@ -58,7 +59,6 @@ export function DesignationFormPage({
           name: values.name,
           departmentIds: values.departmentIds,
           isActive: values.isActive,
-          createdAt: record?.createdAt ?? null,
         },
         record?.id,
       );
@@ -81,6 +81,7 @@ export function DesignationFormPage({
       onSubmit={onSubmit}
       isSubmitting={isSaving}
       submitLabel={isEdit ? 'Save changes' : 'Create designation'}
+      readOnly={readOnly}
     >
       {actionError ? (
         <Alert severity="error" sx={{ mb: 3 }} onClose={onClearActionError}>
@@ -98,6 +99,7 @@ export function DesignationFormPage({
               {...register('name')}
               error={!!errors.name}
               autoFocus
+              disabled={readOnly}
             />
           </SettingsField>
         </Grid>
@@ -116,6 +118,7 @@ export function DesignationFormPage({
                     value={field.value || []}
                     label="Departments"
                     onChange={(e) => field.onChange(e.target.value)}
+                    disabled={readOnly}
                     renderValue={(selected) => (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                         {selected.map((id) => (
@@ -157,6 +160,7 @@ export function DesignationFormPage({
                     <Switch
                       checked={!!field.value}
                       onChange={(e) => field.onChange(e.target.checked)}
+                      disabled={readOnly}
                     />
                   }
                   label={field.value ? 'Active' : 'Inactive'}

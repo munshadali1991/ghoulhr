@@ -48,7 +48,14 @@ export function LeaveApplyPage() {
   const withdrawMutation = useWithdrawLeaveRequest();
 
   const pendingQuery = useLeaveRequests('PENDING');
-  const historyQuery = useLeaveRequests('APPROVED');
+  const approvedHistoryQuery = useLeaveRequests('APPROVED');
+  const rejectedHistoryQuery = useLeaveRequests('REJECTED');
+
+  const historyItems = [...(approvedHistoryQuery.data ?? []), ...(rejectedHistoryQuery.data ?? [])].sort(
+    (a, b) => dayjs(b.appliedOn).valueOf() - dayjs(a.appliedOn).valueOf(),
+  );
+  const historyLoading = approvedHistoryQuery.isLoading || rejectedHistoryQuery.isLoading;
+  const historyError = approvedHistoryQuery.error ?? rejectedHistoryQuery.error;
 
   const setTab = (value) => {
     setSearchParams({ tab: value });
@@ -86,14 +93,22 @@ export function LeaveApplyPage() {
 
   return (
     <>
-      <Stack alignItems="center" sx={{ mb: 3 }}>
-        <SegmentedTabs value={tab} options={TAB_OPTIONS} onChange={setTab} />
-      </Stack>
+      <Box sx={{ width: '100%', minWidth: 0, maxWidth: '100%' }}>
+        <Box sx={{ width: '100%', mb: 3 }}>
+          <SegmentedTabs value={tab} options={TAB_OPTIONS} onChange={setTab} />
+        </Box>
 
       {tab === 'apply' && (
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="flex-start">
-          <LeaveTypeNav value={leaveTypeNav} onChange={setLeaveTypeNav} />
-          <PageCard sx={{ flex: 1, p: { xs: 2, md: 3 } }}>
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={2}
+          alignItems="flex-start"
+          sx={{ width: '100%', minWidth: 0 }}
+        >
+          <Box sx={{ width: { xs: '100%', md: 'auto' }, minWidth: 0 }}>
+            <LeaveTypeNav value={leaveTypeNav} onChange={setLeaveTypeNav} />
+          </Box>
+          <PageCard sx={{ flex: 1, width: '100%', minWidth: 0, p: { xs: 1.5, sm: 2, md: 3 } }}>
             {typesLoading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
                 <CircularProgress size={32} />
@@ -136,14 +151,14 @@ export function LeaveApplyPage() {
 
       {tab === 'history' && (
         <Box>
-          {historyQuery.isLoading ? (
+          {historyLoading ? (
             <CircularProgress size={32} />
-          ) : historyQuery.error ? (
-            <Alert severity="error">{historyQuery.error.message}</Alert>
-          ) : historyQuery.data?.length === 0 ? (
+          ) : historyError ? (
+            <Alert severity="error">{historyError.message}</Alert>
+          ) : historyItems.length === 0 ? (
             <EmptyStatePanel title="No leave history" />
           ) : (
-            historyQuery.data.map((req) => (
+            historyItems.map((req) => (
               <LeaveRequestAccordionCard key={req.id} request={req} mode="history" />
             ))
           )}
@@ -151,6 +166,7 @@ export function LeaveApplyPage() {
       )}
 
       <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={close} />
+      </Box>
     </>
   );
 }

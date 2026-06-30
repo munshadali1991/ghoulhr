@@ -23,6 +23,8 @@
  *   status: LeaveRequestStatus,
  *   daysCount: number,
  *   approverName?: string,
+ *   rejectionReason?: string,
+ *   approvalNotes?: string,
  *   duration: LeaveDuration,
  *   reason?: string,
  *   appliedOn: string,

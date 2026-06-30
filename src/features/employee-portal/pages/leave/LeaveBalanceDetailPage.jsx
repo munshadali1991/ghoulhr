@@ -107,7 +107,7 @@ export function LeaveBalanceDetailPage() {
             <Button variant="outlined" color="secondary" onClick={() => navigate('/leave/apply')}>
               Apply
             </Button>
-            <FormControl size="small" sx={{ minWidth: 100 }}>
+            <FormControl size="small" sx={{ minWidth: { sm: 100 } }}>
               <InputLabel>Year</InputLabel>
               <Select label="Year" value={year} onChange={(e) => handleYearChange(Number(e.target.value))}>
                 {yearOptions.map((y) => (

@@ -9,6 +9,8 @@ import { createContext } from 'react';
  * @property {string} role
  * @property {string} [employeeCode]
  * @property {string} [name]
+ * @property {boolean} [mustChangePassword]
+ * @property {string} [status]
  */
 
 /**

@@ -84,7 +84,7 @@ export function PermissionResourceRow({
         </Stack>
 
         {hasAnyActive && (
-          <FormControl size="small" sx={{ minWidth: 150 }} disabled={disabled}>
+          <FormControl size="small" sx={{ minWidth: { xs: 0, md: 150 }, width: { xs: '100%', md: 'auto' } }} disabled={disabled}>
             <Select
               value={activeByCode.get(primaryPerm.code) ?? 'SELF'}
               onChange={(e) => {

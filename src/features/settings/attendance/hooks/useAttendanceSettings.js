@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAttendanceSettings, updateAttendanceSettings } from '@/features/settings/api/settingsApi';
 import { pickRecordTimestamp } from '@/shared/utils/timestamps';
@@ -110,8 +111,11 @@ export function useAttendanceSettings(organizationId) {
     },
   });
 
-  // Transform data for form - parse any JSON strings
-  const settings = settingsData ? parseSettingsData(settingsData) : {};
+  // Transform data for form - parse any JSON strings (memoized so referential identity is stable)
+  const settings = useMemo(
+    () => (settingsData ? parseSettingsData(settingsData) : {}),
+    [settingsData],
+  );
 
   return {
     settings,
