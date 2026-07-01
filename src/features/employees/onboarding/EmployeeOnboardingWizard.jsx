@@ -176,15 +176,6 @@ export function EmployeeOnboardingWizard({
     };
   }, [personalEmail, officialEmail, mobileNumber, employeeId]);
 
-  const hrManagerOptions = useMemo(() => {
-    return (employees || [])
-      .filter((e) => e.status !== 'TERMINATED')
-      .map((e) => ({
-        id: e.id,
-        label: `${e.name} (${e.employeeCode})`,
-      }));
-  }, [employees]);
-
   const validationOptions = useCallback(() => {
     const values = getValues();
     const locationId = resolveBusinessUnitToLocationId(values.employment?.businessUnit, activeLocations);
@@ -269,6 +260,7 @@ export function EmployeeOnboardingWizard({
     setSubmitting(true);
     try {
       const payload = buildHrOnboardingPayload(r.data, {
+        isEditMode: Boolean(employeeId),
         deletedDocumentIds: employeeId
           ? getDeletedDocumentIds(initialDocumentIdsRef.current, r.data.documents)
           : undefined,
@@ -316,7 +308,6 @@ export function EmployeeOnboardingWizard({
         return (
           <StepEmployment
             organizationId={organizationId}
-            hrManagerOptions={hrManagerOptions}
             employeeSettings={employeeSettings}
           />
         );
@@ -331,7 +322,7 @@ export function EmployeeOnboardingWizard({
           <StepDocuments uploadBatchId={uploadBatchIdRef.current} employeeId={employeeId} />
         );
       case 6:
-        return <StepAccess />;
+        return <StepAccess isEditMode={isEditMode} />;
       default:
         return null;
     }

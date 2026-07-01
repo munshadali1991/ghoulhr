@@ -42,6 +42,7 @@ export function ReportingManagersTab({ showSnackbar }) {
   const [rows, setRows] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [managerCandidates, setManagerCandidates] = useState([]);
+  const [candidatesError, setCandidatesError] = useState('');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -56,18 +57,29 @@ export function ReportingManagersTab({ showSnackbar }) {
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
+    setCandidatesError('');
     try {
-      const [data, empList, candidates] = await Promise.all([
+      const [data, empList] = await Promise.all([
         listReportingManagers({ search, filter }),
         listEmployees(),
-        listReportingManagerCandidates(),
       ]);
       setRows(Array.isArray(data) ? data : []);
       setEmployees(Array.isArray(empList) ? empList : []);
-      setManagerCandidates(Array.isArray(candidates) ? candidates : []);
     } catch (e) {
       showSnackbar(e.message || 'Failed to load reporting managers', 'error');
       setRows([]);
+      setEmployees([]);
+    }
+
+    try {
+      const candidates = await listReportingManagerCandidates();
+      setManagerCandidates(Array.isArray(candidates) ? candidates : []);
+    } catch (e) {
+      setManagerCandidates([]);
+      const message =
+        e.message || 'Failed to load manager candidates (Manager role required)';
+      setCandidatesError(message);
+      showSnackbar(message, 'warning');
     } finally {
       setLoading(false);
     }
@@ -416,6 +428,7 @@ export function ReportingManagersTab({ showSnackbar }) {
         onSuccess={handleDialogSuccess}
         employees={employees}
         managerCandidates={managerCandidates}
+        candidatesError={candidatesError}
         selectedEmployees={bulkTargets}
         initialEmployee={dialogTarget?.employee ?? null}
         initialManager={dialogTarget?.manager ?? null}
