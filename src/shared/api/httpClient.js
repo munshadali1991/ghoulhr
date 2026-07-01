@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '@/app/config/appConfig';
+import { getApiBaseUrl } from '@/app/config/appConfig';
 import { SESSION_EXPIRED_EVENT } from '@/features/auth/hooks/useSessionExpiry';
 import { getAppBasePath } from '@/shared/utils/tenant';
 let refreshPromise = null;
@@ -17,7 +17,7 @@ async function refreshTokensOnce() {
   if (refreshPromise) {
     return refreshPromise;
   }
-  refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
+  refreshPromise = fetch(`${getApiBaseUrl()}/auth/refresh`, {
     method: 'POST',
     credentials: 'include',
   }).then((res) => {
@@ -42,7 +42,7 @@ async function refreshTokensOnce() {
  */
 export async function apiFetch(path, options = {}) {
   const { _skipAuthRetry, ...rest } = options;
-  const url = `${API_BASE_URL}${path}`;
+  const url = `${getApiBaseUrl()}${path}`;
   const headers = {
     ...(rest.headers || {}),
   };

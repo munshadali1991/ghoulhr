@@ -1,4 +1,4 @@
-import { API_BASE_URL, DEFAULT_BOOTSTRAP_KEY } from '@/app/config/appConfig';
+import { getApiBaseUrl, DEFAULT_BOOTSTRAP_KEY } from '@/app/config/appConfig';
 import { SESSION_EXPIRED_EVENT } from '@/features/auth/hooks/useSessionExpiry';
 
 async function parseJsonResponse(response) {
@@ -12,7 +12,7 @@ async function parseJsonResponse(response) {
 }
 
 async function authPost(path, body, extraHeaders = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -42,12 +42,12 @@ async function authPost(path, body, extraHeaders = {}) {
 }
 
 async function loadSessionFromApi() {
-  let res = await fetch(`${API_BASE_URL}/auth/session`, {
+  let res = await fetch(`${getApiBaseUrl()}/auth/session`, {
     credentials: 'include',
   });
 
   if (res.status === 401) {
-    const r2 = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    const r2 = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
     });
@@ -57,7 +57,7 @@ async function loadSessionFromApi() {
       }
       return null;
     }
-    res = await fetch(`${API_BASE_URL}/auth/session`, {
+    res = await fetch(`${getApiBaseUrl()}/auth/session`, {
       credentials: 'include',
     });
   }
@@ -90,7 +90,7 @@ export async function fetchSessionUser() {
 }
 
 export async function logoutRequest() {
-  await fetch(`${API_BASE_URL}/auth/logout`, {
+  await fetch(`${getApiBaseUrl()}/auth/logout`, {
     method: 'POST',
     credentials: 'include',
   });

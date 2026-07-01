@@ -1,14 +1,26 @@
+/** True when the app is running in staging (build base or URL path). */
+export function isStagingRuntime() {
+  const base = import.meta.env.BASE_URL ?? '/';
+  if (base !== '/') {
+    return true;
+  }
+  if (
+    typeof window !== 'undefined' &&
+    window.location.pathname.startsWith('/staging')
+  ) {
+    return true;
+  }
+  return false;
+}
+
 /** Vite BASE_URL without trailing slash; empty for production (`/`). */
 export function getAppBasePath() {
+  if (!isStagingRuntime()) {
+    return '';
+  }
   const base = import.meta.env.BASE_URL ?? '/';
   if (base === '/') {
-    if (
-      typeof window !== 'undefined' &&
-      window.location.pathname.startsWith('/staging')
-    ) {
-      return '/staging';
-    }
-    return '';
+    return '/staging';
   }
   return base.endsWith('/') ? base.slice(0, -1) : base;
 }

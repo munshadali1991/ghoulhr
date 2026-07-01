@@ -15,6 +15,23 @@ export function resolvePostAuthRedirect(user) {
 }
 
 /**
+ * @param {string | null} redirectUrl
+ * @param {{ handoff?: string }} authResult
+ * @param {string} [pathSuffix]
+ */
+function assignPostAuthRedirect(redirectUrl, authResult, pathSuffix = '') {
+  const url = new URL(redirectUrl);
+  const base = getAppBasePath();
+  if (pathSuffix) {
+    url.pathname = base ? `${base}${pathSuffix}` : pathSuffix;
+  }
+  if (authResult.handoff) {
+    url.searchParams.set('handoff', authResult.handoff);
+  }
+  window.location.assign(url.toString());
+}
+
+/**
  * @param {{ user?: object, entitledModules?: string[], permissions?: string[], roles?: string[] }} authResult
  * @param {(session: import('@/app/providers/authContext').AuthSession) => void} setSession
  * @returns {boolean} True when a full-page redirect was started.
@@ -22,6 +39,20 @@ export function resolvePostAuthRedirect(user) {
 export async function applyAuthResult(authResult, setSession) {
   if (!authResult?.user) {
     throw new Error('Login failed. Invalid response from server.');
+  }
+
+  const mustChangePassword =
+    authResult.requiresPasswordChange || authResult.user?.mustChangePassword;
+
+  const redirectUrl = resolvePostAuthRedirect(authResult.user);
+
+  if (redirectUrl) {
+    if (mustChangePassword) {
+      assignPostAuthRedirect(redirectUrl, authResult, '/change-password');
+      return true;
+    }
+    assignPostAuthRedirect(redirectUrl, authResult);
+    return true;
   }
 
   const { fetchSession } = await import('@/features/auth/api/authApi');
@@ -34,36 +65,15 @@ export async function applyAuthResult(authResult, setSession) {
 
   setSession(session);
 
-  const mustChangePassword =
-    authResult.requiresPasswordChange ||
-    authResult.user?.mustChangePassword ||
-    session.user?.mustChangePassword;
+  const needsPasswordChange =
+    mustChangePassword || session.user?.mustChangePassword;
 
-  if (mustChangePassword) {
-    const redirectUrl = resolvePostAuthRedirect(authResult.user);
-    if (redirectUrl) {
-      const url = new URL(redirectUrl);
-      url.pathname = '/change-password';
-      if (authResult.handoff) {
-        url.searchParams.set('handoff', authResult.handoff);
-      }
-      window.location.assign(url.toString());
-      return true;
-    }
+  if (needsPasswordChange) {
     const base = getAppBasePath();
     window.location.assign(`${base}/change-password`);
     return true;
   }
 
-  const redirectUrl = resolvePostAuthRedirect(authResult.user);
-  if (redirectUrl) {
-    const url = new URL(redirectUrl);
-    if (authResult.handoff) {
-      url.searchParams.set('handoff', authResult.handoff);
-    }
-    window.location.assign(url.toString());
-    return true;
-  }
   return false;
 }
 

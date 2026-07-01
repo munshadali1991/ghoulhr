@@ -1,21 +1,15 @@
+import { isStagingRuntime } from '@/shared/utils/tenant';
+
 const STORAGE_KEY = 'ghoulhr_session';
 
 export const APP_NAME = 'peopleAIQ';
 export const APP_BRAND_INITIALS = 'pA';
 
 const PRODUCTION_API_PATH = '/ghoulhrms/api/v1';
+const STAGING_API_PATH = '/staging/api/v1';
 
-function getStagingApiPath() {
-  const base = import.meta.env.BASE_URL ?? '/';
-  if (base === '/') {
-    return null;
-  }
-  const basePath = base.endsWith('/') ? base.slice(0, -1) : base;
-  return `${basePath}/api/v1`;
-}
-
-// Local dev uses the domain proxy on :8080; production nginx serves API on same host.
-const getCurrentApiUrl = () => {
+/** Resolve API base URL from current host + staging/production path (call per request). */
+export function getApiBaseUrl() {
   if (typeof window === 'undefined') {
     return import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
   }
@@ -36,14 +30,12 @@ const getCurrentApiUrl = () => {
     return fromEnv.replace(/\/$/, '');
   }
 
-  const stagingApiPath = getStagingApiPath();
-  if (stagingApiPath) {
-    return `${origin}${stagingApiPath}`;
+  if (isStagingRuntime()) {
+    return `${origin}${STAGING_API_PATH}`;
   }
 
   return `${origin}${PRODUCTION_API_PATH}`;
-};
+}
 
-export const API_BASE_URL = getCurrentApiUrl();
 export const DEFAULT_BOOTSTRAP_KEY = import.meta.env.VITE_BOOTSTRAP_ADMIN_KEY ?? '';
 export { STORAGE_KEY };

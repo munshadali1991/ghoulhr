@@ -1,11 +1,35 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getAppBasePath, getTenantRedirectUrl } from './tenant';
+import { getAppBasePath, getTenantRedirectUrl, isStagingRuntime } from './tenant';
 
 function mockWindowLocation({ protocol, hostname, port = '', pathname = '/' }) {
   vi.stubGlobal('window', {
     location: { protocol, hostname, port, pathname },
   });
 }
+
+describe('isStagingRuntime', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns true when pathname starts with /staging', () => {
+    mockWindowLocation({
+      protocol: 'https:',
+      hostname: 'ghoulhr.peopleaiq.com',
+      pathname: '/staging/dashboard',
+    });
+    expect(isStagingRuntime()).toBe(true);
+  });
+
+  it('returns false on production tenant root', () => {
+    mockWindowLocation({
+      protocol: 'https:',
+      hostname: 'ghoulhr.peopleaiq.com',
+      pathname: '/dashboard',
+    });
+    expect(isStagingRuntime()).toBe(false);
+  });
+});
 
 describe('getAppBasePath', () => {
   afterEach(() => {
