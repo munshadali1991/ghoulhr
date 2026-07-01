@@ -15,7 +15,7 @@ export function resolvePostAuthRedirect(user) {
 }
 
 /**
- * @param {string | null} redirectUrl
+ * @param {string} redirectUrl
  * @param {{ handoff?: string }} authResult
  * @param {string} [pathSuffix]
  */
@@ -25,10 +25,11 @@ function assignPostAuthRedirect(redirectUrl, authResult, pathSuffix = '') {
   if (pathSuffix) {
     url.pathname = base ? `${base}${pathSuffix}` : pathSuffix;
   }
-  if (authResult.handoff) {
-    url.searchParams.set('handoff', authResult.handoff);
+  const handoff = authResult?.handoff;
+  if (typeof handoff === 'string' && handoff.length > 0) {
+    url.searchParams.set('handoff', handoff);
   }
-  window.location.assign(url.toString());
+  window.location.replace(url.toString());
 }
 
 /**

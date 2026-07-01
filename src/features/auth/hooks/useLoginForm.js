@@ -4,6 +4,7 @@ import {
   applyAuthResult,
   authenticate,
   authenticateWithBootstrap,
+  resolvePostAuthRedirect,
 } from '@/features/auth/utils/authFlow';
 import { isSubscriptionLoginError } from '@/features/auth/utils/subscriptionLoginError';
 
@@ -35,6 +36,17 @@ export function useLoginForm(mode) {
 
       try {
         const authResult = await authenticate(mode, form);
+
+        const redirectUrl = authResult?.user
+          ? resolvePostAuthRedirect(authResult.user)
+          : null;
+        if (redirectUrl && authResult.handoff) {
+          const url = new URL(redirectUrl);
+          url.searchParams.set('handoff', authResult.handoff);
+          window.location.replace(url.toString());
+          return;
+        }
+
         await applyAuthResult(authResult, setSession);
       } catch (loginError) {
         if (mode === 'admin' && loginError.status === 401) {
