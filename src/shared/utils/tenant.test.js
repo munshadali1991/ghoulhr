@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getAppBasePath, getTenantRedirectUrl, isStagingRuntime } from './tenant';
+import {
+  getAppBasePath,
+  getTenantRedirectUrl,
+  isStagingRuntime,
+  pathnameIndicatesStaging,
+} from './tenant';
 
 function mockWindowLocation({ protocol, hostname, port = '', pathname = '/' }) {
   vi.stubGlobal('window', {
@@ -29,6 +34,16 @@ describe('isStagingRuntime', () => {
     });
     expect(isStagingRuntime()).toBe(false);
   });
+
+  it('returns true for /ghoulhrms/staging misroute path', () => {
+    mockWindowLocation({
+      protocol: 'https:',
+      hostname: 'ghoulhr.peopleaiq.com',
+      pathname: '/ghoulhrms/staging',
+    });
+    expect(isStagingRuntime()).toBe(true);
+    expect(pathnameIndicatesStaging('/ghoulhrms/staging')).toBe(true);
+  });
 });
 
 describe('getAppBasePath', () => {
@@ -50,11 +65,11 @@ describe('getAppBasePath', () => {
     expect(getAppBasePath()).toBe('/staging');
   });
 
-  it('returns /staging from pathname for nested staging routes', () => {
+  it('returns /staging for /ghoulhrms/staging misroute path', () => {
     mockWindowLocation({
       protocol: 'https:',
-      hostname: 'peopleaiq.com',
-      pathname: '/staging/login',
+      hostname: 'ghoulhr.peopleaiq.com',
+      pathname: '/ghoulhrms/staging',
     });
     expect(getAppBasePath()).toBe('/staging');
   });

@@ -5,8 +5,33 @@ const STORAGE_KEY = 'ghoulhr_session';
 export const APP_NAME = 'peopleAIQ';
 export const APP_BRAND_INITIALS = 'pA';
 
-const PRODUCTION_API_PATH = '/ghoulhrms/api/v1';
-const STAGING_API_PATH = '/staging/api/v1';
+const DEFAULT_STAGING_API_PATH = '/staging/api/v1';
+const DEFAULT_PRODUCTION_API_PATH = '/ghoulhrms/api/v1';
+
+function normalizeEnvPath(value) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+}
+
+function resolveApiPath() {
+  const envPath = import.meta.env.VITE_API_PATH?.trim();
+
+  if (isStagingRuntime()) {
+    if (import.meta.env.MODE === 'staging' && envPath) {
+      return normalizeEnvPath(envPath);
+    }
+    return DEFAULT_STAGING_API_PATH;
+  }
+
+  if (import.meta.env.MODE === 'production' && envPath) {
+    return normalizeEnvPath(envPath);
+  }
+
+  return DEFAULT_PRODUCTION_API_PATH;
+}
 
 /** Resolve API base URL from current host + staging/production path (call per request). */
 export function getApiBaseUrl() {
@@ -30,11 +55,7 @@ export function getApiBaseUrl() {
     return fromEnv.replace(/\/$/, '');
   }
 
-  if (isStagingRuntime()) {
-    return `${origin}${STAGING_API_PATH}`;
-  }
-
-  return `${origin}${PRODUCTION_API_PATH}`;
+  return `${origin}${resolveApiPath()}`;
 }
 
 export const DEFAULT_BOOTSTRAP_KEY = import.meta.env.VITE_BOOTSTRAP_ADMIN_KEY ?? '';

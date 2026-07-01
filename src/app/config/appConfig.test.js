@@ -37,10 +37,21 @@ describe('getApiBaseUrl', () => {
     mockWindowLocation({
       protocol: 'https:',
       hostname: 'ghoulhr.peopleaiq.com',
-      pathname: '/dashboard',
+      pathname: '/',
     });
     expect(getApiBaseUrl()).toBe(
       'https://ghoulhr.peopleaiq.com/ghoulhrms/api/v1',
+    );
+  });
+
+  it('uses staging API path for /ghoulhrms/staging misroute', () => {
+    mockWindowLocation({
+      protocol: 'https:',
+      hostname: 'ghoulhr.peopleaiq.com',
+      pathname: '/ghoulhrms/staging',
+    });
+    expect(getApiBaseUrl()).toBe(
+      'https://ghoulhr.peopleaiq.com/staging/api/v1',
     );
   });
 
