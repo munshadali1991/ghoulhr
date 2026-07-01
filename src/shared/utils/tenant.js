@@ -2,6 +2,12 @@
 export function getAppBasePath() {
   const base = import.meta.env.BASE_URL ?? '/';
   if (base === '/') {
+    if (
+      typeof window !== 'undefined' &&
+      window.location.pathname.startsWith('/staging')
+    ) {
+      return '/staging';
+    }
     return '';
   }
   return base.endsWith('/') ? base.slice(0, -1) : base;

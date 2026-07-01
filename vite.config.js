@@ -4,7 +4,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: '/',
+  base: mode === 'staging' ? '/staging/' : '/',
   plugins: [react()],
   resolve: {
     alias: {
