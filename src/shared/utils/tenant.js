@@ -86,7 +86,8 @@ export function getTenantRedirectUrl(organizationSubdomain) {
     }
   }
 
-  return `${protocol}//${targetHost}${portPart}${appBasePath}`;
+  const path = appBasePath ? `${appBasePath}/` : '';
+  return `${protocol}//${targetHost}${portPart}${path}`;
 }
 
 /** True when the app is served on a tenant subdomain (not bare localhost / apex). */

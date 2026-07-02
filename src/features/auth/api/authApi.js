@@ -41,7 +41,9 @@ async function authPost(path, body, extraHeaders = {}) {
   return payload;
 }
 
-async function loadSessionFromApi() {
+async function loadSessionFromApi(options = {}) {
+  const { suppressSessionExpiredEvent = false } = options;
+
   let res = await fetch(`${getApiBaseUrl()}/auth/session`, {
     credentials: 'include',
   });
@@ -52,7 +54,7 @@ async function loadSessionFromApi() {
       credentials: 'include',
     });
     if (!r2.ok) {
-      if (typeof window !== 'undefined') {
+      if (!suppressSessionExpiredEvent && typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
       }
       return null;
@@ -80,8 +82,11 @@ async function loadSessionFromApi() {
   };
 }
 
-export async function fetchSession() {
-  return loadSessionFromApi();
+/**
+ * @param {{ suppressSessionExpiredEvent?: boolean }} [options]
+ */
+export async function fetchSession(options) {
+  return loadSessionFromApi(options);
 }
 
 export async function fetchSessionUser() {

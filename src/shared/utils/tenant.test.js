@@ -87,7 +87,7 @@ describe('getTenantRedirectUrl', () => {
       pathname: '/staging/',
     });
     expect(getTenantRedirectUrl('ghoulhr')).toBe(
-      'https://ghoulhr.peopleaiq.com/staging',
+      'https://ghoulhr.peopleaiq.com/staging/',
     );
   });
 

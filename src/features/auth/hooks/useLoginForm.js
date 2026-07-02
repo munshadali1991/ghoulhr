@@ -1,10 +1,9 @@
 import { useCallback, useState } from 'react';
 import { useAuth } from '@/app/providers/useAuth';
 import {
-  applyAuthResult,
   authenticate,
   authenticateWithBootstrap,
-  resolvePostAuthRedirect,
+  finalizeLogin,
 } from '@/features/auth/utils/authFlow';
 import { isSubscriptionLoginError } from '@/features/auth/utils/subscriptionLoginError';
 
@@ -14,17 +13,22 @@ const EMPTY_FORM = { email: '', password: '' };
  * @param {'tenant' | 'admin'} mode
  */
 export function useLoginForm(mode) {
-  const { setSession } = useAuth();
+  const { setSession, bootstrapError, clearBootstrapError } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [errorKind, setErrorKind] = useState('generic');
   const [form, setForm] = useState(EMPTY_FORM);
 
+  const displayError = error || bootstrapError || '';
+
   const handleChange = useCallback(
     (field) => (event) => {
+      if (bootstrapError) {
+        clearBootstrapError();
+      }
       setForm((prev) => ({ ...prev, [field]: event.target.value }));
     },
-    [],
+    [bootstrapError, clearBootstrapError],
   );
 
   const handleSubmit = useCallback(
@@ -33,26 +37,20 @@ export function useLoginForm(mode) {
       setLoading(true);
       setError('');
       setErrorKind('generic');
+      if (bootstrapError) {
+        clearBootstrapError();
+      }
 
       try {
         const authResult = await authenticate(mode, form);
-
-        const redirectUrl = authResult?.user
-          ? resolvePostAuthRedirect(authResult.user)
-          : null;
-        if (redirectUrl && authResult.handoff) {
-          const url = new URL(redirectUrl);
-          url.searchParams.set('handoff', authResult.handoff);
-          window.location.replace(url.toString());
+        if (await finalizeLogin(authResult, setSession)) {
           return;
         }
-
-        await applyAuthResult(authResult, setSession);
       } catch (loginError) {
         if (mode === 'admin' && loginError.status === 401) {
           try {
             const bootstrapResult = await authenticateWithBootstrap(form);
-            if (await applyAuthResult(bootstrapResult, setSession)) {
+            if (await finalizeLogin(bootstrapResult, setSession)) {
               return;
             }
             return;
@@ -76,14 +74,14 @@ export function useLoginForm(mode) {
         setLoading(false);
       }
     },
-    [form, mode, setSession],
+    [bootstrapError, clearBootstrapError, form, mode, setSession],
   );
 
   return {
     mode,
     form,
     loading,
-    error,
+    error: displayError,
     errorKind,
     handleChange,
     handleSubmit,
