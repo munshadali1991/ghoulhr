@@ -125,6 +125,15 @@ export const SETTINGS_ACCESS = {
       { key: 'category', label: 'Category', read: 'settings.timesheet:read', write: 'settings.timesheet:write' },
     ],
   },
+  performance: {
+    slug: 'performance',
+    label: 'Performance',
+    module: 'settings',
+    read: 'settings.performance:read',
+    write: 'settings.performance:write',
+    apiRead: 'GET /settings/performance/master',
+    apiWrite: 'PUT /settings/performance/master',
+  },
   rbac: {
     slug: 'rbac',
     label: 'Roles & Permissions',
@@ -150,6 +159,7 @@ export const SETTINGS_SLUG_ORDER = [
   'leave',
   'attendance',
   'timesheet',
+  'performance',
   'rbac',
 ];
 

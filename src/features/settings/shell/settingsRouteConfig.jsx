@@ -8,6 +8,7 @@ import { AttendanceSettingsPage } from '@/features/settings/attendance';
 import { LocationsSettingsPage } from '@/features/settings/locations';
 import { LeaveConfigSettingsPage } from '@/features/settings/leave';
 import { TimesheetSettingsPage } from '@/features/settings/timesheet';
+import { PerformanceSettingsPage } from '@/features/settings/performance';
 import { RbacSettingsPage } from '@/features/rbac/pages/RbacSettingsPage';
 
 /**
@@ -84,6 +85,13 @@ export function settingsFlatRoutes(organizationId) {
         element={guardedSettingsRoute(
           organizationId,
           <TimesheetSettingsPage organizationId={organizationId} />,
+        )}
+      />
+      <Route
+        path="/settings/performance"
+        element={guardedSettingsRoute(
+          organizationId,
+          <PerformanceSettingsPage organizationId={organizationId} />,
         )}
       />
       <Route
