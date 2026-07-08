@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useAttendanceSettings } from '@/features/settings/attendance/hooks/useAttendanceSettings';
 import { useLocationConfigurations } from '@/features/settings/locations';
 import {
@@ -9,9 +9,6 @@ import {
 
 function validateShiftLocations(shifts, branchLocations) {
   const validIds = new Set(branchLocations.map((l) => l.id));
-  // #region agent log
-  fetch('http://127.0.0.1:7359/ingest/507eadee-7b9c-4052-86b9-ecdcc1714ed1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c3971f'},body:JSON.stringify({sessionId:'c3971f',hypothesisId:'A,B,D',location:'useAttendanceManager.js:validate',message:'validateShiftLocations entry',data:{branchCount:branchLocations.length,branchIds:branchLocations.map((l)=>({id:l.id,type:typeof l.id,isActive:l.isActive})),shiftLocationIds:shifts.map((s)=>({raw:s.locationId,type:typeof s.locationId,trimmed:s.locationId?.trim?.()}))},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
   for (let i = 0; i < shifts.length; i += 1) {
     const shift = shifts[i];
     const locationId = shift.locationId?.trim();
@@ -20,9 +17,6 @@ function validateShiftLocations(shifts, branchLocations) {
     }
     if (!validIds.has(locationId)) {
       const name = shift.name?.trim() || `shift ${i + 1}`;
-      // #region agent log
-      fetch('http://127.0.0.1:7359/ingest/507eadee-7b9c-4052-86b9-ecdcc1714ed1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c3971f'},body:JSON.stringify({sessionId:'c3971f',hypothesisId:'A,D',location:'useAttendanceManager.js:validateFail',message:'validation FAILED - locationId not in validIds',data:{shiftIndex:i,shiftName:name,offendingLocationId:locationId,validIds:[...validIds]},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       throw new Error(
         `Shift "${name}" references a branch that no longer exists. Pick a valid branch or configure it under Settings → Locations first.`,
       );
@@ -43,12 +37,6 @@ export function useAttendanceManager(organizationId) {
     useLocationConfigurations(organizationId);
 
   const [actionError, setActionError] = useState('');
-
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7359/ingest/507eadee-7b9c-4052-86b9-ecdcc1714ed1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c3971f'},body:JSON.stringify({sessionId:'c3971f',hypothesisId:'C,E,A,B',location:'useAttendanceManager.js:hook',message:'hook location/settings state',data:{organizationId:organizationId??null,orgIdType:typeof organizationId,locationsLoading,branchCount:branchLocations.length,branchIds:branchLocations.map((l)=>({id:l.id,isActive:l.isActive})),settingsShiftCount:Array.isArray(settings?.shifts)?settings.shifts.length:null,settingsShiftLocIds:Array.isArray(settings?.shifts)?settings.shifts.map((s)=>s.locationId??s.location_id??null):null},timestamp:Date.now()})}).catch(()=>{});
-  }, [organizationId, locationsLoading, branchLocations, settings?.shifts]);
-  // #endregion
 
   const firstBranchId = useMemo(
     () =>

@@ -95,12 +95,6 @@ export function ShiftFormPage({
     saveAttendanceClockFormat(clockFormat);
   }, [clockFormat]);
 
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7359/ingest/507eadee-7b9c-4052-86b9-ecdcc1714ed1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c3971f'},body:JSON.stringify({sessionId:'c3971f',hypothesisId:'A,B',location:'ShiftFormPage.jsx:branchDropdown',message:'shift form branch dropdown source',data:{branchCount:Array.isArray(branchLocations)?branchLocations.length:null,activeCount:Array.isArray(branchLocations)?branchLocations.filter((l)=>l.isActive!==false).length:null,branchIds:Array.isArray(branchLocations)?branchLocations.map((l)=>({id:l.id,isActive:l.isActive})):null,firstBranchId:firstBranchId??null,recordLocationId:record?.locationId??null,isEdit},timestamp:Date.now()})}).catch(()=>{});
-  }, [branchLocations, firstBranchId, record, isEdit]);
-  // #endregion
-
   const defaults = record
     ? {
         name: record.name || '',
