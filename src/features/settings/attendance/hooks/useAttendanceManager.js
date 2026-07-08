@@ -7,6 +7,23 @@ import {
   serializeShiftForApi,
 } from '../utils/shifts';
 
+function validateShiftLocations(shifts, branchLocations) {
+  const validIds = new Set(branchLocations.map((l) => l.id));
+  for (let i = 0; i < shifts.length; i += 1) {
+    const shift = shifts[i];
+    const locationId = shift.locationId?.trim();
+    if (!locationId) {
+      throw new Error(`Select a branch for shift ${i + 1} (Settings → Locations).`);
+    }
+    if (!validIds.has(locationId)) {
+      const name = shift.name?.trim() || `shift ${i + 1}`;
+      throw new Error(
+        `Shift "${name}" references a branch that no longer exists. Pick a valid branch or configure it under Settings → Locations first.`,
+      );
+    }
+  }
+}
+
 export function useAttendanceManager(organizationId) {
   const {
     settings,
@@ -57,13 +74,13 @@ export function useAttendanceManager(organizationId) {
 
   const persist = useCallback(
     async (patch) => {
-      const payload = { ...settings, ...patch };
+      const payload = { ...patch };
       if (Array.isArray(payload.shifts)) {
         payload.shifts = payload.shifts.map(serializeShiftForApi);
       }
       await updateSettings(payload);
     },
-    [settings, updateSettings],
+    [updateSettings],
   );
 
   const saveShift = useCallback(
@@ -82,11 +99,7 @@ export function useAttendanceManager(organizationId) {
         throw new Error('At least one shift is required.');
       }
 
-      for (let i = 0; i < nextShifts.length; i += 1) {
-        if (!nextShifts[i].locationId?.trim()) {
-          throw new Error(`Select a branch for shift ${i + 1} (Settings → Locations).`);
-        }
-      }
+      validateShiftLocations(nextShifts, branchLocations);
 
       try {
         await persist({
@@ -98,7 +111,7 @@ export function useAttendanceManager(organizationId) {
         throw err;
       }
     },
-    [persist, shifts],
+    [branchLocations, persist, shifts],
   );
 
   const deleteShift = useCallback(
@@ -110,6 +123,8 @@ export function useAttendanceManager(organizationId) {
         throw new Error('Cannot delete the last shift.');
       }
 
+      validateShiftLocations(nextShifts, branchLocations);
+
       try {
         await persist({
           shifts: nextShifts.map(serializeShiftForApi),
@@ -119,7 +134,7 @@ export function useAttendanceManager(organizationId) {
         throw err;
       }
     },
-    [persist, shifts],
+    [branchLocations, persist, shifts],
   );
 
   const saveSchedule = useCallback(
