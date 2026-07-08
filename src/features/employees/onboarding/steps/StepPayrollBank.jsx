@@ -23,6 +23,19 @@ export function StepPayrollBank() {
     formState: { errors },
   } = useFormContext();
   const acct = watch('bank.accountNumber');
+  const accountOnFile = watch('bank.accountNumberOnFile');
+
+  const accountHelperText =
+    errors.bank?.accountNumber?.message ||
+    (acct
+      ? `Masked: ${maskAccount(acct)}`
+      : accountOnFile
+        ? `Account ending •••• ${accountOnFile} on file — leave blank to keep`
+        : '');
+
+  const confirmHelperText =
+    errors.bank?.confirmAccountNumber?.message ||
+    (!acct && accountOnFile ? 'Leave blank to keep existing account on file' : '');
 
   return (
     <Stack spacing={2.5}>
@@ -214,7 +227,7 @@ export function StepPayrollBank() {
                 type="password"
                 autoComplete="new-password"
                 error={!!errors.bank?.accountNumber}
-                helperText={errors.bank?.accountNumber?.message || (acct ? `Masked: ${maskAccount(acct)}` : '')}
+                helperText={accountHelperText}
               />
             )}
           />
@@ -230,7 +243,7 @@ export function StepPayrollBank() {
                 label="Confirm account number"
                 type="password"
                 error={!!errors.bank?.confirmAccountNumber}
-                helperText={errors.bank?.confirmAccountNumber?.message}
+                helperText={confirmHelperText}
               />
             )}
           />

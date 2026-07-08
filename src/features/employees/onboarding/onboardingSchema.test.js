@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildHrOnboardingPayload,
+  emergencyRelationshipValue,
   getDefaultOnboardingValues,
   getStepIndexFromIssuePath,
+  mapEmployeeToOnboardingValues,
   validateOnboardingStep,
   validatePasswordStrength,
 } from './onboardingSchema';
@@ -157,6 +160,21 @@ describe('validateOnboardingStep', () => {
     const paths = result.error.issues.map((i) => i.path.join('.'));
     expect(paths).toContain('emergency.contactName');
   });
+
+  it('step 3 passes when bank fields are filled and account is on file', () => {
+    const values = getDefaultOnboardingValues();
+    values.bank = {
+      ...values.bank,
+      accountHolderName: 'Jane Doe',
+      bankName: 'Test Bank',
+      accountNumber: '',
+      confirmAccountNumber: '',
+      accountNumberOnFile: '7890',
+      ifscCode: 'HDFC0001234',
+    };
+    const result = validateOnboardingStep(3, values);
+    expect(result.success).toBe(true);
+  });
 });
 
 describe('getStepIndexFromIssuePath', () => {
@@ -176,5 +194,91 @@ describe('validatePasswordStrength', () => {
     const result = validatePasswordStrength('alllowercase');
     expect(result.valid).toBe(false);
     expect(result.errors.length).toBeGreaterThan(0);
+  });
+});
+
+describe('emergencyRelationshipValue', () => {
+  it('maps legacy stored labels back to select values', () => {
+    expect(emergencyRelationshipValue('Spouse')).toBe('SPOUSE');
+    expect(emergencyRelationshipValue('Parent')).toBe('PARENT');
+  });
+
+  it('keeps canonical select values unchanged', () => {
+    expect(emergencyRelationshipValue('SPOUSE')).toBe('SPOUSE');
+  });
+});
+
+describe('mapEmployeeToOnboardingValues', () => {
+  it('rehydrates on-file sensitive metadata without exposing full values', () => {
+    const mapped = mapEmployeeToOnboardingValues({
+      id: 'emp-1',
+      firstName: 'Jane',
+      lastName: 'Doe',
+      email: 'jane@example.com',
+      bankDetail: {
+        accountHolderName: 'Jane Doe',
+        bankName: 'HDFC',
+        accountLastFour: '7890',
+        ifscCode: 'HDFC0001234',
+      },
+      complianceSummary: {
+        hasPan: true,
+        hasAadhaar: true,
+        panLastFour: '1234F',
+        aadhaarLastFour: '9012',
+      },
+      emergencyContactDetail: {
+        contactName: 'John',
+        contactPhone: '9876543210',
+        relationship: 'Spouse',
+      },
+    });
+
+    expect(mapped.bank.accountNumber).toBe('');
+    expect(mapped.bank.accountNumberOnFile).toBe('7890');
+    expect(mapped.compliance.panNumber).toBe('');
+    expect(mapped.compliance.panOnFile).toBe('1234F');
+    expect(mapped.compliance.aadhaarOnFile).toBe('9012');
+    expect(mapped.emergency.relationship).toBe('SPOUSE');
+  });
+});
+
+describe('buildHrOnboardingPayload', () => {
+  it('persists relationship as select value and omits blank on-file sensitive fields', () => {
+    const values = getDefaultOnboardingValues();
+    values.basic.firstName = 'Jane';
+    values.basic.lastName = 'Doe';
+    values.basic.personalEmail = 'jane@example.com';
+    values.basic.mobileNumber = '9876543210';
+    values.employment.dateOfJoining = '2024-06-01';
+    values.emergency = {
+      contactName: 'John',
+      contactPhone: '9876543211',
+      relationship: 'SPOUSE',
+    };
+    values.bank = {
+      ...values.bank,
+      accountHolderName: 'Jane Doe',
+      bankName: 'HDFC',
+      accountNumber: '',
+      confirmAccountNumber: '',
+      accountNumberOnFile: '7890',
+      ifscCode: 'HDFC0001234',
+    };
+    values.compliance = {
+      ...values.compliance,
+      panNumber: '',
+      aadhaarNumber: '',
+      panOnFile: '1234F',
+      aadhaarOnFile: '9012',
+    };
+
+    const payload = buildHrOnboardingPayload(values, { isEditMode: true });
+
+    expect(payload.emergencyContact?.relationship).toBe('SPOUSE');
+    expect(payload.bank.accountNumber).toBeUndefined();
+    expect(payload.bank.confirmAccountNumber).toBeUndefined();
+    expect(payload.compliance.panNumber).toBeUndefined();
+    expect(payload.compliance.aadhaarNumber).toBeUndefined();
   });
 });
