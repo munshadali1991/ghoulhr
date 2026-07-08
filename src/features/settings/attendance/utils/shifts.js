@@ -34,23 +34,37 @@ export function defaultShiftTemplate(locationId = '') {
   };
 }
 
-export function mapShiftsToFormState(shifts, defaultLocationId = '') {
+export function mapShiftsToFormState(shifts, defaultLocationId = '', validLocationIds = null) {
   const list =
     Array.isArray(shifts) && shifts.length > 0
       ? shifts
       : [defaultShiftTemplate(defaultLocationId)];
 
+  const validSet =
+    validLocationIds instanceof Set
+      ? validLocationIds
+      : Array.isArray(validLocationIds)
+        ? new Set(validLocationIds)
+        : null;
+
   return list.map((s) => {
     const createdAt =
       pickRecordTimestamp(s) ||
       pickRecordTimestamp({ createdAt: s.updatedAt ?? s.updated_at });
+    const storedLocationId = s.locationId || s.location_id || s.location?.id || '';
+    // If the stored branch no longer exists for this org, fall back to a valid
+    // default so an orphaned shift can't permanently block edits/deletes/saves.
+    const resolvedLocationId =
+      storedLocationId && (!validSet || validSet.size === 0 || validSet.has(storedLocationId))
+        ? storedLocationId
+        : defaultLocationId || '';
     return {
       id: s.id,
       name: s.name ?? '',
       start_time: s.start_time ?? s.startTime ?? '',
       end_time: s.end_time ?? s.endTime ?? '',
       break_minutes: s.break_minutes ?? s.breakMinutes ?? 0,
-      locationId: s.locationId || s.location_id || s.location?.id || defaultLocationId || '',
+      locationId: resolvedLocationId,
       sessions: Array.isArray(s.sessions) ? s.sessions : [],
       createdAt,
     };

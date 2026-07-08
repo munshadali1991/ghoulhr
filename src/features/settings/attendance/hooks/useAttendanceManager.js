@@ -58,11 +58,16 @@ export function useAttendanceManager(organizationId) {
     [branchLocations],
   );
 
+  const validBranchIds = useMemo(
+    () => new Set(branchLocations.map((l) => l.id)),
+    [branchLocations],
+  );
+
   const shifts = useMemo(() => {
     const raw = settings?.shifts;
     if (!Array.isArray(raw) || raw.length === 0) return [];
-    return mapShiftsToFormState(raw, firstBranchId);
-  }, [settings?.shifts, firstBranchId]);
+    return mapShiftsToFormState(raw, firstBranchId, validBranchIds);
+  }, [settings?.shifts, firstBranchId, validBranchIds]);
 
   const schedule = useMemo(
     () => ({
