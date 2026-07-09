@@ -271,6 +271,7 @@ export function useUpsertTimesheetDay() {
       queryClient.invalidateQueries({
         queryKey: employeePortalKeys.timesheetCategories(),
       });
+      queryClient.invalidateQueries({ queryKey: ['approvals'] });
     },
   });
 }
