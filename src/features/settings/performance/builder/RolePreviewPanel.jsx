@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Box,
   FormControl,
   InputLabel,
   MenuItem,
@@ -72,48 +71,43 @@ export function RolePreviewPanel({ formValues, rbacRoles = [] }) {
   }
 
   return (
-    <PageCard sx={{ p: { xs: 2, sm: 2.5 } }}>
-      <Stack spacing={2}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-          justifyContent="space-between"
-          spacing={2}
+    <Stack spacing={2.25}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        spacing={1.5}
+      >
+        <Typography
+          variant="caption"
+          sx={{ fontWeight: 600, color: 'text.secondary', whiteSpace: 'nowrap' }}
         >
-          <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              Preview by role
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              See which sections are editable vs locked for each role (read-only). Uses your
-              current unsaved template.
-            </Typography>
-          </Box>
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Preview as</InputLabel>
-            <Select
-              label="Preview as"
-              value={previewRole}
-              onChange={(e) => setPreviewRole(e.target.value)}
-            >
-              {sectionRoles.map((code) => (
-                <MenuItem key={code} value={code}>
-                  {rbacRoles.find((r) => r.code === code)?.name ?? code}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Stack>
+          Previewing as
+        </Typography>
+        <FormControl size="small" sx={{ maxWidth: 240, minWidth: 180 }}>
+          <InputLabel>Role</InputLabel>
+          <Select
+            label="Role"
+            value={previewRole}
+            onChange={(e) => setPreviewRole(e.target.value)}
+          >
+            {sectionRoles.map((code) => (
+              <MenuItem key={code} value={code}>
+                {rbacRoles.find((r) => r.code === code)?.name ?? code}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Stack>
 
-        <Typography variant="caption" color="text.secondary">
+      <PageCard sx={{ p: { xs: 2.5, sm: 3.5 }, maxWidth: 640 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
           Viewing as <strong>{roleLabel}</strong> at workflow stage{' '}
           <strong>{perms.previewStatus.replace(/_/g, ' ').toLowerCase()}</strong>.
         </Typography>
-
         <FormProvider {...methods}>
           <AssessmentSectionList sections={schema.sections} perms={perms} />
         </FormProvider>
-      </Stack>
-    </PageCard>
+      </PageCard>
+    </Stack>
   );
 }

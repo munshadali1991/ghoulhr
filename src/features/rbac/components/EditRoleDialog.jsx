@@ -63,7 +63,7 @@ export function EditRoleDialog({ open, role, onClose, onSubmit, isPending }) {
       fullWidth
       TransitionProps={{ onEnter: handleEnter }}
     >
-      <DialogTitle>Edit role</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 600, pb: 1 }}>Edit role</DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
@@ -73,8 +73,12 @@ export function EditRoleDialog({ open, role, onClose, onSubmit, isPending }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           error={Boolean(error)}
-          helperText={error || 'Display name shown to administrators'}
+          helperText={error || 'A clear name helps admins assign this role correctly.'}
           disabled={isPending}
+          FormHelperTextProps={{
+            sx: { mx: 0, mt: 0.75, fontSize: 11.5, color: error ? undefined : 'text.disabled' },
+          }}
+          sx={{ mb: 2 }}
         />
         <TextField
           margin="dense"
@@ -84,12 +88,11 @@ export function EditRoleDialog({ open, role, onClose, onSubmit, isPending }) {
           minRows={2}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Optional description of this role's purpose"
-          helperText="Helps admins understand when to assign this role"
+          placeholder="Describe what this role is for and who should receive it."
           disabled={isPending}
         />
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
         <Button variant="outlined" onClick={handleClose} disabled={isPending}>
           Cancel
         </Button>

@@ -1,6 +1,15 @@
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, FormControlLabel, Grid, MenuItem, Switch, TextField } from '@mui/material';
+import {
+  Alert,
+  Box,
+  FormControlLabel,
+  Grid,
+  MenuItem,
+  Switch,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { SettingsField } from '@/shared/components/settings/SettingsField';
 import { RecordFormLayout } from '@/features/settings/shared';
 import { IpAddressInput } from '@/features/settings/attendance/components/IpAddressInput';
@@ -26,6 +35,7 @@ export function CheckInFormPage({
   });
 
   const trackingMode = watch('tracking_mode');
+  const ipEditable = trackingMode === 'ip';
 
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -101,22 +111,35 @@ export function CheckInFormPage({
           />
         </Grid>
 
-        {trackingMode === 'ip' ? (
-          <Grid size={{ xs: 12 }}>
-            <SettingsField
-              label="Network allowlist"
-              description="Only requests from these addresses can record attendance when mode is IP-based."
-            >
+        <Grid size={{ xs: 12 }}>
+          <SettingsField
+            label="Network allowlist"
+            description={
+              ipEditable
+                ? 'Only requests from these addresses can record attendance when mode is IP-based.'
+                : undefined
+            }
+          >
+            {!ipEditable ? (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }}>
+                Switch mode to IP-based to edit allowlist. Existing addresses are kept.
+              </Typography>
+            ) : null}
+            <Box sx={{ opacity: ipEditable ? 1 : 0.55 }}>
               <Controller
                 name="allowed_ip_addresses"
                 control={control}
                 render={({ field }) => (
-                  <IpAddressInput value={field.value || []} onChange={field.onChange} />
+                  <IpAddressInput
+                    value={field.value || []}
+                    onChange={field.onChange}
+                    disabled={!ipEditable}
+                  />
                 )}
               />
-            </SettingsField>
-          </Grid>
-        ) : null}
+            </Box>
+          </SettingsField>
+        </Grid>
       </Grid>
     </RecordFormLayout>
   );

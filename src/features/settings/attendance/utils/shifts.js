@@ -1,5 +1,5 @@
 import { formatDisplayDate, pickRecordTimestamp } from '@/shared/utils/timestamps';
-import { shiftTimeRangeTooltip } from '@/shared/utils/shiftTime';
+import { shiftTimeRangeTooltip, shiftTimeToDayjs } from '@/shared/utils/shiftTime';
 import { ATTENDANCE_CLOCK_STORAGE_KEY } from '../constants';
 
 export function formatOrgDate(value) {
@@ -114,7 +114,10 @@ export function locationLabelForId(branchLocations, id) {
   if (!id) return null;
   const loc = branchLocations.find((l) => l.id === id);
   if (!loc) return null;
-  return loc.city ? `${loc.name}, ${loc.city}` : loc.name;
+  const name = String(loc.name || '').trim();
+  const city = String(loc.city || '').trim();
+  if (!city || city.toLowerCase() === name.toLowerCase()) return name || null;
+  return `${name}, ${city}`;
 }
 
 export function shiftRowStatus(row) {
@@ -133,6 +136,27 @@ export function shiftScheduleDescription(row) {
   );
   if (!tooltip) return '—';
   return net ? `${tooltip} · ${net} net` : tooltip;
+}
+
+/** Compact list meta — one clock format, no duplicate gross span. */
+export function formatShiftListParts(row, clockFormat = '12') {
+  const a = shiftTimeToDayjs(row?.start_time);
+  const b = shiftTimeToDayjs(row?.end_time);
+  const is12 = clockFormat === '12';
+  const fmt = is12 ? 'h:mm A' : 'HH:mm';
+  const time = a && b ? `${a.format(fmt)} – ${b.format(fmt)}` : null;
+  const net = formatDurationHuman(
+    netWorkingMinutes(row?.start_time, row?.end_time, row?.break_minutes),
+  );
+  const overnight =
+    parseTimeToMinutes(row?.start_time) != null &&
+    parseTimeToMinutes(row?.end_time) != null &&
+    parseTimeToMinutes(row?.end_time) <= parseTimeToMinutes(row?.start_time);
+  return {
+    time,
+    net: net ? `${net} net` : null,
+    overnight,
+  };
 }
 
 export function serializeShiftForApi(shift) {

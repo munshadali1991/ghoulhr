@@ -8,6 +8,7 @@ import {
   Stack,
   TextField,
 } from '@mui/material';
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import { FilledByRoleSelect } from './FilledByRoleSelect';
 import { CrudButton } from '@/shared/components/ui/CrudButton';
 
@@ -38,7 +39,7 @@ export function CreateSectionModal({ open, onClose, onSubmit }) {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>Add section</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700 }}>Add section</DialogTitle>
       <DialogContent>
         <Stack spacing={2.5} sx={{ pt: 0.5 }}>
           <TextField
@@ -48,6 +49,7 @@ export function CreateSectionModal({ open, onClose, onSubmit }) {
             fullWidth
             required
             autoFocus
+            placeholder="e.g. Peer feedback"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && canSubmit) handleSubmit();
             }}
@@ -55,11 +57,16 @@ export function CreateSectionModal({ open, onClose, onSubmit }) {
           <FilledByRoleSelect value={role} onChange={setRole} />
         </Stack>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} color="inherit">
+      <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+        <Button variant="outlined" onClick={onClose} color="inherit">
           Cancel
         </Button>
-        <CrudButton intent="create" onClick={handleSubmit} disabled={!canSubmit}>
+        <CrudButton
+          intent="create"
+          startIcon={<CheckRoundedIcon />}
+          onClick={handleSubmit}
+          disabled={!canSubmit}
+        >
           Create section
         </CrudButton>
       </DialogActions>

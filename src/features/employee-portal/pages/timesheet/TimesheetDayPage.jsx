@@ -561,7 +561,6 @@ export function TimesheetDayPage() {
               editable={isEditable}
               isSaving={upsertMutation.isPending}
               canSubmit={canSubmit}
-              onSaveDraft={handleSaveAll}
               onSubmit={handleSubmit}
             />
           </CardContent>

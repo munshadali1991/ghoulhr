@@ -19,10 +19,11 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { CrudButton } from '@/shared/components/ui/CrudButton';
 
-export function IpAddressInput({ value = [], onChange }) {
+export function IpAddressInput({ value = [], onChange, disabled = false }) {
   const [inputValue, setInputValue] = useState('');
 
   const handleAddIp = () => {
+    if (disabled) return;
     if (inputValue.trim() && !value.includes(inputValue.trim())) {
       onChange([...value, inputValue.trim()]);
       setInputValue('');
@@ -47,8 +48,15 @@ export function IpAddressInput({ value = [], onChange }) {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          disabled={disabled}
         />
-        <CrudButton intent="create" onClick={handleAddIp} startIcon={<AddIcon />} sx={{ flexShrink: 0 }}>
+        <CrudButton
+          intent="create"
+          onClick={handleAddIp}
+          startIcon={<AddIcon />}
+          disabled={disabled}
+          sx={{ flexShrink: 0 }}
+        >
           Add
         </CrudButton>
       </Stack>
@@ -75,13 +83,16 @@ export function IpAddressInput({ value = [], onChange }) {
                   </TableCell>
                   <TableCell align="right">
                     <Tooltip title="Remove">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => onChange(value.filter((_, i) => i !== index))}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                      <span>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          disabled={disabled}
+                          onClick={() => onChange(value.filter((_, i) => i !== index))}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   </TableCell>
                 </TableRow>

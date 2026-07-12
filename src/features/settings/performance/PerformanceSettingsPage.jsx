@@ -254,8 +254,8 @@ export function PerformanceSettingsPage({ organizationId }) {
       <ConfirmDeleteDialog
         open={deleteSectionIndex != null}
         title="Delete section?"
-        message="This removes the section and all of its questions from the template."
-        onCancel={() => setDeleteSectionIndex(null)}
+        description="This removes the section and all of its questions from the template."
+        onClose={() => setDeleteSectionIndex(null)}
         onConfirm={handleDeleteSection}
       />
 

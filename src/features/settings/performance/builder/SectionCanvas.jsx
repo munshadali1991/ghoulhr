@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
   Box,
   Button,
+  Divider,
   FormControlLabel,
   Stack,
   Switch,
@@ -50,10 +51,59 @@ export function SectionCanvas({
   const prefix = `sections.${sectionIndex}`;
   const questions = watch(`${prefix}.questions`) ?? [];
   const role = watch(`${prefix}.role`);
+  const [expandedQuestionIndex, setExpandedQuestionIndex] = useState(-1);
+  const pendingExpandRef = useRef(false);
+
+  useEffect(() => {
+    setExpandedQuestionIndex(-1);
+    pendingExpandRef.current = false;
+  }, [sectionIndex]);
+
+  useEffect(() => {
+    if (pendingExpandRef.current && questions.length > 0) {
+      pendingExpandRef.current = false;
+      setExpandedQuestionIndex(questions.length - 1);
+      return;
+    }
+    if (expandedQuestionIndex >= questions.length) {
+      setExpandedQuestionIndex(questions.length > 0 ? questions.length - 1 : -1);
+    }
+  }, [questions.length, expandedQuestionIndex]);
+
+  const handleAddQuestion = () => {
+    pendingExpandRef.current = true;
+    onAddQuestion?.();
+  };
+
+  const handleDeleteQuestion = (questionIndex) => {
+    onDeleteQuestion(questionIndex);
+    setExpandedQuestionIndex((prev) => {
+      if (prev === questionIndex) return -1;
+      if (prev > questionIndex) return prev - 1;
+      return prev;
+    });
+  };
+
+  const handleMoveQuestion = (from, to) => {
+    onMoveQuestion(from, to);
+    setExpandedQuestionIndex((prev) => {
+      if (prev === from) return to;
+      if (prev === to) return from;
+      return prev;
+    });
+  };
 
   return (
     <Stack spacing={2.5}>
-      <Typography variant="h6" sx={{ fontWeight: 700 }}>
+      <Typography
+        variant="caption"
+        sx={{
+          fontWeight: 700,
+          letterSpacing: '0.03em',
+          textTransform: 'uppercase',
+          color: 'text.secondary',
+        }}
+      >
         Section details
       </Typography>
 
@@ -82,9 +132,10 @@ export function SectionCanvas({
         disableGutters
         elevation={0}
         sx={{
-          border: '1px solid',
+          border: 1,
           borderColor: 'divider',
           borderRadius: 1.5,
+          bgcolor: (theme) => theme.palette.custom?.surfaces?.subtle ?? 'background.default',
           '&:before': { display: 'none' },
         }}
       >
@@ -97,9 +148,12 @@ export function SectionCanvas({
           <Stack spacing={2}>
             <TextField
               {...register(`${prefix}.banner`)}
-              label="Banner text (optional)"
+              label="Section description"
               fullWidth
+              multiline
+              minRows={2}
               disabled={readOnly}
+              placeholder="Shown above this section when someone fills out the assessment."
               helperText="Shown as a highlighted header on the assessment form."
             />
 
@@ -154,13 +208,21 @@ export function SectionCanvas({
         </AccordionDetails>
       </Accordion>
 
-      <Box sx={{ pt: 1 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
+      <Divider />
+
+      <Box>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.75 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
             Questions
           </Typography>
           {!readOnly && onAddQuestion ? (
-            <Button size="small" startIcon={<AddRoundedIcon />} onClick={onAddQuestion}>
+            <Button
+              size="small"
+              color="inherit"
+              startIcon={<AddRoundedIcon />}
+              onClick={handleAddQuestion}
+              sx={{ fontWeight: 600, px: 0.5 }}
+            >
               Add question
             </Button>
           ) : null}
@@ -171,7 +233,7 @@ export function SectionCanvas({
             No questions yet. Add a text box, radio, dropdown, or other input type.
           </Typography>
         ) : (
-          <Stack spacing={1.5}>
+          <Stack spacing={1}>
             {questions.map((_, questionIndex) => (
               <QuestionCard
                 key={questions[questionIndex]?.id ?? questionIndex}
@@ -187,9 +249,12 @@ export function SectionCanvas({
                 onOpenRatingDrawer={onOpenRatingDrawer}
                 canMoveUp={questionIndex > 0}
                 canMoveDown={questionIndex < questions.length - 1}
-                onMoveUp={() => onMoveQuestion(questionIndex, questionIndex - 1)}
-                onMoveDown={() => onMoveQuestion(questionIndex, questionIndex + 1)}
-                onDelete={() => onDeleteQuestion(questionIndex)}
+                onMoveUp={() => handleMoveQuestion(questionIndex, questionIndex - 1)}
+                onMoveDown={() => handleMoveQuestion(questionIndex, questionIndex + 1)}
+                onDelete={() => handleDeleteQuestion(questionIndex)}
+                expanded={expandedQuestionIndex === questionIndex}
+                onExpand={() => setExpandedQuestionIndex(questionIndex)}
+                onCollapse={() => setExpandedQuestionIndex(-1)}
               />
             ))}
           </Stack>

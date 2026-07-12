@@ -34,7 +34,7 @@ export function RbacSettingsToolbar({
 
   return (
     <SettingsPageToolbar
-      title="Roles & Permissions"
+      title="Roles & permissions"
       subtitle="Configure who can do what within modules enabled for your organization."
       primaryAction={
         showCreateRole ? (
@@ -43,18 +43,44 @@ export function RbacSettingsToolbar({
           </CrudButton>
         ) : null
       }
-      sx={{ mb: 2 }}
+      sx={{ mb: 0 }}
     >
       <Tabs
         value={activeTab}
         onChange={handleTabChange}
         variant="scrollable"
         allowScrollButtonsMobile
-        sx={{ mt: 2, minHeight: 40 }}
+        sx={{
+          mt: 2,
+          minHeight: 40,
+          borderBottom: 1,
+          borderColor: 'divider',
+          '& .MuiTabs-indicator': {
+            height: 2,
+            bgcolor: 'warning.main',
+          },
+        }}
         aria-label="RBAC settings tabs"
       >
         {TAB_ITEMS.map((tab) => (
-          <Tab key={tab.value} label={tab.label} value={tab.value} sx={{ minHeight: 40 }} />
+          <Tab
+            key={tab.value}
+            label={tab.label}
+            value={tab.value}
+            sx={{
+              minHeight: 40,
+              mr: 2.5,
+              px: 0.75,
+              fontSize: 13.5,
+              fontWeight: 600,
+              letterSpacing: '0.02em',
+              textTransform: 'uppercase',
+              color: 'text.disabled',
+              '&.Mui-selected': {
+                color: 'text.primary',
+              },
+            }}
+          />
         ))}
       </Tabs>
     </SettingsPageToolbar>

@@ -5,8 +5,8 @@ export const PERFORMANCE_TABS = {
 };
 
 export const PERFORMANCE_TAB_DEFS = [
-  { key: PERFORMANCE_TABS.builder, label: 'Form Builder' },
-  { key: PERFORMANCE_TABS.rating, label: 'Rating Scale' },
+  { key: PERFORMANCE_TABS.builder, label: 'Form builder' },
+  { key: PERFORMANCE_TABS.rating, label: 'Rating scale' },
   { key: PERFORMANCE_TABS.preview, label: 'Preview by role' },
 ];
 

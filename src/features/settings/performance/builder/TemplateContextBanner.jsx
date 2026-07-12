@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
-import { Alert, IconButton } from '@mui/material';
+import { Box, IconButton, Typography } from '@mui/material';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 const STORAGE_KEY = 'ghoulhr.performance.templateBannerDismissed';
 
@@ -29,22 +30,35 @@ export function TemplateContextBanner() {
   if (dismissed) return null;
 
   return (
-    <Alert
-      severity="info"
-      sx={{ mb: 2 }}
-      action={
-        <IconButton
-          aria-label="Dismiss"
-          color="inherit"
-          size="small"
-          onClick={handleDismiss}
-        >
-          <CloseRoundedIcon fontSize="small" />
-        </IconButton>
-      }
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 1.5,
+        mb: 2.5,
+        px: 2,
+        py: 1.5,
+        borderRadius: 1.5,
+        bgcolor: (theme) =>
+          theme.palette.mode === 'dark'
+            ? 'rgba(96, 165, 250, 0.12)'
+            : 'rgba(59, 130, 246, 0.1)',
+        color: 'text.primary',
+      }}
     >
-      Editing template — changes apply to future assignments only. Already-assigned
-      assessments keep their original version.
-    </Alert>
+      <InfoOutlinedIcon color="secondary" sx={{ fontSize: 18, mt: 0.15, flexShrink: 0 }} />
+      <Typography variant="body2" sx={{ flex: 1, lineHeight: 1.5 }}>
+        Editing template — changes apply to future assignments only. Already-assigned assessments
+        keep their original version.
+      </Typography>
+      <IconButton
+        aria-label="Dismiss"
+        size="small"
+        onClick={handleDismiss}
+        sx={{ flexShrink: 0, color: 'text.secondary' }}
+      >
+        <CloseRoundedIcon fontSize="small" />
+      </IconButton>
+    </Box>
   );
 }

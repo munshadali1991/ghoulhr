@@ -1,4 +1,4 @@
-import { Button, Stack } from '@mui/material';
+import { Stack } from '@mui/material';
 import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
@@ -6,7 +6,6 @@ import { CrudButton } from '@/shared/components/ui/CrudButton';
  *   editable: boolean,
  *   isSaving: boolean,
  *   canSubmit: boolean,
- *   onSaveDraft: () => void,
  *   onSubmit: () => void,
  * }} props
  */
@@ -14,7 +13,6 @@ export function TimesheetDayActions({
   editable,
   isSaving,
   canSubmit,
-  onSaveDraft,
   onSubmit,
 }) {
   if (!editable) return null;
@@ -34,15 +32,6 @@ export function TimesheetDayActions({
         mt: 2,
       }}
     >
-      <Button
-        variant="outlined"
-        onClick={onSaveDraft}
-        disabled={isSaving}
-        fullWidth
-        sx={{ display: { sm: 'inline-flex' }, width: { sm: 'auto' } }}
-      >
-        Save as draft
-      </Button>
       <CrudButton
         intent="save"
         onClick={onSubmit}

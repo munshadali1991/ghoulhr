@@ -34,3 +34,28 @@ export const LEAVE_WIZARD_STEPS = [
 ];
 
 export const LEAVE_WIZARD_LAST = LEAVE_WIZARD_STEPS.length - 1;
+
+export const LEAVE_TABLE_COLUMNS = [
+  { key: 'index', label: '#', align: 'left' },
+  { key: 'name', label: 'Name', align: 'left' },
+  { key: 'code', label: 'Code', align: 'left' },
+  { key: 'location', label: 'Location', align: 'left' },
+  { key: 'days', label: 'Days/yr', align: 'right' },
+  { key: 'accrual', label: 'Accrual', align: 'left' },
+  { key: 'paid', label: 'Paid', align: 'left' },
+  { key: 'isActive', label: 'Active', align: 'center' },
+  { key: 'approval', label: 'Approval', align: 'left' },
+  { key: 'actions', label: 'Actions', align: 'right', nowrap: true },
+];
+
+export const LEAVE_TABLE_HEADER_CELL_SX = {
+  fontWeight: 700,
+  bgcolor: 'background.paper',
+  zIndex: 3,
+};
+
+export const LEAVE_TABLE_CONTAINER_SX = {
+  borderRadius: 2,
+  maxHeight: { xs: 420, sm: 520 },
+  overflow: 'auto',
+};

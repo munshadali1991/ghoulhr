@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, Box, Skeleton } from '@mui/material';
 import { FormStatusAlerts } from '@/shared/components/feedback/FormStatusAlerts';
-import { PageCard } from '@/shared/components/ui/PageCard';
 import { useTabAccess } from '@/features/auth/hooks/useAuthorization';
 import { ORG_STRUCTURE_TAB_DEFS } from './orgStructureTabs';
 import { useOrgStructure } from './hooks/useOrgStructure';
@@ -145,41 +144,39 @@ export function OrgStructurePage({ organizationId }) {
         onTabChange={handleTabChange}
         onAdd={handleAdd}
         canWrite={canWriteActive}
-        addDisabled={
-          activeTab === 'designations' && departments.length === 0
-        }
+        addDisabled={activeTab === 'designations' && departments.length === 0}
       />
 
-      <PageCard>
-        <Box sx={{ p: { xs: 2, md: 3 } }}>
-          {activeTab === 'departments' ? (
-            <DepartmentTab
-              departments={departments}
-              isLoading={isLoading}
-              isSaving={isSaving}
-              actionError={actionError}
-              onClearActionError={clearActionError}
-              onEdit={openDepartmentEdit}
-              onDelete={deleteDepartment}
-              onToggleActive={toggleDepartmentActive}
-              readOnly={!canWriteTab(ORG_STRUCTURE_TAB_DEFS[0])}
-            />
-          ) : (
-            <DesignationTab
-              departments={departments}
-              designations={designations}
-              isLoading={isLoading}
-              isSaving={isSaving}
-              actionError={actionError}
-              onClearActionError={clearActionError}
-              onEdit={openDesignationEdit}
-              onDelete={deleteDesignation}
-              onToggleActive={toggleDesignationActive}
-              readOnly={!canWriteTab(ORG_STRUCTURE_TAB_DEFS[1])}
-            />
-          )}
-        </Box>
-      </PageCard>
+      <Box sx={{ mt: 2.5 }}>
+        {activeTab === 'departments' ? (
+          <DepartmentTab
+            departments={departments}
+            isLoading={isLoading}
+            isSaving={isSaving}
+            actionError={actionError}
+            onClearActionError={clearActionError}
+            onEdit={openDepartmentEdit}
+            onDelete={deleteDepartment}
+            onToggleActive={toggleDepartmentActive}
+            onAdd={canWriteActive ? handleAdd : undefined}
+            readOnly={!canWriteTab(ORG_STRUCTURE_TAB_DEFS[0])}
+          />
+        ) : (
+          <DesignationTab
+            departments={departments}
+            designations={designations}
+            isLoading={isLoading}
+            isSaving={isSaving}
+            actionError={actionError}
+            onClearActionError={clearActionError}
+            onEdit={openDesignationEdit}
+            onDelete={deleteDesignation}
+            onToggleActive={toggleDesignationActive}
+            onAdd={canWriteActive ? handleAdd : undefined}
+            readOnly={!canWriteTab(ORG_STRUCTURE_TAB_DEFS[1])}
+          />
+        )}
+      </Box>
 
       {isSaving ? (
         <Alert severity="info" sx={{ mt: 2 }}>

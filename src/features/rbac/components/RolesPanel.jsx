@@ -18,6 +18,7 @@ import { CreateRoleDialog } from '@/features/rbac/components/CreateRoleDialog';
 import { CloneRoleDialog } from '@/features/rbac/components/CloneRoleDialog';
 import { EditRoleDialog } from '@/features/rbac/components/EditRoleDialog';
 import { ConfirmDialog } from '@/features/rbac/components/ConfirmDialog';
+import { PageCard } from '@/shared/components/ui/PageCard';
 import { DEFAULT_ACCESS_SCOPE } from '@/features/rbac/constants/accessScopes';
 import { buildPermissionMatrix } from '@/features/rbac/utils/permissionMatrix';
 import {
@@ -274,10 +275,11 @@ export function RolesPanel({
 
       <Box
         sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: '280px 1fr' },
+          gap: 2.25,
+          alignItems: 'start',
           minHeight: 480,
-          gap: { xs: 2, md: 0 },
         }}
       >
         <RoleCatalogPanel
@@ -289,7 +291,7 @@ export function RolesPanel({
           canManage={canManage}
         />
 
-        <Box sx={{ flex: 1, minWidth: 0, pl: { md: 3 } }}>
+        <PageCard sx={{ p: { xs: 2, sm: 3 }, minWidth: 0 }}>
           <RoleDetailPanel
             roleDetail={roleDetail}
             roleLoading={roleLoading}
@@ -308,7 +310,7 @@ export function RolesPanel({
             canManage={canManage}
             onEditRole={() => setEditRoleOpen(true)}
           />
-        </Box>
+        </PageCard>
       </Box>
 
       <CreateRoleDialog

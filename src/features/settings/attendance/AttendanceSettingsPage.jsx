@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Alert, Box, Skeleton } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { FormStatusAlerts } from '@/shared/components/feedback/FormStatusAlerts';
-import { PageCard } from '@/shared/components/ui/PageCard';
 import { ATTENDANCE_TABS } from './constants';
 import { useAttendanceManager } from './hooks/useAttendanceManager';
 import { AttendanceToolbar } from './components/AttendanceToolbar';
@@ -155,64 +154,46 @@ export function AttendanceSettingsPage({ organizationId }) {
         }
       />
 
-      <PageCard>
-        <Box sx={{ p: { xs: 2, md: 3 } }}>
-          {activeTab === ATTENDANCE_TABS.shifts ? (
-            <ShiftsTab
-              shifts={shifts}
-              branchLocations={branchLocations}
-              isLoading={isLoading}
-              isSaving={isSaving}
-              actionError={actionError}
-              onClearActionError={clearActionError}
-              onEdit={
-                canWrite
-                  ? (record) => {
-                      clearActionError();
-                      setFormView({ type: 'shift', record });
-                    }
-                  : undefined
-              }
-              onDelete={canWrite ? deleteShift : undefined}
-              onToggleActive={canWrite ? toggleShiftActive : undefined}
-              readOnly={!canWrite}
-              locationsEmpty={locationsEmpty}
-            />
-          ) : null}
+      <Box sx={{ mt: 2.5 }}>
+        {activeTab === ATTENDANCE_TABS.shifts ? (
+          <ShiftsTab
+            shifts={shifts}
+            branchLocations={branchLocations}
+            isLoading={isLoading}
+            isSaving={isSaving}
+            actionError={actionError}
+            onClearActionError={clearActionError}
+            onEdit={
+              canWrite
+                ? (record) => {
+                    clearActionError();
+                    setFormView({ type: 'shift', record });
+                  }
+                : undefined
+            }
+            onDelete={canWrite ? deleteShift : undefined}
+            onToggleActive={canWrite ? toggleShiftActive : undefined}
+            readOnly={!canWrite}
+            locationsEmpty={locationsEmpty}
+          />
+        ) : null}
 
-          {activeTab === ATTENDANCE_TABS.schedule ? (
-            <ScheduleTab
-              schedule={schedule}
-              actionError={actionError}
-              onClearActionError={clearActionError}
-              onEdit={
-                canWrite
-                  ? () => {
-                      clearActionError();
-                      setFormView({ type: 'schedule' });
-                    }
-                  : undefined
-              }
-            />
-          ) : null}
+        {activeTab === ATTENDANCE_TABS.schedule ? (
+          <ScheduleTab
+            schedule={schedule}
+            actionError={actionError}
+            onClearActionError={clearActionError}
+          />
+        ) : null}
 
-          {activeTab === ATTENDANCE_TABS.checkin ? (
-            <CheckInTab
-              checkIn={checkIn}
-              actionError={actionError}
-              onClearActionError={clearActionError}
-              onEdit={
-                canWrite
-                  ? () => {
-                      clearActionError();
-                      setFormView({ type: 'checkin' });
-                    }
-                  : undefined
-              }
-            />
-          ) : null}
-        </Box>
-      </PageCard>
+        {activeTab === ATTENDANCE_TABS.checkin ? (
+          <CheckInTab
+            checkIn={checkIn}
+            actionError={actionError}
+            onClearActionError={clearActionError}
+          />
+        ) : null}
+      </Box>
 
       {isSaving ? (
         <Alert severity="info" sx={{ mt: 2 }}>

@@ -1,17 +1,9 @@
-import {
-  Alert,
-  Box,
-  Button,
-  CardContent,
-  CircularProgress,
-  Grid,
-  Link,
-  Stack,
-  Typography,
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import { HeroBanner } from '@/shared/components/ui/HeroBanner';
-import { PageCard } from '@/shared/components/ui/PageCard';
+import { Alert, Box, CircularProgress } from '@mui/material';
+import { HomeGreetingBar } from '../../components/home/HomeGreetingBar';
+import { QuickAccessCard } from '../../components/home/QuickAccessCard';
+import { PayslipCard } from '../../components/home/PayslipCard';
+import { ApprovalsLeaveCard } from '../../components/home/ApprovalsLeaveCard';
+import { HomeNoticeCard } from '../../components/home/HomeNoticeCard';
 import { AttendanceHomeWidget } from '../../components/attendance/AttendanceHomeWidget';
 import { UpcomingHolidaysWidget } from '../../components/leave/UpcomingHolidaysWidget';
 import { TimesheetHomeWidget } from '../../components/timesheet/TimesheetHomeWidget';
@@ -23,49 +15,27 @@ import {
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { Can } from '@/features/auth/components/Can';
+import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
 
-function PayslipRing() {
-  return (
-    <Box sx={{ position: 'relative', width: 120, height: 120, mx: 'auto' }}>
-      <CircularProgress
-        variant="determinate"
-        value={75}
-        size={120}
-        thickness={4}
-        sx={{ color: 'secondary.main' }}
-      />
-      <CircularProgress
-        variant="determinate"
-        value={45}
-        size={120}
-        thickness={4}
-        sx={{
-          color: 'success.light',
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          transform: 'rotate(-90deg)',
-        }}
-      />
-      <Box
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Typography variant="caption" color="text.secondary">
-          Apr
-        </Typography>
-      </Box>
-    </Box>
-  );
-}
+const GRID_DESKTOP = `
+  "ts ts ts ts ts sh sh sh sh hd hd hd"
+  "qa qa qa ps ps ps lv lv lv hd hd hd"
+  "n1 n1 n1 n1 n1 n1 n2 n2 n2 n2 n2 n2"
+`;
+
+const GRID_MOBILE = `
+  "ts"
+  "sh"
+  "hd"
+  "qa"
+  "ps"
+  "lv"
+  "n1"
+  "n2"
+`;
 
 export function EmployeeHomePage({ userName }) {
-  const navigate = useNavigate();
+  const { can } = useAuthorization();
   const { data, isLoading, error, refetch } = useEmployeeHome();
   const signInMutation = useSignInAttendance();
   const signOutMutation = useSignOutAttendance();
@@ -100,167 +70,83 @@ export function EmployeeHomePage({ userName }) {
 
   if (!data) return null;
 
+  const showApprovals =
+    can('ess.leave:read') || can('approvals.leave:read') || can('approvals.timesheet:read');
+
   return (
     <>
-      <HeroBanner sx={{ mb: 2 }}>
-        <Grid container alignItems="center">
-          <Grid size={{ xs: 12, md: 8 }}>
-            <Typography variant="h5" fontWeight={700} gutterBottom>
-              {data.greeting}, {userName}!
-            </Typography>
-          </Grid>
-        </Grid>
-      </HeroBanner>
+      <HomeGreetingBar greeting={data.greeting} userName={userName} />
 
-      <Grid container spacing={2}>
+      <Box
+        sx={{
+          display: 'grid',
+          gap: 2.25,
+          gridTemplateColumns: { xs: '1fr', md: 'repeat(12, 1fr)' },
+          gridTemplateAreas: { xs: GRID_MOBILE, md: GRID_DESKTOP },
+          alignItems: 'stretch',
+        }}
+      >
         <Can permission="ess.timesheet:read">
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Box sx={{ gridArea: 'ts', minWidth: 0 }}>
             <TimesheetHomeWidget timesheet={data.timesheet} />
-          </Grid>
+          </Box>
         </Can>
 
         <Can permission="ess.attendance:read">
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Box sx={{ gridArea: 'sh', minWidth: 0 }}>
             <AttendanceHomeWidget
               attendance={data.attendance}
               onToggle={handleAttendanceToggle}
               isPending={signInMutation.isPending || signOutMutation.isPending}
             />
-          </Grid>
+          </Box>
         </Can>
 
         <Can permission="ess.leave:read">
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Box sx={{ gridArea: 'hd', minWidth: 0, minHeight: { md: 0 } }}>
             <UpcomingHolidaysWidget holidays={data.upcomingHolidays} />
-          </Grid>
+          </Box>
         </Can>
 
         <Can permission="ess.leave:read">
-          <Grid size={{ xs: 12, md: 4 }}>
-            <PageCard sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                  Quick Access
-                </Typography>
-                <Stack spacing={0.5}>
-                  {data.quickLinks.map((link) => (
-                    <Link key={link.label} href={link.href} variant="body2" underline="hover">
-                      {link.label}
-                    </Link>
-                  ))}
-                </Stack>
-              </CardContent>
-            </PageCard>
-          </Grid>
+          <Box sx={{ gridArea: 'qa', minWidth: 0 }}>
+            <QuickAccessCard links={data.quickLinks} />
+          </Box>
         </Can>
 
         <Can permission="payroll:read">
-          <Grid size={{ xs: 12, md: 4 }}>
-            <PageCard sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="subtitle2" fontWeight={700}>
-                  Payslip
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {data.payslip.month} · {data.payslip.paidDays} Paid Days
-                </Typography>
-                <PayslipRing />
-                <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 1 }}>
-                  <Link component="button" variant="body2">
-                    Download
-                  </Link>
-                  <Link component="button" variant="body2">
-                    Show Salary
-                  </Link>
-                </Stack>
-              </CardContent>
-            </PageCard>
-          </Grid>
+          <Box sx={{ gridArea: 'ps', minWidth: 0 }}>
+            <PayslipCard payslip={data.payslip} />
+          </Box>
         </Can>
 
-        <Can permission="ess.leave:read">
-          <Grid size={{ xs: 12, md: 4 }}>
-            <PageCard
-              sx={{ height: '100%', cursor: 'pointer' }}
-              onClick={() => navigate('/leave/apply?tab=pending')}
-            >
-              <CardContent>
-                <Typography variant="h4" fontWeight={700}>
-                  {String(data.pendingLeaveCount).padStart(2, '0')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Leave pending
-                </Typography>
-              </CardContent>
-            </PageCard>
-          </Grid>
-        </Can>
+        {showApprovals ? (
+          <Box sx={{ gridArea: 'lv', minWidth: 0 }}>
+            <ApprovalsLeaveCard
+              pendingLeaveCount={data.pendingLeaveCount}
+              pendingApprovalLeaveCount={data.pendingApprovalLeaveCount}
+              pendingApprovalTimesheetCount={data.pendingApprovalTimesheetCount}
+            />
+          </Box>
+        ) : null}
 
-        <Can permission="approvals.leave:read">
-          <Grid size={{ xs: 12, md: 4 }}>
-            <PageCard
-              sx={{ height: '100%', cursor: 'pointer' }}
-              onClick={() => navigate('/leave/requests')}
-            >
-              <CardContent>
-                <Typography variant="h4" fontWeight={700}>
-                  {String(data.pendingApprovalLeaveCount ?? 0).padStart(2, '0')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Awaiting my approval
-                </Typography>
-              </CardContent>
-            </PageCard>
-          </Grid>
-        </Can>
+        <Box sx={{ gridArea: 'n1', minWidth: 0 }}>
+          <HomeNoticeCard
+            tone="success"
+            title="IT declaration"
+            message={data.itDeclaration?.message}
+            actionLabel="View"
+          />
+        </Box>
 
-        <Can permission="approvals.timesheet:read">
-          <Grid size={{ xs: 12, md: 4 }}>
-            <PageCard
-              sx={{ height: '100%', cursor: 'pointer' }}
-              onClick={() => navigate('/timesheet/team?status=SUBMITTED')}
-            >
-              <CardContent>
-                <Typography variant="h4" fontWeight={700}>
-                  {String(data.pendingApprovalTimesheetCount ?? 0).padStart(2, '0')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Timesheets awaiting approval
-                </Typography>
-              </CardContent>
-            </PageCard>
-          </Grid>
-        </Can>
-
-        <Grid size={{ xs: 12, md: 6 }}>
-          <PageCard sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                IT Declaration
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                {data.itDeclaration.message}
-              </Typography>
-              <Button variant="outlined" color="secondary" size="small">
-                View
-              </Button>
-            </CardContent>
-          </PageCard>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 6 }}>
-          <PageCard sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                POI
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {data.poi.message}
-              </Typography>
-            </CardContent>
-          </PageCard>
-        </Grid>
-      </Grid>
+        <Box sx={{ gridArea: 'n2', minWidth: 0 }}>
+          <HomeNoticeCard
+            tone="warning"
+            title="Proof of investments"
+            message={data.poi?.message}
+          />
+        </Box>
+      </Box>
 
       <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={close} />
     </>

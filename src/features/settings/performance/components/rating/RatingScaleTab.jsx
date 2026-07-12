@@ -2,25 +2,23 @@ import { useMemo, useState } from 'react';
 import {
   Alert,
   Box,
-  Chip,
+  Button,
+  Collapse,
   IconButton,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArrowDownwardRoundedIcon from '@mui/icons-material/ArrowDownwardRounded';
 import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import ExpandLessRoundedIcon from '@mui/icons-material/ExpandLessRounded';
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import { Controller } from 'react-hook-form';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { ActiveSwitchCell } from '@/shared/components/data/ActiveSwitchCell';
-import { TableRowActions } from '@/shared/components/data/TableRowActions';
 import { ConfirmDeleteDialog, EmptyState } from '@/features/settings/shared';
 
 /**
@@ -31,8 +29,8 @@ import { ConfirmDeleteDialog, EmptyState } from '@/features/settings/shared';
  * }} props
  */
 export function RatingScaleTab({ ratingOptions, form, readOnly = false }) {
-  const [editIndex, setEditIndex] = useState(null);
   const [deleteIndex, setDeleteIndex] = useState(null);
+  const [expandedMore, setExpandedMore] = useState({});
 
   const weightsWarning = useMemo(() => {
     const active = ratingOptions.filter((o) => o?.isActive !== false);
@@ -47,14 +45,25 @@ export function RatingScaleTab({ ratingOptions, form, readOnly = false }) {
 
   if (!ratingOptions.length) {
     return (
-      <EmptyState
-        title="No rating options"
-        description="Add at least one KPI rating level for scored questions."
-      />
+      <PageCard sx={{ p: { xs: 2, sm: 3 }, maxWidth: 640 }}>
+        <EmptyState
+          title="No rating options"
+          description="Add at least one KPI rating level for scored questions."
+        />
+        {!readOnly ? (
+          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+            <Button
+              variant="outlined"
+              startIcon={<AddRoundedIcon />}
+              onClick={() => form.addRatingOption()}
+            >
+              Add rating level
+            </Button>
+          </Box>
+        ) : null}
+      </PageCard>
     );
   }
-
-  const editRow = editIndex != null ? ratingOptions[editIndex] : null;
 
   return (
     <>
@@ -64,76 +73,139 @@ export function RatingScaleTab({ ratingOptions, form, readOnly = false }) {
         </Alert>
       ) : null}
 
-      <PageCard sx={{ p: 0 }}>
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow sx={{ bgcolor: 'background.default' }}>
-                <TableCell width={88}>
-                  <strong>Order</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Label</strong>
-                </TableCell>
-                <TableCell width={100}>
-                  <strong>Weight</strong>
-                </TableCell>
-                <TableCell align="center" width={88}>
-                  <strong>Active</strong>
-                </TableCell>
-                <TableCell align="right" width={120}>
-                  <strong>Actions</strong>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {ratingOptions.map((option, index) => (
-                <TableRow
-                  key={option.id ?? index}
-                  hover={!readOnly}
-                  sx={{ cursor: readOnly ? 'default' : 'pointer' }}
-                  onClick={() => !readOnly && setEditIndex(index)}
-                  selected={editIndex === index}
-                >
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    {!readOnly ? (
-                      <Stack direction="row" spacing={0.25}>
-                        <Tooltip title="Move up">
-                          <span>
-                            <IconButton
-                              size="small"
-                              disabled={index === 0}
-                              onClick={() => form.ratingFields.move(index, index - 1)}
-                            >
-                              <ArrowUpwardRoundedIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                        <Tooltip title="Move down">
-                          <span>
-                            <IconButton
-                              size="small"
-                              disabled={index >= ratingOptions.length - 1}
-                              onClick={() => form.ratingFields.move(index, index + 1)}
-                            >
-                              <ArrowDownwardRoundedIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      </Stack>
-                    ) : (
-                      index + 1
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={600}>
-                      {option.label || '—'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip size="small" label={option.weight ?? 0} variant="outlined" />
-                  </TableCell>
-                  <TableCell align="center" onClick={(e) => e.stopPropagation()}>
+      <PageCard sx={{ p: { xs: 2, sm: 3 }, maxWidth: 640 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 600,
+            display: 'block',
+            mb: 1.75,
+            color: 'text.secondary',
+          }}
+        >
+          Rating levels
+        </Typography>
+
+        <Stack>
+          {ratingOptions.map((option, index) => {
+            const moreOpen = Boolean(expandedMore[index]);
+            return (
+              <Box
+                key={option.id ?? index}
+                sx={{
+                  py: 1.5,
+                  borderTop: index === 0 ? 0 : 1,
+                  borderColor: 'divider',
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <Box
+                    sx={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: '50%',
+                      bgcolor: (theme) =>
+                        theme.palette.mode === 'dark'
+                          ? 'rgba(96, 165, 250, 0.16)'
+                          : 'rgba(59, 130, 246, 0.12)',
+                      color: 'secondary.main',
+                      fontWeight: 700,
+                      fontSize: 13,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {index + 1}
+                  </Box>
+                  <TextField
+                    {...form.register(`ratingOptions.${index}.label`)}
+                    placeholder="e.g. Meets expectations"
+                    fullWidth
+                    size="small"
+                    disabled={readOnly}
+                  />
+                  {!readOnly ? (
+                    <Stack direction="row" spacing={0} flexShrink={0}>
+                      <Tooltip title="Move up">
+                        <span>
+                          <IconButton
+                            size="small"
+                            disabled={index === 0}
+                            onClick={() => form.ratingFields.move(index, index - 1)}
+                          >
+                            <ArrowUpwardRoundedIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Tooltip title="Move down">
+                        <span>
+                          <IconButton
+                            size="small"
+                            disabled={index >= ratingOptions.length - 1}
+                            onClick={() => form.ratingFields.move(index, index + 1)}
+                          >
+                            <ArrowDownwardRoundedIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Tooltip title="Weight & active">
+                        <IconButton
+                          size="small"
+                          onClick={() =>
+                            setExpandedMore((prev) => ({
+                              ...prev,
+                              [index]: !prev[index],
+                            }))
+                          }
+                        >
+                          {moreOpen ? (
+                            <ExpandLessRoundedIcon fontSize="small" />
+                          ) : (
+                            <ExpandMoreRoundedIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip
+                        title={
+                          ratingOptions.length <= 1
+                            ? 'At least one rating option is required'
+                            : 'Delete'
+                        }
+                      >
+                        <span>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            disabled={ratingOptions.length <= 1}
+                            onClick={() => setDeleteIndex(index)}
+                          >
+                            <DeleteOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </Stack>
+                  ) : null}
+                </Stack>
+
+                <Collapse in={moreOpen}>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={2}
+                    alignItems={{ sm: 'center' }}
+                    sx={{ mt: 1.5, pl: { sm: 5.5 } }}
+                  >
+                    <TextField
+                      {...form.register(`ratingOptions.${index}.weight`, {
+                        valueAsNumber: true,
+                      })}
+                      label="Weight"
+                      type="number"
+                      size="small"
+                      sx={{ width: { sm: 120 } }}
+                      disabled={readOnly}
+                    />
                     <Controller
                       control={form.control}
                       name={`ratingOptions.${index}.isActive`}
@@ -146,76 +218,28 @@ export function RatingScaleTab({ ratingOptions, form, readOnly = false }) {
                         />
                       )}
                     />
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    className="table-actions-cell"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <TableRowActions
-                      onEdit={() => setEditIndex(index)}
-                      editLabel={readOnly ? 'View' : 'Edit'}
-                      onDelete={
-                        readOnly || ratingOptions.length <= 1
-                          ? undefined
-                          : () => setDeleteIndex(index)
-                      }
-                      deleteDisabled={ratingOptions.length <= 1}
-                      deleteLabel={
-                        ratingOptions.length <= 1
-                          ? 'At least one rating option is required'
-                          : 'Delete'
-                      }
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </PageCard>
+                    <Typography variant="caption" color="text.secondary">
+                      Higher weights = stronger ratings
+                    </Typography>
+                  </Stack>
+                </Collapse>
+              </Box>
+            );
+          })}
+        </Stack>
 
-      {editIndex != null && editRow ? (
-        <PageCard sx={{ p: 2.5, mt: 2 }}>
-          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-            Edit rating option
-          </Typography>
-          <Stack spacing={2} direction={{ xs: 'column', sm: 'row' }} alignItems="flex-start">
-            <TextField
-              {...form.register(`ratingOptions.${editIndex}.label`)}
-              label="Label"
-              fullWidth
-              disabled={readOnly}
-            />
-            <TextField
-              {...form.register(`ratingOptions.${editIndex}.weight`, { valueAsNumber: true })}
-              label="Weight"
-              type="number"
-              sx={{ minWidth: 120 }}
-              disabled={readOnly}
-            />
-            <Box sx={{ pt: 0.5 }}>
-              <Controller
-                control={form.control}
-                name={`ratingOptions.${editIndex}.isActive`}
-                render={({ field }) => (
-                  <ActiveSwitchCell
-                    checked={field.value !== false}
-                    disabled={readOnly}
-                    ariaLabel="Active"
-                    onChange={(next) => field.onChange(next)}
-                  />
-                )}
-              />
-            </Box>
-          </Stack>
-          {!readOnly ? (
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
-              Higher weights represent stronger performance ratings in KPI scoring.
-            </Typography>
-          ) : null}
-        </PageCard>
-      ) : null}
+        {!readOnly ? (
+          <Box sx={{ mt: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<AddRoundedIcon />}
+              onClick={() => form.addRatingOption()}
+            >
+              Add rating level
+            </Button>
+          </Box>
+        ) : null}
+      </PageCard>
 
       <ConfirmDeleteDialog
         open={deleteIndex != null}
@@ -225,7 +249,7 @@ export function RatingScaleTab({ ratingOptions, form, readOnly = false }) {
         onConfirm={() => {
           if (deleteIndex != null) {
             form.ratingFields.remove(deleteIndex);
-            if (editIndex === deleteIndex) setEditIndex(null);
+            setExpandedMore({});
           }
           setDeleteIndex(null);
         }}

@@ -16,7 +16,7 @@ export function LeaveFormRow({ label, required, hint, children }) {
       rowSpacing={0}
       alignItems={{ xs: 'flex-start', sm: 'flex-start' }}
       sx={{
-        py: 2.25,
+        py: 1.75,
         borderBottom: '1px solid',
         borderColor: 'divider',
         '&:last-of-type': { borderBottom: 'none' },

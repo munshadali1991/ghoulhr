@@ -21,11 +21,13 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
+import { DesktopTimePicker } from '@mui/x-date-pickers/DesktopTimePicker';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import { SettingsField } from '@/shared/components/settings/SettingsField';
 import { RhfDesktopTimePicker } from '@/shared/components/forms/RhfDesktopTimePicker';
 import { RecordFormLayout } from '@/features/settings/shared';
+import { dayjsToShiftTime, shiftTimeToDayjs } from '@/shared/utils/shiftTime';
 import { shiftFormSchema } from '../../schemas';
 import {
   defaultShiftTemplate,
@@ -33,9 +35,9 @@ import {
   netWorkingMinutes,
   formatDurationHuman,
   saveAttendanceClockFormat,
+  parseTimeToMinutes,
 } from '../../utils/shifts';
 import { shiftBarGradient } from '@/shared/theme/surfaces';
-import { shiftTimeRangeTooltip } from '@/shared/utils/shiftTime';
 
 function DayWindowBar({ start, end, theme }) {
   const parse = (t) => {
@@ -68,6 +70,30 @@ function DayWindowBar({ start, end, theme }) {
         }}
       />
     </Box>
+  );
+}
+
+function SessionTimePicker({ label, value, onChange, clockFormat }) {
+  const is12 = clockFormat === '12';
+  return (
+    <DesktopTimePicker
+      label={label}
+      ampm={is12}
+      format={is12 ? 'hh:mm A' : 'HH:mm'}
+      value={shiftTimeToDayjs(value)}
+      onChange={(v) => onChange(dayjsToShiftTime(v))}
+      minutesStep={1}
+      slotProps={{
+        textField: {
+          size: 'small',
+          sx: { width: 150 },
+          placeholder: is12 ? '9:00 AM' : '14:30',
+        },
+        openPickerButton: {
+          'aria-label': `Open time picker: ${label}`,
+        },
+      }}
+    />
   );
 }
 
@@ -124,6 +150,10 @@ export function ShiftFormPage({
   const netLabel = formatDurationHuman(
     netWorkingMinutes(watched.start_time, watched.end_time, watched.break_minutes),
   );
+  const startMinutes = parseTimeToMinutes(watched.start_time);
+  const endMinutes = parseTimeToMinutes(watched.end_time);
+  const isOvernight =
+    startMinutes != null && endMinutes != null && endMinutes <= startMinutes;
 
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -186,9 +216,18 @@ export function ShiftFormPage({
         </Grid>
 
         <Grid size={{ xs: 12 }}>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 2,
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 1.5,
+            }}
+          >
             <Typography variant="subtitle2" fontWeight={600}>
-              Schedule preview
+              Working hours
             </Typography>
             <ToggleButtonGroup
               size="small"
@@ -201,11 +240,6 @@ export function ShiftFormPage({
               <ToggleButton value="24">24-hour</ToggleButton>
             </ToggleButtonGroup>
           </Box>
-          <DayWindowBar start={watched.start_time} end={watched.end_time} theme={theme} />
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.75, display: 'block' }}>
-            {shiftTimeRangeTooltip(watched.start_time, watched.end_time) || 'Set start and end times'}
-            {netLabel ? ` · ${netLabel} net working time` : ''}
-          </Typography>
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6 }}>
@@ -273,6 +307,18 @@ export function ShiftFormPage({
               </SettingsField>
             )}
           />
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+            Schedule preview
+          </Typography>
+          <DayWindowBar start={watched.start_time} end={watched.end_time} theme={theme} />
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.75, display: 'block' }}>
+            {netLabel
+              ? `${netLabel} net working time${isOvernight ? ' · Overnight shift' : ''}`
+              : 'Set start and end times to see net working time'}
+          </Typography>
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6 }}>
@@ -352,29 +398,25 @@ export function ShiftFormPage({
                   }
                   sx={{ minWidth: 140 }}
                 />
-                <TextField
-                  size="small"
-                  label="Start (HH:mm)"
-                  placeholder="13:00"
+                <SessionTimePicker
+                  label="Start"
                   value={sess.start_time}
-                  onChange={(e) =>
+                  clockFormat={clockFormat}
+                  onChange={(next) =>
                     setSessions((prev) =>
-                      prev.map((s, i) => (i === idx ? { ...s, start_time: e.target.value } : s)),
+                      prev.map((s, i) => (i === idx ? { ...s, start_time: next } : s)),
                     )
                   }
-                  sx={{ width: 120 }}
                 />
-                <TextField
-                  size="small"
-                  label="End (HH:mm)"
-                  placeholder="17:30"
+                <SessionTimePicker
+                  label="End"
                   value={sess.end_time}
-                  onChange={(e) =>
+                  clockFormat={clockFormat}
+                  onChange={(next) =>
                     setSessions((prev) =>
-                      prev.map((s, i) => (i === idx ? { ...s, end_time: e.target.value } : s)),
+                      prev.map((s, i) => (i === idx ? { ...s, end_time: next } : s)),
                     )
                   }
-                  sx={{ width: 120 }}
                 />
                 <IconButton
                   size="small"

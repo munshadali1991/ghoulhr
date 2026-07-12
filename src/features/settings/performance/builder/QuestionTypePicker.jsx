@@ -18,7 +18,12 @@ export function QuestionTypePicker({ value, onChange, disabled = false }) {
           color={value === type ? 'primary' : 'default'}
           variant={value === type ? 'filled' : 'outlined'}
           onClick={disabled ? undefined : () => onChange(type)}
-          sx={{ cursor: disabled ? 'default' : 'pointer' }}
+          sx={{
+            cursor: disabled ? 'default' : 'pointer',
+            borderRadius: 5,
+            fontWeight: 600,
+            fontSize: 12.5,
+          }}
         />
       ))}
     </Stack>
