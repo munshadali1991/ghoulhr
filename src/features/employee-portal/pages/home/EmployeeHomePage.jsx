@@ -9,9 +9,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { APP_NAME } from '@/app/config/appConfig';
 import { useNavigate } from 'react-router-dom';
-import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { HeroBanner } from '@/shared/components/ui/HeroBanner';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { AttendanceHomeWidget } from '../../components/attendance/AttendanceHomeWidget';
@@ -110,30 +108,9 @@ export function EmployeeHomePage({ userName }) {
             <Typography variant="h5" fontWeight={700} gutterBottom>
               {data.greeting}, {userName}!
             </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              {data.quote}
-            </Typography>
           </Grid>
         </Grid>
       </HeroBanner>
-
-      <PageCard sx={{ mb: 2, bgcolor: 'warning.light', border: 'none' }}>
-        <CardContent>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Box>
-              <Typography variant="subtitle2" fontWeight={700}>
-                Unite by {APP_NAME}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Loans and salary advances for employees.
-              </Typography>
-            </Box>
-            <CrudButton intent="create" size="small">
-              Explore
-            </CrudButton>
-          </Stack>
-        </CardContent>
-      </PageCard>
 
       <Grid container spacing={2}>
         <Can permission="ess.timesheet:read">

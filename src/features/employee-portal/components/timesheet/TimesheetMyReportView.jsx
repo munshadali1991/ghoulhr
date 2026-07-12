@@ -31,6 +31,7 @@ import TableChartRoundedIcon from '@mui/icons-material/TableChartRounded';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { PageCard } from '@/shared/components/ui/PageCard';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { TimesheetStatusChip } from './TimesheetStatusChip';
 import {
   useTimesheetDay,
@@ -429,28 +430,26 @@ export function TimesheetMyReportView({
                       <TableCell>{row.refNumber || ''}</TableCell>
                       <TableCell align="center">
                         <Stack direction="row" spacing={0.5} justifyContent="center">
-                          <Button
+                          <CrudButton
+                            intent="edit"
                             size="small"
-                            variant="contained"
-                            color="success"
                             startIcon={<EditOutlinedIcon />}
                             onClick={() => onEdit(row)}
                             disabled={!row.canModify}
                             sx={{ minWidth: 72, textTransform: 'none', py: 0.25 }}
                           >
                             Edit
-                          </Button>
-                          <Button
+                          </CrudButton>
+                          <CrudButton
+                            intent="delete"
                             size="small"
-                            variant="contained"
-                            color="error"
                             startIcon={<DeleteOutlineIcon />}
                             onClick={() => onDelete(row)}
                             disabled={!row.canModify}
                             sx={{ minWidth: 84, textTransform: 'none', py: 0.25 }}
                           >
                             Delete
-                          </Button>
+                          </CrudButton>
                         </Stack>
                       </TableCell>
                     </TableRow>
