@@ -11,6 +11,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 const HOLIDAY_TYPES = [
   { value: 'GENERAL', label: 'General (org-wide non-working day)' },
@@ -149,9 +150,9 @@ export function HolidayEditDialog({
         <Button onClick={onClose} disabled={submitting}>
           Cancel
         </Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={submitting}>
+        <CrudButton intent="save" onClick={handleSubmit} disabled={submitting}>
           {submitting ? 'Saving…' : 'Save'}
-        </Button>
+        </CrudButton>
       </DialogActions>
     </Dialog>
   );

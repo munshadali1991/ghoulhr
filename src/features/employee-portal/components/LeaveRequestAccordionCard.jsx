@@ -107,9 +107,9 @@ export function LeaveRequestAccordionCard({ request, mode, onWithdraw, withdrawi
                 </Link>
                 {mode === 'pending' && onWithdraw ? (
                   <Button
-                    variant="contained"
-                    color="secondary"
                     size="small"
+                    variant="outlined"
+                    color="error"
                     disabled={withdrawing}
                     sx={{ width: { xs: '100%', sm: 'auto' } }}
                     onClick={(e) => {

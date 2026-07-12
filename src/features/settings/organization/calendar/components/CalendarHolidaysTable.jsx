@@ -1,6 +1,5 @@
 import {
   Chip,
-  IconButton,
   Stack,
   Table,
   TableBody,
@@ -10,28 +9,41 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+import { TableRowActions } from '@/shared/components/data/TableRowActions';
 
 /**
  * @param {{
  *   holidays: object[],
- *   onEdit: (row: object) => void,
- *   onDelete: (row: object) => void,
+ *   emptyMessage?: string,
+ *   onEdit?: (row: object) => void,
+ *   onDelete?: (row: object) => void,
  * }} props
  */
-export function CalendarHolidaysTable({ holidays, onEdit, onDelete }) {
+export function CalendarHolidaysTable({
+  holidays,
+  emptyMessage = 'No holidays for this year. Add holidays to build your organization calendar.',
+  onEdit,
+  onDelete,
+}) {
   const isMobileLayout = useIsMobileLayout();
 
   if (holidays.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
-        No holidays for this year. Add holidays to build your organization calendar.
+        {emptyMessage}
       </Typography>
     );
   }
+
+  const actions = (row) =>
+    onEdit || onDelete ? (
+      <TableRowActions
+        onEdit={onEdit ? () => onEdit(row) : undefined}
+        onDelete={onDelete ? () => onDelete(row) : undefined}
+      />
+    ) : undefined;
 
   if (isMobileLayout) {
     return (
@@ -58,16 +70,7 @@ export function CalendarHolidaysTable({ holidays, onEdit, onDelete }) {
               },
               { label: 'Location', value: row.locationName || 'All locations' },
             ]}
-            actions={
-              <Stack direction="row" spacing={0.5}>
-                <IconButton size="small" aria-label="Edit" onClick={() => onEdit(row)}>
-                  <EditRoundedIcon fontSize="small" />
-                </IconButton>
-                <IconButton size="small" color="error" aria-label="Delete" onClick={() => onDelete(row)}>
-                  <DeleteRoundedIcon fontSize="small" />
-                </IconButton>
-              </Stack>
-            }
+            actions={actions(row)}
           />
         ))}
       </Stack>
@@ -112,20 +115,8 @@ export function CalendarHolidaysTable({ holidays, onEdit, onDelete }) {
                 />
               </TableCell>
               <TableCell>{row.locationName || 'All locations'}</TableCell>
-              <TableCell align="right">
-                <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                  <IconButton size="small" aria-label="Edit" onClick={() => onEdit(row)}>
-                    <EditRoundedIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="error"
-                    aria-label="Delete"
-                    onClick={() => onDelete(row)}
-                  >
-                    <DeleteRoundedIcon fontSize="small" />
-                  </IconButton>
-                </Stack>
+              <TableCell align="right" className="table-actions-cell">
+                {actions(row)}
               </TableCell>
             </TableRow>
           ))}

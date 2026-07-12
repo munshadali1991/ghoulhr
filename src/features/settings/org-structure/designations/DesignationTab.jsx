@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Alert, Box, Chip, Typography } from '@mui/material';
 import WorkOutlineOutlinedIcon from '@mui/icons-material/WorkOutlineOutlined';
-import { CrudDataTable, StatusChipCell, ConfirmDeleteDialog, EmptyState } from '@/features/settings/shared';
+import { CrudDataTable, ConfirmDeleteDialog, EmptyState } from '@/features/settings/shared';
 import { departmentNameMap, formatOrgDate } from '../utils/orgStructure';
 
 export function DesignationTab({
@@ -13,6 +13,7 @@ export function DesignationTab({
   onClearActionError,
   onEdit,
   onDelete,
+  onToggleActive,
   readOnly = false,
 }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -57,11 +58,6 @@ export function DesignationTab({
         label: 'Created',
         render: (row) => formatOrgDate(row.createdAt),
       },
-      {
-        id: 'isActive',
-        label: 'Status',
-        render: (row) => <StatusChipCell active={row.isActive !== false} />,
-      },
     ],
     [deptNames],
   );
@@ -102,6 +98,10 @@ export function DesignationTab({
         emptyDescription="Add job titles and map them to one or more departments."
         onEdit={onEdit}
         onDelete={setDeleteTarget}
+        onToggleActive={
+          onToggleActive ? (row, next) => onToggleActive(row.id, next) : undefined
+        }
+        toggleActiveDisabled={isSaving}
         readOnly={readOnly}
       />
 

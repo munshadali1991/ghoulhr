@@ -1,18 +1,25 @@
 /**
- * Accent colors that echo the legacy UI: the employee response field carries a
- * rose left/outline accent, the supplementary comment field a green accent.
+ * Accent outline styles for performance question fields.
+ * Colors resolve from theme.palette.custom.accent.
  */
-export const RESPONSE_ACCENT = '#e57373';
-export const COMMENT_ACCENT = '#66bb6a';
 
 /** Outlined-input sx that tints the resting border with an accent color. */
-export function accentOutlineSx(color) {
-  return {
-    '& .MuiOutlinedInput-notchedOutline': { borderColor: color },
-    '&:hover .MuiOutlinedInput-root:not(.Mui-focused) .MuiOutlinedInput-notchedOutline':
-      { borderColor: color },
+export function accentOutlineSx(colorResolver) {
+  return (theme) => {
+    const color =
+      typeof colorResolver === 'function' ? colorResolver(theme) : colorResolver;
+    return {
+      '& .MuiOutlinedInput-notchedOutline': { borderColor: color },
+      '&:hover .MuiOutlinedInput-root:not(.Mui-focused) .MuiOutlinedInput-notchedOutline':
+        { borderColor: color },
+    };
   };
 }
 
-export const answerFieldSx = accentOutlineSx(RESPONSE_ACCENT);
-export const commentFieldSx = accentOutlineSx(COMMENT_ACCENT);
+export const answerFieldSx = accentOutlineSx(
+  (theme) => theme.palette.custom.accent.response,
+);
+
+export const commentFieldSx = accentOutlineSx(
+  (theme) => theme.palette.custom.accent.comment,
+);

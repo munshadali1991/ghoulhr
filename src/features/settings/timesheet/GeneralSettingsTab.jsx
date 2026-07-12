@@ -1,4 +1,5 @@
 import {
+  Button,
   FormControlLabel,
   MenuItem,
   Stack,
@@ -7,7 +8,7 @@ import {
   Typography,
 } from '@mui/material';
 import { PageCard } from '@/shared/components/ui/PageCard';
-import { BrandedButton } from '@/shared/components/ui/BrandedButton';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { WEEK_START_OPTIONS } from './constants';
 
 /**
@@ -98,7 +99,7 @@ export function GeneralSettingsTab({ form, readOnly = false }) {
         justifyContent="flex-end"
         alignItems={{ xs: 'stretch', sm: 'center' }}
       >
-        <BrandedButton
+        <Button
           type="button"
           variant="outlined"
           onClick={form.handleReset}
@@ -107,15 +108,16 @@ export function GeneralSettingsTab({ form, readOnly = false }) {
           sx={{ display: { xs: 'flex', sm: 'inline-flex' }, width: { sm: 'auto' } }}
         >
           Reset
-        </BrandedButton>
-        <BrandedButton
+        </Button>
+        <CrudButton
+          intent="save"
           type="submit"
           disabled={!form.formState.isDirty || form.isUpdating}
           fullWidth
           sx={{ display: { xs: 'flex', sm: 'inline-flex' }, width: { sm: 'auto' } }}
         >
           {form.isUpdating ? 'Saving…' : 'Save settings'}
-        </BrandedButton>
+        </CrudButton>
       </Stack>
       ) : null}
     </form>

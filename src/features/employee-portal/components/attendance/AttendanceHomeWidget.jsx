@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { DashboardWidgetCard } from '@/shared/components/ui/DashboardWidgetCard';
-import { BrandedButton } from '@/shared/components/ui/BrandedButton';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { Can } from '@/features/auth/components/Can';
 
 function LiveClock() {
@@ -32,9 +32,9 @@ export function AttendanceHomeWidget({ attendance, onToggle, isPending = false }
 
   const punchAction = (
     <Can permission="ess.attendance:punch">
-      <BrandedButton size="small" disabled={isPending} onClick={onToggle}>
+      <CrudButton intent="create" size="small" disabled={isPending} onClick={onToggle}>
         {attendance.signedIn ? 'Sign Out' : 'Sign In'}
-      </BrandedButton>
+      </CrudButton>
     </Can>
   );
 

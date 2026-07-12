@@ -6,6 +6,7 @@ import {
   Box,
   Button,
   FormControl,
+  FormControlLabel,
   FormHelperText,
   Grid,
   IconButton,
@@ -13,6 +14,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Switch,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
@@ -102,6 +104,7 @@ export function ShiftFormPage({
         end_time: record.end_time || '',
         break_minutes: record.break_minutes ?? 0,
         locationId: record.locationId || '',
+        isActive: record.isActive !== false,
       }
     : defaultShiftTemplate(firstBranchId);
 
@@ -131,6 +134,7 @@ export function ShiftFormPage({
           end_time: values.end_time,
           break_minutes: values.break_minutes,
           locationId: values.locationId,
+          isActive: values.isActive !== false,
           sessions,
         },
         record?.id,
@@ -266,6 +270,26 @@ export function ShiftFormPage({
                   </Select>
                   {fieldState.error && <FormHelperText>{fieldState.error.message}</FormHelperText>}
                 </FormControl>
+              </SettingsField>
+            )}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Controller
+            name="isActive"
+            control={control}
+            render={({ field }) => (
+              <SettingsField label="Status">
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={field.value !== false}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                    />
+                  }
+                  label={field.value !== false ? 'Active' : 'Inactive'}
+                />
               </SettingsField>
             )}
           />

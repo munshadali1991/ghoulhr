@@ -9,6 +9,7 @@ import {
   TextField,
 } from '@mui/material';
 import { FilledByRoleSelect } from './FilledByRoleSelect';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * @param {{
@@ -58,9 +59,9 @@ export function CreateSectionModal({ open, onClose, onSubmit }) {
         <Button onClick={onClose} color="inherit">
           Cancel
         </Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={!canSubmit}>
+        <CrudButton intent="create" onClick={handleSubmit} disabled={!canSubmit}>
           Create section
-        </Button>
+        </CrudButton>
       </DialogActions>
     </Dialog>
   );

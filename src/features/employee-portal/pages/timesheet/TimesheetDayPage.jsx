@@ -59,12 +59,23 @@ function enrichWithCategory(row, categories) {
   return { ...row, categoryName: cat?.name ?? row.categoryName ?? '' };
 }
 
+function emptyDraftFieldErrors() {
+  return {
+    workAreaDescription: { message: 'Work area / description is required' },
+    hoursSpent: { message: 'Minimum 0.25 hours' },
+  };
+}
+
 function validateAndMergeDraftRows({ draftRows, entries, editingKey, workDate, categories }) {
   const filledDrafts = draftRows.filter((row) => !isDraftRowEmpty(row));
   const hasSavedEntries = entries.length > 0;
 
   if (filledDrafts.length === 0 && !hasSavedEntries) {
-    return { ok: false, reason: 'empty' };
+    const allErrors = {};
+    for (const row of draftRows) {
+      allErrors[row._draftId] = emptyDraftFieldErrors();
+    }
+    return { ok: false, reason: 'validation', allErrors };
   }
 
   const allErrors = {};
@@ -235,12 +246,8 @@ export function TimesheetDayPage() {
     });
 
     if (!result.ok) {
-      if (result.reason === 'empty') {
-        show('Fill at least one row before saving', 'warning');
-        return;
-      }
       setDraftErrors(result.allErrors);
-      show('Please fix the highlighted fields', 'error');
+      show('Please fill the required fields', 'error');
       return;
     }
 
@@ -283,12 +290,8 @@ export function TimesheetDayPage() {
     });
 
     if (!result.ok) {
-      if (result.reason === 'empty') {
-        show('Add at least one entry before submitting', 'warning');
-        return;
-      }
       setDraftErrors(result.allErrors);
-      show('Please fix the highlighted fields', 'error');
+      show('Please fill the required fields', 'error');
       return;
     }
 

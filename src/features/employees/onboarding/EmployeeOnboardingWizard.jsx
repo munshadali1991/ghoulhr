@@ -434,7 +434,7 @@ export function EmployeeOnboardingWizard({
               p: { xs: 2, sm: 2.5 },
               borderTop: '1px solid',
               borderColor: 'divider',
-              bgcolor: 'grey.50',
+              bgcolor: (theme) => theme.palette.custom.surfaces.subtle,
               position: { xs: 'sticky', sm: 'static' },
               bottom: 0,
             }}

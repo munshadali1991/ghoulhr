@@ -3,7 +3,6 @@ import {
   Box,
   Chip,
   CircularProgress,
-  IconButton,
   Stack,
   Table,
   TableBody,
@@ -13,10 +12,9 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+import { TableRowActions } from '@/shared/components/data/TableRowActions';
 
 function labelFor(options, value) {
   return options.find((o) => o.value === value)?.label ?? value;
@@ -79,14 +77,10 @@ export function TimesheetSavedEntriesTable({
         {entries.map((entry, index) => {
           const key = entryKey(entry);
           const actions = isEditable ? (
-            <Stack direction="row" spacing={0.5}>
-              <IconButton size="small" aria-label="Edit" onClick={() => onRowClick(entry)}>
-                <EditOutlinedIcon fontSize="small" />
-              </IconButton>
-              <IconButton size="small" color="error" aria-label="Delete" onClick={() => onDelete(entry)}>
-                <DeleteOutlineIcon fontSize="small" />
-              </IconButton>
-            </Stack>
+            <TableRowActions
+              onEdit={() => onRowClick(entry)}
+              onDelete={() => onDelete(entry)}
+            />
           ) : null;
 
           return (
@@ -220,15 +214,15 @@ export function TimesheetSavedEntriesTable({
                 </Typography>
               </TableCell>
               {isEditable ? (
-                <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                  <Stack direction="row" justifyContent="flex-end" spacing={0.5}>
-                    <IconButton size="small" aria-label="Edit" onClick={() => onRowClick(entry)}>
-                      <EditOutlinedIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" color="error" aria-label="Delete" onClick={() => onDelete(entry)}>
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </Stack>
+                <TableCell
+                  align="right"
+                  className="table-actions-cell"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <TableRowActions
+                    onEdit={() => onRowClick(entry)}
+                    onDelete={() => onDelete(entry)}
+                  />
                 </TableCell>
               ) : null}
             </TableRow>

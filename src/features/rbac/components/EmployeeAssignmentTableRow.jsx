@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   Chip,
   Skeleton,
   Stack,
@@ -8,8 +7,8 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+import { TableRowActions } from '@/shared/components/data/TableRowActions';
 
 function RoleChips({ assignments, isLoading }) {
   if (isLoading) {
@@ -77,11 +76,7 @@ export function EmployeeAssignmentCard({ employee, assignments = [], isLoading =
         },
         { label: 'All roles', value: <RoleChips assignments={assignments} isLoading={isLoading} /> },
       ]}
-      actions={
-        <Button size="small" startIcon={<EditOutlinedIcon />} onClick={onEdit}>
-          Edit
-        </Button>
-      }
+      actions={<TableRowActions onEdit={onEdit} />}
     />
   );
 }
@@ -147,10 +142,8 @@ export function EmployeeAssignmentTableRow({
           </Stack>
         )}
       </TableCell>
-      <TableCell align="right">
-        <Button size="small" startIcon={<EditOutlinedIcon />} onClick={onEdit}>
-          Edit
-        </Button>
+      <TableCell align="right" className="table-actions-cell">
+        <TableRowActions onEdit={onEdit} />
       </TableCell>
     </TableRow>
   );

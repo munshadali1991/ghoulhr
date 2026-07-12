@@ -7,6 +7,7 @@ import {
   DialogTitle,
   TextField,
 } from '@mui/material';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * @param {{
@@ -72,10 +73,12 @@ export function CreateRoleDialog({ open, onClose, onSubmit, isPending }) {
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={isPending}>
-          Create role
+        <Button variant="outlined" onClick={handleClose}>
+          Cancel
         </Button>
+        <CrudButton intent="create" onClick={handleSubmit} disabled={isPending}>
+          Create role
+        </CrudButton>
       </DialogActions>
     </Dialog>
   );

@@ -16,6 +16,7 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import { surface } from '@/shared/theme/surfaces';
 import { LEAVE_WIZARD_LAST, LEAVE_WIZARD_STEPS } from '../constants';
 import { LeaveWizardStepContent } from './LeaveWizardStepContent';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * @param {{
@@ -222,18 +223,18 @@ export function LeaveTypeEditorWizard({
               Discard
             </Button>
             {wizardStep < LEAVE_WIZARD_LAST ? (
-              <Button
+              <CrudButton
+                intent="create"
                 type="button"
-                variant="contained"
                 onClick={onWizardNext}
                 endIcon={<ChevronRightRoundedIcon />}
               >
                 Continue
-              </Button>
+              </CrudButton>
             ) : (
-              <Button type="submit" variant="contained" disabled={isUpdating || !isDirty}>
+              <CrudButton intent="save" type="submit" disabled={isUpdating || !isDirty}>
                 {isUpdating ? <CircularProgress size={22} color="inherit" /> : 'Save changes'}
-              </Button>
+              </CrudButton>
             )}
           </Stack>
         </Box>

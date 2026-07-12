@@ -70,6 +70,7 @@ export function OrganizationSettingsPage({ organizationId, orgForm, orgSubPath =
 
   const [calendarMeta, setCalendarMeta] = useState({ status: null, holidayCount: 0 });
   const [addHolidayNonce, setAddHolidayNonce] = useState(0);
+  const [importHolidayNonce, setImportHolidayNonce] = useState(0);
 
   const isCalendar = activeTab === ORGANIZATION_TABS.calendar;
 
@@ -79,6 +80,10 @@ export function OrganizationSettingsPage({ organizationId, orgForm, orgSubPath =
 
   const handleAddHoliday = useCallback(() => {
     setAddHolidayNonce((n) => n + 1);
+  }, []);
+
+  const handleUploadExcel = useCallback(() => {
+    setImportHolidayNonce((n) => n + 1);
   }, []);
 
   if (orgSubPath && orgSubPath !== 'calendar' && !orgSubPath.startsWith('calendar/')) {
@@ -92,13 +97,16 @@ export function OrganizationSettingsPage({ organizationId, orgForm, orgSubPath =
           ? 'settings-organization-calendar-page'
           : 'settings-organization-page'
       }
-    >      <OrganizationSettingsToolbar
+    >
+      <OrganizationSettingsToolbar
         activeTab={activeTab}
         financialYearStartMonth={orgForm.formValues.financialYearStartMonth}
         calendarStatus={isCalendar ? calendarMeta.status : null}
         holidayCount={isCalendar ? calendarMeta.holidayCount : 0}
         showAddHoliday={isCalendar && canWrite}
         onAddHoliday={handleAddHoliday}
+        showUploadExcel={isCalendar && canWrite}
+        onUploadExcel={handleUploadExcel}
       />
 
       <Box key={activeTab}>
@@ -108,6 +116,7 @@ export function OrganizationSettingsPage({ organizationId, orgForm, orgSubPath =
           <OrganizationCalendarTab
             organizationId={organizationId}
             addHolidayNonce={addHolidayNonce}
+            importHolidayNonce={importHolidayNonce}
             onMetaChange={handleCalendarMetaChange}
             canWrite={canWrite}
           />

@@ -26,7 +26,7 @@ import { can, canAny, hasModule } from '@/features/auth/utils/authorization';
 export const DASHBOARDS = [
   {
     key: 'ess',
-    label: 'Home',
+    label: 'Employee Dashboard',
     path: '/home',
     read: 'dashboard.ess:read',
     icon: 'home',
@@ -42,7 +42,7 @@ export const DASHBOARDS = [
   },
   {
     key: 'hr',
-    label: 'Dashboard',
+    label: 'Admin Dashboard',
     path: '/dashboard',
     read: 'dashboard.hr:read',
     icon: 'dashboard',

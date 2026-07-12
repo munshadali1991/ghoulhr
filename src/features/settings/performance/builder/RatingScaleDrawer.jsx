@@ -9,6 +9,7 @@ import {
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import { RatingScaleTab } from '../components/rating/RatingScaleTab';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * Side drawer for editing rating scale without leaving the Form Builder.
@@ -80,9 +81,9 @@ export function RatingScaleDrawer({
             justifyContent: 'flex-end',
           }}
         >
-          <Button variant="contained" onClick={onClose}>
+          <CrudButton intent="save" onClick={onClose}>
             Done
-          </Button>
+          </CrudButton>
         </Box>
       </Box>
     </Drawer>

@@ -142,6 +142,25 @@ export function useAttendanceManager(organizationId) {
     [branchLocations, persist, shifts],
   );
 
+  const toggleShiftActive = useCallback(
+    async (shiftId, nextActive) => {
+      setActionError('');
+      const nextShifts = shifts.map((s) =>
+        s.id === shiftId ? { ...s, isActive: nextActive } : s,
+      );
+      validateShiftLocations(nextShifts, branchLocations);
+      try {
+        await persist({
+          shifts: nextShifts.map(serializeShiftForApi),
+        });
+      } catch (err) {
+        setActionError(err.message || 'Failed to update shift status.');
+        throw err;
+      }
+    },
+    [branchLocations, persist, shifts],
+  );
+
   const saveSchedule = useCallback(
     async (payload) => {
       setActionError('');
@@ -181,6 +200,7 @@ export function useAttendanceManager(organizationId) {
     clearActionError: () => setActionError(''),
     saveShift,
     deleteShift,
+    toggleShiftActive,
     saveSchedule,
     saveCheckIn,
   };

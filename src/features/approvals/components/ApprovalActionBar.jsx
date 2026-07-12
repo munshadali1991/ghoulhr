@@ -19,7 +19,7 @@ export function ApprovalActionBar({ onApprove, onSendBack, onReject, disabled })
         <Button variant="outlined" color="error" onClick={onReject} disabled={disabled}>
           Reject
         </Button>
-        <Button variant="contained" onClick={onApprove} disabled={disabled}>
+        <Button variant="contained" color="success" onClick={onApprove} disabled={disabled}>
           Approve
         </Button>
       </Stack>

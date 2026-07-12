@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { APP_NAME } from '@/app/config/appConfig';
 import { useNavigate } from 'react-router-dom';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { HeroBanner } from '@/shared/components/ui/HeroBanner';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { AttendanceHomeWidget } from '../../components/attendance/AttendanceHomeWidget';
@@ -127,9 +128,9 @@ export function EmployeeHomePage({ userName }) {
                 Loans and salary advances for employees.
               </Typography>
             </Box>
-            <Button variant="contained" color="secondary" size="small">
+            <CrudButton intent="create" size="small">
               Explore
-            </Button>
+            </CrudButton>
           </Stack>
         </CardContent>
       </PageCard>

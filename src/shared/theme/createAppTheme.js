@@ -1,8 +1,9 @@
 import { createTheme } from '@mui/material/styles';
-import { tokens } from './tokens';
+import { buttonSizes, tokens } from './tokens';
 
 function buildSchemePalette(schemeTokens) {
-  const { palette, brand, login, card, surfaces } = schemeTokens;
+  const { palette, brand, login, card, surfaces, accent, chart, attendance, metrics, crud } =
+    schemeTokens;
   return {
     ...palette,
     custom: {
@@ -10,6 +11,11 @@ function buildSchemePalette(schemeTokens) {
       login,
       card,
       surfaces,
+      accent,
+      chart,
+      attendance,
+      metrics,
+      crud,
     },
   };
 }
@@ -42,6 +48,8 @@ export function createAppTheme() {
       subtitle1: { fontWeight: 500 },
       body2: { lineHeight: 1.6 },
     },
+    // Custom app tokens (not part of MUI palette)
+    appButtonSizes: buttonSizes,
     components: {
       MuiCssBaseline: {
         styleOverrides: {
@@ -60,10 +68,50 @@ export function createAppTheme() {
         },
       },
       MuiButton: {
+        defaultProps: {
+          size: 'medium',
+        },
         styleOverrides: {
           root: {
             textTransform: 'none',
             fontWeight: 500,
+          },
+          sizeSmall: {
+            height: buttonSizes.small.height,
+            paddingLeft: buttonSizes.small.px,
+            paddingRight: buttonSizes.small.px,
+          },
+          sizeMedium: {
+            height: buttonSizes.medium.height,
+            paddingLeft: buttonSizes.medium.px,
+            paddingRight: buttonSizes.medium.px,
+          },
+          sizeLarge: {
+            height: buttonSizes.large.height,
+            paddingLeft: buttonSizes.large.px,
+            paddingRight: buttonSizes.large.px,
+          },
+        },
+      },
+      MuiIconButton: {
+        defaultProps: {
+          size: 'small',
+        },
+      },
+      MuiTableCell: {
+        styleOverrides: {
+          root: {
+            '&.MuiTableCell-paddingCheckbox': {
+              width: 48,
+            },
+          },
+          body: {
+            '&.table-actions-cell': {
+              width: 1,
+              whiteSpace: 'nowrap',
+              paddingLeft: 8,
+              paddingRight: 8,
+            },
           },
         },
       },

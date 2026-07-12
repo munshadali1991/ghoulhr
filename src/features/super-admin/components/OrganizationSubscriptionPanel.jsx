@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Box,
-  Button,
   Chip,
   CircularProgress,
   FormControl,
@@ -18,6 +17,7 @@ import {
 } from '@mui/material';
 import EventAvailableRoundedIcon from '@mui/icons-material/EventAvailableRounded';
 import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import {
   assignOrganizationSubscription,
   getOrganizationSubscription,
@@ -239,23 +239,23 @@ export function OrganizationSubscriptionPanel({ organizationId, onSubscriptionCh
 
         <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
           {hasActivePlan ? (
-            <Button
-              variant="contained"
+            <CrudButton
+              intent="save"
               startIcon={<AutorenewRoundedIcon />}
               disabled={saving}
               onClick={() => handleSubmit('renew')}
             >
               {saving ? 'Saving…' : 'Renew plan'}
-            </Button>
+            </CrudButton>
           ) : (
-            <Button
-              variant="contained"
+            <CrudButton
+              intent="create"
               startIcon={<EventAvailableRoundedIcon />}
               disabled={saving}
               onClick={() => handleSubmit('assign')}
             >
               {saving ? 'Saving…' : 'Assign plan'}
-            </Button>
+            </CrudButton>
           )}
         </Stack>
       </Paper>

@@ -1,8 +1,8 @@
-import { Alert, Box, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Stack, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
 import { DashboardWidgetCard } from '@/shared/components/ui/DashboardWidgetCard';
-import { BrandedButton } from '@/shared/components/ui/BrandedButton';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { TimesheetStatusChip } from './TimesheetStatusChip';
 import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
 
@@ -58,19 +58,19 @@ export function TimesheetHomeWidget({ timesheet }) {
 
       {canWrite ? (
         <Box sx={{ mt: 'auto', pt: 1 }}>
-          <BrandedButton fullWidth onClick={() => navigate(`/timesheet?date=${workDate}`)}>
+          <CrudButton intent="create" fullWidth onClick={() => navigate(`/timesheet?date=${workDate}`)}>
             {ctaLabel}
-          </BrandedButton>
+          </CrudButton>
         </Box>
       ) : showViewOnlyCta ? (
         <Box sx={{ mt: 'auto', pt: 1 }}>
-          <BrandedButton
+          <Button
             fullWidth
             variant="outlined"
             onClick={() => navigate(`/timesheet?date=${workDate}`)}
           >
             {ctaLabel}
-          </BrandedButton>
+          </Button>
         </Box>
       ) : null}
     </DashboardWidgetCard>

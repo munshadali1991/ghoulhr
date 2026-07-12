@@ -14,6 +14,7 @@ import {
 import MapOutlinedIcon from '@mui/icons-material/MapOutlined';
 import { Controller } from 'react-hook-form';
 import { SectionLabel } from './SectionLabel';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * @param {{
@@ -161,9 +162,9 @@ export function LocationEditDialog({
         <Button onClick={handleCancel} color="inherit">
           Cancel
         </Button>
-        <Button onClick={onClose} variant="contained">
+        <CrudButton intent="save" onClick={onClose}>
           Done
-        </Button>
+        </CrudButton>
       </DialogActions>
     </Dialog>
   );

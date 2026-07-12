@@ -12,6 +12,7 @@ import {
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { PageToolbar, ToolbarButtonGroup } from '../../components/PageToolbar';
 import { LeaveBalanceCard } from '../../components/LeaveBalanceCard';
 import { useLeaveBalances } from '../../hooks/useEmployeePortalQueries';
@@ -34,10 +35,10 @@ export function LeaveBalancesPage() {
         right={
           <>
             <ToolbarButtonGroup>
-              <Button variant="outlined" color="secondary" onClick={() => navigate('/leave/apply')}>
+              <CrudButton intent="create" onClick={() => navigate('/leave/apply')}>
                 Apply
-              </Button>
-              <Button variant="contained" color="secondary" startIcon={<DownloadRoundedIcon />}>
+              </CrudButton>
+              <Button variant="outlined" startIcon={<DownloadRoundedIcon />}>
                 Download
               </Button>
             </ToolbarButtonGroup>

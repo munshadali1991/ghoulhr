@@ -57,7 +57,12 @@ export function ApproveLeaveDialog({
         <Button onClick={onCancel} disabled={isPending}>
           Cancel
         </Button>
-        <Button variant="contained" onClick={() => onConfirm(notes.trim())} disabled={isPending}>
+        <Button
+          variant="contained"
+          color="success"
+          onClick={() => onConfirm(notes.trim())}
+          disabled={isPending}
+        >
           Approve
         </Button>
       </DialogActions>

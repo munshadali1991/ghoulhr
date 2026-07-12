@@ -17,11 +17,11 @@ import {
 } from '@mui/material';
 import ArrowDownwardRoundedIcon from '@mui/icons-material/ArrowDownwardRounded';
 import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { Controller } from 'react-hook-form';
 import { PageCard } from '@/shared/components/ui/PageCard';
-import { ConfirmDeleteDialog, EmptyState, StatusChipCell } from '@/features/settings/shared';
+import { ActiveSwitchCell } from '@/shared/components/data/ActiveSwitchCell';
+import { TableRowActions } from '@/shared/components/data/TableRowActions';
+import { ConfirmDeleteDialog, EmptyState } from '@/features/settings/shared';
 
 /**
  * @param {{
@@ -78,8 +78,8 @@ export function RatingScaleTab({ ratingOptions, form, readOnly = false }) {
                 <TableCell width={100}>
                   <strong>Weight</strong>
                 </TableCell>
-                <TableCell width={100}>
-                  <strong>Status</strong>
+                <TableCell align="center" width={88}>
+                  <strong>Active</strong>
                 </TableCell>
                 <TableCell align="right" width={120}>
                   <strong>Actions</strong>
@@ -133,31 +133,40 @@ export function RatingScaleTab({ ratingOptions, form, readOnly = false }) {
                   <TableCell>
                     <Chip size="small" label={option.weight ?? 0} variant="outlined" />
                   </TableCell>
-                  <TableCell>
-                    <StatusChipCell active={option.isActive !== false} />
+                  <TableCell align="center" onClick={(e) => e.stopPropagation()}>
+                    <Controller
+                      control={form.control}
+                      name={`ratingOptions.${index}.isActive`}
+                      render={({ field }) => (
+                        <ActiveSwitchCell
+                          checked={field.value !== false}
+                          disabled={readOnly}
+                          ariaLabel={`Active for ${option.label || `rating ${index + 1}`}`}
+                          onChange={(next) => field.onChange(next)}
+                        />
+                      )}
+                    />
                   </TableCell>
-                  <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                    <Stack direction="row" spacing={0.25} justifyContent="flex-end">
-                      <Tooltip title={readOnly ? 'View' : 'Edit'}>
-                        <IconButton size="small" onClick={() => setEditIndex(index)}>
-                          <EditOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      {!readOnly ? (
-                        <Tooltip title="Delete">
-                          <span>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              disabled={ratingOptions.length <= 1}
-                              onClick={() => setDeleteIndex(index)}
-                            >
-                              <DeleteOutlineIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      ) : null}
-                    </Stack>
+                  <TableCell
+                    align="right"
+                    className="table-actions-cell"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <TableRowActions
+                      onEdit={() => setEditIndex(index)}
+                      editLabel={readOnly ? 'View' : 'Edit'}
+                      onDelete={
+                        readOnly || ratingOptions.length <= 1
+                          ? undefined
+                          : () => setDeleteIndex(index)
+                      }
+                      deleteDisabled={ratingOptions.length <= 1}
+                      deleteLabel={
+                        ratingOptions.length <= 1
+                          ? 'At least one rating option is required'
+                          : 'Delete'
+                      }
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -185,21 +194,20 @@ export function RatingScaleTab({ ratingOptions, form, readOnly = false }) {
               sx={{ minWidth: 120 }}
               disabled={readOnly}
             />
-            <Controller
-              control={form.control}
-              name={`ratingOptions.${editIndex}.isActive`}
-              render={({ field }) => (
-                <Box sx={{ pt: 1 }}>
-                  <Chip
-                    clickable={!readOnly}
-                    label={field.value !== false ? 'Active' : 'Inactive'}
-                    color={field.value !== false ? 'success' : 'default'}
-                    variant="outlined"
-                    onClick={() => !readOnly && field.onChange(!(field.value !== false))}
+            <Box sx={{ pt: 0.5 }}>
+              <Controller
+                control={form.control}
+                name={`ratingOptions.${editIndex}.isActive`}
+                render={({ field }) => (
+                  <ActiveSwitchCell
+                    checked={field.value !== false}
+                    disabled={readOnly}
+                    ariaLabel="Active"
+                    onChange={(next) => field.onChange(next)}
                   />
-                </Box>
-              )}
-            />
+                )}
+              />
+            </Box>
           </Stack>
           {!readOnly ? (
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>

@@ -180,15 +180,29 @@ function isNavPathActive(pathname, itemPath, expandPathPrefix) {
  * @param {import('@/app/providers/authContext').AuthSession | null | undefined} [session]
  */
 export function buildTenantNavItems(pathname, session) {
-  const dashboardItems = buildDashboardNavItems(session).map((item) => {
+  const dashboardChildren = buildDashboardNavItems(session).map((item) => {
     const Icon = ICONS[item.iconKey] ?? DashboardRoundedIcon;
     return {
       ...item,
       icon: <Icon />,
       active: isNavPathActive(pathname, item.path),
-      submenuOpen: false,
     };
   });
+
+  const onDashboard = isDashboardPath(pathname);
+  const dashboardSection =
+    dashboardChildren.length > 0
+      ? [
+          {
+            key: 'dashboards',
+            label: 'Dashboard',
+            icon: <DashboardRoundedIcon />,
+            active: onDashboard,
+            submenuOpen: onDashboard,
+            children: dashboardChildren,
+          },
+        ]
+      : [];
 
   const moduleItems = filterTenantNavConfig(session).map((item) => {
     const Icon = ICONS[item.key];
@@ -211,7 +225,7 @@ export function buildTenantNavItems(pathname, session) {
     };
   });
 
-  return [...dashboardItems, ...moduleItems];
+  return [...dashboardSection, ...moduleItems];
 }
 
 /**

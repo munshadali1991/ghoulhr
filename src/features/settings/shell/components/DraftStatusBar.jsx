@@ -2,6 +2,7 @@ import { Paper, Box, Typography, Chip, Button, CircularProgress } from '@mui/mat
 import SaveIcon from '@mui/icons-material/Save';
 
 import { SETTINGS_PAGE_MAX_WIDTH } from '@/shared/components/settings/settingsLayout';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * @param {{
@@ -64,17 +65,17 @@ export function DraftStatusBar({
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button onClick={onDiscard} disabled={isPublishing}>
+          <Button variant="outlined" onClick={onDiscard} disabled={isPublishing}>
             Discard
           </Button>
-          <Button
-            variant="contained"
+          <CrudButton
+            intent="save"
             onClick={onPublish}
             disabled={isPublishing}
-            startIcon={isPublishing ? <CircularProgress size={20} /> : <SaveIcon />}
+            startIcon={isPublishing ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
           >
             {isPublishing ? publishingLabel : publishLabel}
-          </Button>
+          </CrudButton>
         </Box>
       </Box>
     </Paper>

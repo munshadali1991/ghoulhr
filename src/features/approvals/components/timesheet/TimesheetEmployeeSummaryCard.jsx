@@ -1,23 +1,18 @@
 import { Box, Paper, Stack, Typography } from '@mui/material';
-import { TimesheetStatusChip } from '@/features/employee-portal/components/timesheet/TimesheetStatusChip';
-
-const SUMMARY_ORDER = ['PENDING', 'SUBMITTED', 'APPROVED', 'REJECTED'];
 
 /**
  * @param {{
  *   employee: { id: string, name: string, employeeCode?: string },
  *   totalDays: number,
  *   totalHours: number,
- *   pendingCount: number,
- *   statusSummary: Record<string, number>,
+ *   submittedCount?: number,
  * }} props
  */
 export function TimesheetEmployeeSummaryCard({
   employee,
   totalDays,
   totalHours,
-  pendingCount,
-  statusSummary,
+  submittedCount = 0,
 }) {
   return (
     <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
@@ -40,35 +35,23 @@ export function TimesheetEmployeeSummaryCard({
         <Stack direction="row" flexWrap="wrap" gap={2} alignItems="center">
           <Stat label="Days" value={String(totalDays)} />
           <Stat label="Hours" value={`${totalHours.toFixed(1)}h`} />
-          <Stat label="Not submitted" value={String(pendingCount)} highlight={pendingCount > 0} />
+          <Stat label="Submitted" value={String(submittedCount)} />
         </Stack>
-      </Stack>
-      <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 1.5 }}>
-        {SUMMARY_ORDER.map((st) => {
-          const count = statusSummary[st] ?? 0;
-          if (count === 0) return null;
-          return (
-            <Stack key={st} direction="row" alignItems="center" spacing={0.5}>
-              <TimesheetStatusChip status={st} />
-              <Typography variant="caption">×{count}</Typography>
-            </Stack>
-          );
-        })}
       </Stack>
     </Paper>
   );
 }
 
 /**
- * @param {{ label: string, value: string, highlight?: boolean }} props
+ * @param {{ label: string, value: string }} props
  */
-function Stat({ label, value, highlight }) {
+function Stat({ label, value }) {
   return (
     <Box>
       <Typography variant="caption" color="text.secondary" display="block">
         {label}
       </Typography>
-      <Typography variant="body1" fontWeight={700} color={highlight ? 'warning.main' : 'text.primary'}>
+      <Typography variant="body1" fontWeight={700} color="text.primary">
         {value}
       </Typography>
     </Box>

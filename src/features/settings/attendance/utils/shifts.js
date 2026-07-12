@@ -31,6 +31,7 @@ export function defaultShiftTemplate(locationId = '') {
     end_time: '18:00',
     break_minutes: 60,
     locationId,
+    isActive: true,
   };
 }
 
@@ -66,6 +67,7 @@ export function mapShiftsToFormState(shifts, defaultLocationId = '', validLocati
       break_minutes: s.break_minutes ?? s.breakMinutes ?? 0,
       locationId: resolvedLocationId,
       sessions: Array.isArray(s.sessions) ? s.sessions : [],
+      isActive: s.isActive !== false,
       createdAt,
     };
   });
@@ -140,6 +142,7 @@ export function serializeShiftForApi(shift) {
     end_time: shift.end_time,
     break_minutes: Number(shift.break_minutes) || 0,
     locationId: String(shift.locationId).trim(),
+    isActive: shift.isActive !== false,
     sessions: Array.isArray(shift.sessions)
       ? shift.sessions
           .filter((s) => s?.start_time && s?.end_time)

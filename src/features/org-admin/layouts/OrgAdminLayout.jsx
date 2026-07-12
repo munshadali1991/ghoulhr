@@ -12,12 +12,15 @@ import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/app/providers/useAuth';
 import { SidebarContent } from '@/shared/components/layout/SidebarContent';
+import {
+  DRAWER_WIDTH,
+  DRAWER_WIDTH_COLLAPSED,
+  useSidebarCollapsed,
+} from '@/shared/components/layout/sidebarLayout';
 import { APP_NAME } from '@/app/config/appConfig';
 import { useOrganizationBranding } from '@/features/settings/organization/hooks/useOrganizationBranding';
 import { DEFAULT_SETTINGS_PATH } from '@/features/settings/shell/settingsNav';
 import { buildOrgAdminNavItems } from '../config/orgAdminNav';
-
-const DRAWER_WIDTH = 280;
 
 /**
  * @param {{
@@ -39,6 +42,8 @@ export function OrgAdminLayout({
   const location = useLocation();
   const navigate = useNavigate();
   const { session } = useAuth();
+  const { collapsed, toggleCollapsed } = useSidebarCollapsed();
+  const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
 
   const sidebarNavItems = buildOrgAdminNavItems(location.pathname, session);
   const branding = useOrganizationBranding(user?.organizationId);
@@ -58,18 +63,16 @@ export function OrgAdminLayout({
     }
   };
 
-  const sidebar = (
-    <SidebarContent
-      user={user}
-      navItems={sidebarNavItems}
-      onItemClick={handleNavItemClick}
-      pathname={location.pathname}
-      onNavigate={onCloseMobileDrawer}
-      brandName={branding.displayName}
-      brandLogo={branding.logo}
-      brandInitials={branding.initials}
-    />
-  );
+  const sidebarProps = {
+    user,
+    navItems: sidebarNavItems,
+    onItemClick: handleNavItemClick,
+    pathname: location.pathname,
+    onNavigate: onCloseMobileDrawer,
+    brandName: branding.displayName,
+    brandLogo: branding.logo,
+    brandInitials: branding.initials,
+  };
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -81,8 +84,13 @@ export function OrgAdminLayout({
           borderBottom: '1px solid',
           borderColor: 'divider',
           bgcolor: 'background.paper',
-          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-          ml: { md: `${DRAWER_WIDTH}px` },
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          ml: { md: `${drawerWidth}px` },
+          transition: (theme) =>
+            theme.transitions.create(['width', 'margin'], {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
         }}
       >
         <Toolbar>
@@ -97,13 +105,13 @@ export function OrgAdminLayout({
               {headerSubtitle}
             </Typography>
           </Box>
-          <Button color="inherit" startIcon={<LogoutRoundedIcon />} onClick={onLogout}>
+          <Button color="inherit" size="small" startIcon={<LogoutRoundedIcon />} onClick={onLogout}>
             Logout
           </Button>
         </Toolbar>
       </AppBar>
 
-      <Box component="nav" sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}>
+      <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
         <Drawer
           variant="temporary"
           open={mobileDrawerOpen}
@@ -114,17 +122,30 @@ export function OrgAdminLayout({
             '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH },
           }}
         >
-          {sidebar}
+          <SidebarContent {...sidebarProps} collapsed={false} />
         </Drawer>
         <Drawer
           variant="permanent"
           open
           sx={{
             display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH },
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: drawerWidth,
+              overflowX: 'hidden',
+              transition: (theme) =>
+                theme.transitions.create('width', {
+                  easing: theme.transitions.easing.sharp,
+                  duration: theme.transitions.duration.enteringScreen,
+                }),
+            },
           }}
         >
-          {sidebar}
+          <SidebarContent
+            {...sidebarProps}
+            collapsed={collapsed}
+            onToggleCollapsed={toggleCollapsed}
+          />
         </Drawer>
       </Box>
 
@@ -133,8 +154,13 @@ export function OrgAdminLayout({
         sx={{
           flexGrow: 1,
           p: { xs: 2, md: 3 },
-          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          width: { md: `calc(100% - ${drawerWidth}px)` },
           mt: '72px',
+          transition: (theme) =>
+            theme.transitions.create('width', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
         }}
       >
         <Outlet />

@@ -168,6 +168,38 @@ export function useOrgStructure(organizationId) {
     [departments, designations, persistDesignations],
   );
 
+  const toggleDepartmentActive = useCallback(
+    async (departmentId, nextActive) => {
+      setActionError('');
+      const nextDepartments = departments.map((d) =>
+        d.id === departmentId ? { ...d, isActive: nextActive } : d,
+      );
+      try {
+        await persistDepartments(nextDepartments, designations);
+      } catch (err) {
+        setActionError(err.message || 'Failed to update department status.');
+        throw err;
+      }
+    },
+    [departments, designations, persistDepartments],
+  );
+
+  const toggleDesignationActive = useCallback(
+    async (designationId, nextActive) => {
+      setActionError('');
+      const nextDesignations = designations.map((d) =>
+        d.id === designationId ? { ...d, isActive: nextActive } : d,
+      );
+      try {
+        await persistDesignations(departments, nextDesignations);
+      } catch (err) {
+        setActionError(err.message || 'Failed to update designation status.');
+        throw err;
+      }
+    },
+    [departments, designations, persistDesignations],
+  );
+
   const refetch = useCallback(() => {
     departmentsQuery.refetch();
     designationsQuery.refetch();
@@ -186,5 +218,7 @@ export function useOrgStructure(organizationId) {
     deleteDepartment,
     saveDesignation,
     deleteDesignation,
+    toggleDepartmentActive,
+    toggleDesignationActive,
   };
 }

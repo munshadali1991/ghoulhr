@@ -8,6 +8,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * @param {{
@@ -85,10 +86,12 @@ export function CloneRoleDialog({ open, sourceRole, onClose, onSubmit, isPending
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={isPending}>
-          Clone role
+        <Button variant="outlined" onClick={handleClose}>
+          Cancel
         </Button>
+        <CrudButton intent="create" onClick={handleSubmit} disabled={isPending}>
+          Clone role
+        </CrudButton>
       </DialogActions>
     </Dialog>
   );

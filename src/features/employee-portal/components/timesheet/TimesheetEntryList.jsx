@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   Stack,
   Table,
   TableBody,
@@ -12,8 +11,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { TableRowActions } from '@/shared/components/data/TableRowActions';
 import { TASK_STATUSES, PRIORITIES } from '../../constants/timesheetEnums';
 
 function labelFor(options, value) {
@@ -58,25 +56,12 @@ function TimesheetEntryCard({ entry, editable, onEdit, onDelete }) {
         <Typography variant="caption">{labelFor(PRIORITIES, entry.priority)}</Typography>
       </Stack>
       {editable ? (
-        <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<EditOutlinedIcon />}
-            onClick={() => onEdit(entry)}
-          >
-            Edit
-          </Button>
-          <Button
-            size="small"
-            color="error"
-            variant="text"
-            startIcon={<DeleteOutlineIcon />}
-            onClick={() => onDelete(entry)}
-          >
-            Delete
-          </Button>
-        </Stack>
+        <Box sx={{ mt: 1.5 }}>
+          <TableRowActions
+            onEdit={() => onEdit(entry)}
+            onDelete={() => onDelete(entry)}
+          />
+        </Box>
       ) : null}
     </Box>
   );
@@ -141,24 +126,11 @@ export function TimesheetEntryList({ entries, editable, onEdit, onDelete }) {
               <TableCell>{labelFor(TASK_STATUSES, entry.taskStatus)}</TableCell>
               <TableCell>{labelFor(PRIORITIES, entry.priority)}</TableCell>
               {editable ? (
-                <TableCell align="right">
-                  <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<EditOutlinedIcon />}
-                      onClick={() => onEdit(entry)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      size="small"
-                      color="error"
-                      onClick={() => onDelete(entry)}
-                    >
-                      Delete
-                    </Button>
-                  </Stack>
+                <TableCell align="right" className="table-actions-cell">
+                  <TableRowActions
+                    onEdit={() => onEdit(entry)}
+                    onDelete={() => onDelete(entry)}
+                  />
                 </TableCell>
               ) : null}
             </TableRow>

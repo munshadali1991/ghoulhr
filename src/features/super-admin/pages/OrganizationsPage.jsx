@@ -1,5 +1,4 @@
 import {
-  Box,
   Button,
   CardContent,
   Chip,
@@ -17,8 +16,8 @@ import {
   Typography,
 } from '@mui/material';
 import { PageCard } from '@/shared/components/ui/PageCard';
-import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
+import { TableRowActions } from '@/shared/components/data/TableRowActions';
 import RestoreFromTrashRoundedIcon from '@mui/icons-material/RestoreFromTrashRounded';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -90,12 +89,9 @@ export function OrganizationsPage({
                     onChange={onSearchChange}
                     sx={{ minWidth: { xs: '100%', sm: 200 } }}
                   />
-                  <Button
-                    variant="contained"
-                    onClick={() => navigate('/organizations/new')}
-                  >
+                  <CrudButton intent="create" onClick={() => navigate('/organizations/new')}>
                     Add Organization
-                  </Button>
+                  </CrudButton>
                 </Stack>
               </Stack>
 
@@ -138,26 +134,11 @@ export function OrganizationsPage({
                               variant="outlined"
                             />
                           </TableCell>
-                          <TableCell align="right">
-                            <Stack direction="row" spacing={1} justifyContent="flex-end">
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                startIcon={<EditRoundedIcon />}
-                                onClick={() => navigate(`/organizations/${org.id}/edit`)}
-                              >
-                                Edit
-                              </Button>
-                              <Button
-                                size="small"
-                                color="error"
-                                variant="outlined"
-                                startIcon={<DeleteRoundedIcon />}
-                                onClick={() => onDelete(org.id)}
-                              >
-                                Delete
-                              </Button>
-                            </Stack>
+                          <TableCell align="right" className="table-actions-cell">
+                            <TableRowActions
+                              onEdit={() => navigate(`/organizations/${org.id}/edit`)}
+                              onDelete={() => onDelete(org.id)}
+                            />
                           </TableCell>
                         </TableRow>
                         );

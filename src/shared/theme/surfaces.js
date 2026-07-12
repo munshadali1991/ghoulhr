@@ -12,7 +12,7 @@ export function sectionPanelGradient(theme) {
   if (theme.palette.mode === 'dark') {
     return `linear-gradient(135deg, ${theme.palette.primary.dark}22 0%, ${theme.palette.background.paper} 55%)`;
   }
-  return `linear-gradient(135deg, ${theme.palette.primary.light}33 0%, ${theme.palette.grey[50]} 50%)`;
+  return `linear-gradient(135deg, ${theme.palette.primary.light}33 0%, ${theme.palette.custom.surfaces.subtle} 50%)`;
 }
 
 /** Semantic surface backgrounds — use as bgcolor: surface.subtle */

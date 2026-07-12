@@ -29,6 +29,8 @@ export function OrgStructurePage({ organizationId }) {
     deleteDepartment,
     saveDesignation,
     deleteDesignation,
+    toggleDepartmentActive,
+    toggleDesignationActive,
   } = useOrgStructure(organizationId);
 
   useEffect(() => {
@@ -159,6 +161,7 @@ export function OrgStructurePage({ organizationId }) {
               onClearActionError={clearActionError}
               onEdit={openDepartmentEdit}
               onDelete={deleteDepartment}
+              onToggleActive={toggleDepartmentActive}
               readOnly={!canWriteTab(ORG_STRUCTURE_TAB_DEFS[0])}
             />
           ) : (
@@ -171,6 +174,7 @@ export function OrgStructurePage({ organizationId }) {
               onClearActionError={clearActionError}
               onEdit={openDesignationEdit}
               onDelete={deleteDesignation}
+              onToggleActive={toggleDesignationActive}
               readOnly={!canWriteTab(ORG_STRUCTURE_TAB_DEFS[1])}
             />
           )}

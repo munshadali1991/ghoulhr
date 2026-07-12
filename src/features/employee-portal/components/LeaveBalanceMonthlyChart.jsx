@@ -1,4 +1,4 @@
-import { Box, Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography, useTheme } from '@mui/material';
 import {
   Bar,
   BarChart,
@@ -19,6 +19,9 @@ import { PageCard } from '@/shared/components/ui/PageCard';
  * }} props
  */
 export function LeaveBalanceMonthlyChart({ leaveTypeName, year, monthlyChart }) {
+  const theme = useTheme();
+  const balanceColor = theme.palette.custom.chart.balance;
+  const consumedColor = theme.palette.custom.chart.consumed;
   const chartTitle = `${leaveTypeName}: ${year}`;
 
   return (
@@ -46,18 +49,18 @@ export function LeaveBalanceMonthlyChart({ leaveTypeName, year, monthlyChart }) 
               align="center"
               wrapperStyle={{ paddingTop: 16 }}
             />
-            <Bar dataKey="balance" name="Balance" fill="#90CAF9" radius={[2, 2, 0, 0]} />
-            <Bar dataKey="consumed" name="Consumed" fill="#EF9A9A" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="balance" name="Balance" fill={balanceColor} radius={[2, 2, 0, 0]} />
+            <Bar dataKey="consumed" name="Consumed" fill={consumedColor} radius={[2, 2, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </Box>
       <Stack direction="row" spacing={3} justifyContent="center" sx={{ mt: 1 }}>
         <Stack direction="row" alignItems="center" spacing={0.75}>
-          <Box sx={{ width: 12, height: 12, bgcolor: '#90CAF9', borderRadius: 0.5 }} />
+          <Box sx={{ width: 12, height: 12, bgcolor: balanceColor, borderRadius: 0.5 }} />
           <Typography variant="caption">Balance</Typography>
         </Stack>
         <Stack direction="row" alignItems="center" spacing={0.75}>
-          <Box sx={{ width: 12, height: 12, bgcolor: '#EF9A9A', borderRadius: 0.5 }} />
+          <Box sx={{ width: 12, height: 12, bgcolor: consumedColor, borderRadius: 0.5 }} />
           <Typography variant="caption">Consumed</Typography>
         </Stack>
       </Stack>

@@ -1,5 +1,6 @@
-import { Alert, Box, Chip, IconButton, Stack, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Chip, Stack, Tooltip, Typography } from '@mui/material';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * @param {{
@@ -28,9 +29,9 @@ export function RoleDetailHeader({ roleDetail, canManage, onEdit }) {
             <Chip label="Active" size="small" color="success" variant="outlined" />
             {canEditMetadata && (
               <Tooltip title="Edit role name and description">
-                <IconButton size="small" onClick={onEdit}>
-                  <EditOutlinedIcon fontSize="small" />
-                </IconButton>
+                <CrudButton intent="edit" size="small" startIcon={<EditOutlinedIcon />} onClick={onEdit}>
+                  Edit
+                </CrudButton>
               </Tooltip>
             )}
           </Stack>

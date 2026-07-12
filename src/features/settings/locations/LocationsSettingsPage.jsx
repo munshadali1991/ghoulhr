@@ -1,8 +1,9 @@
-import { Box, Button } from '@mui/material';
+import { Box } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { FormStatusAlerts } from '@/shared/components/feedback/FormStatusAlerts';
 import { SettingsSection } from '@/shared/components/settings/SettingsSection';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { useLocationsSettingsForm } from './hooks/useLocationsSettingsForm';
 import { LocationEditDialog } from './components/LocationEditDialog';
 import { LocationsEmptyState } from './components/LocationsEmptyState';
@@ -42,14 +43,14 @@ export function LocationsSettingsPage({ organizationId }) {
           description="Table view stays compact at scale. Scroll inside the table to review many locations."
           actions={
             canWrite ? (
-              <Button
-                variant="contained"
+              <CrudButton
+                intent="create"
                 startIcon={<AddIcon />}
                 onClick={form.openAddDialog}
                 type="button"
               >
                 Add location
-              </Button>
+              </CrudButton>
             ) : null
           }
         >

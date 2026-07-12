@@ -18,6 +18,7 @@ import { RejectTimesheetDialog } from './RejectTimesheetDialog';
 /**
  * @param {{
  *   requestId: string,
+ *   readOnly?: boolean,
  *   onActionComplete?: () => void,
  *   onError?: (message: string) => void,
  *   onSuccess?: (message: string) => void,
@@ -25,6 +26,7 @@ import { RejectTimesheetDialog } from './RejectTimesheetDialog';
  */
 export function TimesheetApprovalDetailPanel({
   requestId,
+  readOnly = false,
   onActionComplete,
   onError,
   onSuccess,
@@ -37,6 +39,7 @@ export function TimesheetApprovalDetailPanel({
   const [rejectOpen, setRejectOpen] = useState(false);
 
   const acting = approveMutation.isPending || rejectMutation.isPending;
+  const showActions = !readOnly;
 
   const handleApprove = async () => {
     try {
@@ -138,7 +141,7 @@ export function TimesheetApprovalDetailPanel({
               priorities={PRIORITIES}
             />
           </Box>
-          {data.canAct ? (
+          {showActions && data.canAct ? (
             <TimesheetApprovalActionBar
               disabled={acting}
               onApprove={() => setApproveOpen(true)}
@@ -148,22 +151,26 @@ export function TimesheetApprovalDetailPanel({
         </Stack>
       </PageCard>
 
-      <ApproveTimesheetDialog
-        open={approveOpen}
-        employeeName={data.employee.name}
-        workDate={dayjs(day.workDate).format('DD MMM YYYY')}
-        isPending={acting}
-        onConfirm={handleApprove}
-        onCancel={() => setApproveOpen(false)}
-      />
+      {showActions ? (
+        <>
+          <ApproveTimesheetDialog
+            open={approveOpen}
+            employeeName={data.employee.name}
+            workDate={dayjs(day.workDate).format('DD MMM YYYY')}
+            isPending={acting}
+            onConfirm={handleApprove}
+            onCancel={() => setApproveOpen(false)}
+          />
 
-      <RejectTimesheetDialog
-        open={rejectOpen}
-        employeeName={data.employee.name}
-        isPending={acting}
-        onConfirm={handleReject}
-        onCancel={() => setRejectOpen(false)}
-      />
+          <RejectTimesheetDialog
+            open={rejectOpen}
+            employeeName={data.employee.name}
+            isPending={acting}
+            onConfirm={handleReject}
+            onCancel={() => setRejectOpen(false)}
+          />
+        </>
+      ) : null}
     </>
   );
 }

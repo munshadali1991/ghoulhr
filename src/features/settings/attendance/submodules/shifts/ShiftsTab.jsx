@@ -17,7 +17,9 @@ export function ShiftsTab({
   onClearActionError,
   onEdit,
   onDelete,
+  onToggleActive,
   locationsEmpty,
+  readOnly = false,
 }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -26,11 +28,32 @@ export function ShiftsTab({
       {
         id: 'name',
         label: 'Name',
-        render: (row) => (
-          <Typography variant="body2" fontWeight={600}>
-            {row.name?.trim() || 'Untitled shift'}
-          </Typography>
-        ),
+        render: (row) => {
+          const ready = shiftRowStatus(row) === 'ready';
+          return (
+            <>
+              <Typography variant="body2" fontWeight={600}>
+                {row.name?.trim() || 'Untitled shift'}
+              </Typography>
+              <Typography
+                component="span"
+                variant="caption"
+                sx={{
+                  display: 'inline-block',
+                  mt: 0.5,
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: 1,
+                  fontWeight: 600,
+                  bgcolor: ready ? 'success.light' : 'warning.light',
+                  color: ready ? 'success.dark' : 'warning.dark',
+                }}
+              >
+                {ready ? 'Ready' : 'Incomplete'}
+              </Typography>
+            </>
+          );
+        },
       },
       {
         id: 'schedule',
@@ -48,29 +71,6 @@ export function ShiftsTab({
         id: 'createdAt',
         label: 'Created',
         render: (row) => formatOrgDate(row.createdAt),
-      },
-      {
-        id: 'status',
-        label: 'Status',
-        render: (row) => {
-          const ready = shiftRowStatus(row) === 'ready';
-          return (
-            <Typography
-              component="span"
-              variant="caption"
-              sx={{
-                px: 1,
-                py: 0.25,
-                borderRadius: 1,
-                fontWeight: 600,
-                bgcolor: ready ? 'success.light' : 'warning.light',
-                color: ready ? 'success.dark' : 'warning.dark',
-              }}
-            >
-              {ready ? 'Ready' : 'Incomplete'}
-            </Typography>
-          );
-        },
       },
     ],
     [branchLocations],
@@ -106,10 +106,15 @@ export function ShiftsTab({
         columns={columns}
         rows={shifts}
         isLoading={isLoading}
-        emptyTitle="No shifts configured"
-        emptyDescription="Define shift templates with start/end times and branch locations for attendance tracking."
+        emptyTitle="No shifts yet"
+        emptyDescription="Create shift templates for attendance expectations by branch."
         onEdit={onEdit}
-        onDelete={setDeleteTarget}
+        onDelete={onDelete ? setDeleteTarget : undefined}
+        onToggleActive={
+          onToggleActive ? (row, next) => onToggleActive(row.id, next) : undefined
+        }
+        toggleActiveDisabled={isSaving}
+        readOnly={readOnly}
       />
 
       <ConfirmDeleteDialog
@@ -117,7 +122,7 @@ export function ShiftsTab({
         title="Delete shift?"
         description={
           deleteTarget
-            ? `Are you sure you want to delete "${deleteTarget.name}"? Employees assigned to this shift pattern may need reassignment.`
+            ? `Are you sure you want to delete "${deleteTarget.name || 'this shift'}"?`
             : ''
         }
         isDeleting={isSaving}

@@ -163,3 +163,14 @@ export function publishOrganizationCalendar(organizationId, year) {
     body: JSON.stringify({ year }),
   });
 }
+
+export function bulkUpsertCalendarHolidays(organizationId, body) {
+  return settingsFetch(
+    '/settings/organization/calendar/holidays/bulk',
+    organizationId,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  );
+}

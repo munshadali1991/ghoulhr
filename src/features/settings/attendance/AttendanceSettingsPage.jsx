@@ -34,6 +34,7 @@ export function AttendanceSettingsPage({ organizationId }) {
     clearActionError,
     saveShift,
     deleteShift,
+    toggleShiftActive,
     saveSchedule,
     saveCheckIn,
   } = useAttendanceManager(organizationId);
@@ -173,6 +174,8 @@ export function AttendanceSettingsPage({ organizationId }) {
                   : undefined
               }
               onDelete={canWrite ? deleteShift : undefined}
+              onToggleActive={canWrite ? toggleShiftActive : undefined}
+              readOnly={!canWrite}
               locationsEmpty={locationsEmpty}
             />
           ) : null}

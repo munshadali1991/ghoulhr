@@ -2,6 +2,7 @@ import { Button, CircularProgress, Stack } from '@mui/material';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import PictureAsPdfRoundedIcon from '@mui/icons-material/PictureAsPdfRounded';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * The primary action cluster (Save as Draft / Submit / Save as PDF), reused in
@@ -38,8 +39,7 @@ export function AssessmentActions({
       {showDraft ? (
         <Button
           type="button"
-          variant="contained"
-          color="secondary"
+          variant="outlined"
           size={size}
           onClick={onSaveDraft}
           disabled={disabled || busy}
@@ -51,10 +51,9 @@ export function AssessmentActions({
         </Button>
       ) : null}
       {showSubmit ? (
-        <Button
+        <CrudButton
+          intent="save"
           type="button"
-          variant="contained"
-          color="success"
           size={size}
           onClick={onSubmit}
           disabled={disabled || busy}
@@ -63,13 +62,12 @@ export function AssessmentActions({
           }
         >
           Submit
-        </Button>
+        </CrudButton>
       ) : null}
       {showPdf ? (
         <Button
           type="button"
-          variant="contained"
-          color="warning"
+          variant="outlined"
           size={size}
           onClick={onSavePdf}
           startIcon={<PictureAsPdfRoundedIcon />}

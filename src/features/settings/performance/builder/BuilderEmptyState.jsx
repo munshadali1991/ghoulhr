@@ -1,10 +1,10 @@
 import {
   Box,
-  Button,
   Typography,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import AssignmentTurnedInRoundedIcon from '@mui/icons-material/AssignmentTurnedInRounded';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * @param {{ onAddSection?: () => void, readOnly?: boolean }} props
@@ -31,9 +31,9 @@ export function BuilderEmptyState({ onAddSection, readOnly = false }) {
         and add questions with text, radio, dropdown, and rating inputs.
       </Typography>
       {!readOnly && onAddSection ? (
-        <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={onAddSection}>
+        <CrudButton intent="create" startIcon={<AddRoundedIcon />} onClick={onAddSection}>
           Create first section
-        </Button>
+        </CrudButton>
       ) : null}
     </Box>
   );

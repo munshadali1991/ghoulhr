@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Alert, Typography } from '@mui/material';
-import { CrudDataTable, StatusChipCell, ConfirmDeleteDialog } from '@/features/settings/shared';
+import { CrudDataTable, ConfirmDeleteDialog } from '@/features/settings/shared';
 import { formatOrgDate } from '../utils/orgStructure';
 
 export function DepartmentTab({
@@ -11,6 +11,7 @@ export function DepartmentTab({
   onClearActionError,
   onEdit,
   onDelete,
+  onToggleActive,
   readOnly = false,
 }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -39,11 +40,6 @@ export function DepartmentTab({
         id: 'createdAt',
         label: 'Created',
         render: (row) => formatOrgDate(row.createdAt),
-      },
-      {
-        id: 'isActive',
-        label: 'Status',
-        render: (row) => <StatusChipCell active={row.isActive !== false} />,
       },
     ],
     [],
@@ -75,6 +71,10 @@ export function DepartmentTab({
         emptyDescription="Create your first department to organize teams and assign designations."
         onEdit={onEdit}
         onDelete={setDeleteTarget}
+        onToggleActive={
+          onToggleActive ? (row, next) => onToggleActive(row.id, next) : undefined
+        }
+        toggleActiveDisabled={isSaving}
         readOnly={readOnly}
       />
 

@@ -3,7 +3,6 @@ import {
   Button,
   CardContent,
   Chip,
-  IconButton,
   InputAdornment,
   Stack,
   Table,
@@ -13,16 +12,15 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PolicyOutlinedIcon from '@mui/icons-material/PolicyOutlined';
-import { BrandedButton } from '@/shared/components/ui/BrandedButton';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+import { TableRowActions } from '@/shared/components/data/TableRowActions';
 import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 import { accrualLabel, workflowLabel } from '../utils/leaveMappers';
 
@@ -63,19 +61,14 @@ export function LeaveTypesListView({
   const renderLeaveRow = (fieldIndex) => {
     const r = watchedLeaves[fieldIndex] || {};
     const locName = locationNameById.get(r.locationId) || '—';
-    const deleteAction = readOnly || !onRemove ? null : (
-      <Tooltip title="Delete">
-        <span>
-          <IconButton
-            size="small"
-            color="error"
-            disabled={fields.length <= 1}
-            onClick={() => onRemove(fieldIndex)}
-          >
-            <DeleteOutlineIcon fontSize="small" />
-          </IconButton>
-        </span>
-      </Tooltip>
+    const rowActions = (
+      <TableRowActions
+        readOnly={readOnly}
+        onEdit={readOnly ? undefined : () => onRowClick(fieldIndex)}
+        onDelete={readOnly || !onRemove ? undefined : () => onRemove(fieldIndex)}
+        deleteDisabled={fields.length <= 1}
+        deleteLabel={fields.length <= 1 ? 'At least one leave type is required' : 'Delete'}
+      />
     );
 
     if (isMobileLayout) {
@@ -113,7 +106,7 @@ export function LeaveTypesListView({
             },
             { label: 'Approval', value: workflowLabel(r.approvalWorkflowPreset) },
           ]}
-          actions={deleteAction}
+          actions={rowActions}
         />
       );
     }
@@ -153,8 +146,12 @@ export function LeaveTypesListView({
         <TableCell sx={{ maxWidth: 200 }} noWrap>
           {workflowLabel(r.approvalWorkflowPreset)}
         </TableCell>
-        <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-          {deleteAction}
+        <TableCell
+          align="right"
+          className="table-actions-cell"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {rowActions}
         </TableCell>
       </TableRow>
     );
@@ -182,9 +179,9 @@ export function LeaveTypesListView({
           </Typography>
         </Box>
         {onAdd && !readOnly ? (
-          <BrandedButton startIcon={<AddRoundedIcon />} onClick={onAdd} sx={{ alignSelf: { sm: 'center' } }}>
+          <CrudButton intent="create" startIcon={<AddRoundedIcon />} onClick={onAdd} sx={{ alignSelf: { sm: 'center' } }}>
             Add leave type
-          </BrandedButton>
+          </CrudButton>
         ) : null}
       </Box>
 

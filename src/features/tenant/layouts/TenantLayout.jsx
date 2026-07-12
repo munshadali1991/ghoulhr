@@ -15,11 +15,14 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { APP_NAME } from '@/app/config/appConfig';
 import { useAuth } from '@/app/providers/useAuth';
 import { SidebarContent } from '@/shared/components/layout/SidebarContent';
+import {
+  DRAWER_WIDTH,
+  DRAWER_WIDTH_COLLAPSED,
+  useSidebarCollapsed,
+} from '@/shared/components/layout/sidebarLayout';
 import { buildTenantNavItems, getTenantPageTitle } from '../config/tenantNav';
 import { useOrganizationBranding } from '@/features/settings/organization/hooks/useOrganizationBranding';
 import { EmployeeNotificationsMenu } from '@/features/employee-portal/components/EmployeeNotificationsMenu';
-
-const DRAWER_WIDTH = 280;
 
 /**
  * @param {{
@@ -43,6 +46,8 @@ export function TenantLayout({
   const navigate = useNavigate();
   const { session } = useAuth();
   const pathname = location.pathname;
+  const { collapsed, toggleCollapsed } = useSidebarCollapsed();
+  const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
 
   const sidebarNavItems = buildTenantNavItems(pathname, session);
   const pageTitle = getTenantPageTitle(pathname, session);
@@ -62,18 +67,16 @@ export function TenantLayout({
     onCloseMobileDrawer?.();
   };
 
-  const sidebar = (
-    <SidebarContent
-      user={user}
-      navItems={sidebarNavItems}
-      onItemClick={handleNavItemClick}
-      pathname={pathname}
-      onNavigate={onCloseMobileDrawer}
-      brandName={branding.displayName}
-      brandLogo={branding.logo}
-      brandInitials={branding.initials}
-    />
-  );
+  const sidebarProps = {
+    user,
+    navItems: sidebarNavItems,
+    onItemClick: handleNavItemClick,
+    pathname,
+    onNavigate: onCloseMobileDrawer,
+    brandName: branding.displayName,
+    brandLogo: branding.logo,
+    brandInitials: branding.initials,
+  };
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -85,8 +88,13 @@ export function TenantLayout({
           borderBottom: '1px solid',
           borderColor: 'divider',
           bgcolor: 'background.paper',
-          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-          ml: { md: `${DRAWER_WIDTH}px` },
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          ml: { md: `${drawerWidth}px` },
+          transition: (theme) =>
+            theme.transitions.create(['width', 'margin'], {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
         }}
       >
         <Toolbar>
@@ -110,7 +118,7 @@ export function TenantLayout({
         </Toolbar>
       </AppBar>
 
-      <Box component="nav" sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}>
+      <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
         <Drawer
           variant="temporary"
           open={mobileDrawerOpen}
@@ -121,17 +129,30 @@ export function TenantLayout({
             '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH },
           }}
         >
-          {sidebar}
+          <SidebarContent {...sidebarProps} collapsed={false} />
         </Drawer>
         <Drawer
           variant="permanent"
           open
           sx={{
             display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH },
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: drawerWidth,
+              overflowX: 'hidden',
+              transition: (theme) =>
+                theme.transitions.create('width', {
+                  easing: theme.transitions.easing.sharp,
+                  duration: theme.transitions.duration.enteringScreen,
+                }),
+            },
           }}
         >
-          {sidebar}
+          <SidebarContent
+            {...sidebarProps}
+            collapsed={collapsed}
+            onToggleCollapsed={toggleCollapsed}
+          />
         </Drawer>
       </Box>
 
@@ -140,12 +161,17 @@ export function TenantLayout({
         sx={{
           flexGrow: 1,
           p: { xs: 2, md: 3 },
-          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          width: { md: `calc(100% - ${drawerWidth}px)` },
           minWidth: 0,
           mt: '72px',
           display: 'flex',
           flexDirection: 'column',
           minHeight: 'calc(100vh - 72px)',
+          transition: (theme) =>
+            theme.transitions.create('width', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
         }}
       >
         <Box sx={{ flexGrow: 1 }}>

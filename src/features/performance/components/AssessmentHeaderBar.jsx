@@ -1,8 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material';
 import { ScoreBadge } from './ScoreBadge';
 
-export const CONTROL_BAR_TEAL = '#17a2b8';
-
 /** Offset below the fixed tenant AppBar (72px) so the bar sticks just under it. */
 const STICKY_TOP = 72;
 
@@ -28,7 +26,7 @@ export function AssessmentHeaderBar({ title, score, answered, total, actions }) 
         px: { xs: 1.5, sm: 2.5 },
         py: 1.5,
         borderRadius: 1,
-        bgcolor: CONTROL_BAR_TEAL,
+        bgcolor: (theme) => theme.palette.custom.accent.teal,
         color: 'common.white',
         boxShadow: 2,
       }}

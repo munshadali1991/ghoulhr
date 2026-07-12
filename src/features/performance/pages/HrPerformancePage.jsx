@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Button,
   CircularProgress,
   Stack,
   Typography,
@@ -11,6 +10,7 @@ import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { FormStatusAlerts } from '@/shared/components/feedback/FormStatusAlerts';
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { AssessmentsDataTable } from '../components/AssessmentsDataTable';
 import { AssignAssessmentDialog } from '../components/AssignAssessmentDialog';
 import { useReviewAssessments } from '../hooks/usePerformanceQueries';
@@ -73,14 +73,14 @@ export function HrPerformancePage() {
               Assign review cycles and monitor assessments across the organization.
             </Typography>
           </Box>
-          <Button
-            variant="contained"
+          <CrudButton
+            intent="create"
             startIcon={<AddRoundedIcon />}
             onClick={() => setAssignOpen(true)}
             sx={{ alignSelf: { xs: 'stretch', sm: 'auto' }, flexShrink: 0 }}
           >
             Assign assessment
-          </Button>
+          </CrudButton>
         </Stack>
 
         <AssessmentsDataTable

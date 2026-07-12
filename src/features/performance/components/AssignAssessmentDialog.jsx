@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { listEmployees } from '@/features/employees/api/employeesApi';
 import { useCreateAssessment } from '../hooks/usePerformanceQueries';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * @param {{
@@ -137,13 +138,13 @@ export function AssignAssessmentDialog({ open, onClose, onSuccess }) {
         <Button onClick={onClose} disabled={createMutation.isPending}>
           Cancel
         </Button>
-        <Button
-          variant="contained"
+        <CrudButton
+          intent="create"
           onClick={handleSubmit}
           disabled={createMutation.isPending}
         >
           Assign
-        </Button>
+        </CrudButton>
       </DialogActions>
     </Dialog>
   );

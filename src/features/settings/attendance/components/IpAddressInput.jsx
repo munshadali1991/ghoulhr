@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Button,
   IconButton,
   List,
   ListItem,
@@ -18,6 +17,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 export function IpAddressInput({ value = [], onChange }) {
   const [inputValue, setInputValue] = useState('');
@@ -48,9 +48,9 @@ export function IpAddressInput({ value = [], onChange }) {
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
         />
-        <Button variant="contained" onClick={handleAddIp} startIcon={<AddIcon />} sx={{ flexShrink: 0 }}>
+        <CrudButton intent="create" onClick={handleAddIp} startIcon={<AddIcon />} sx={{ flexShrink: 0 }}>
           Add
-        </Button>
+        </CrudButton>
       </Stack>
       {value.length > 0 ? (
         <TableContainer sx={{ borderRadius: 2, border: 1, borderColor: 'divider' }}>
