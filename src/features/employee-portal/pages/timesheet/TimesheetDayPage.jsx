@@ -10,17 +10,21 @@ import {
   Typography,
 } from '@mui/material';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
+import AssessmentRoundedIcon from '@mui/icons-material/AssessmentRounded';
 import { useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { PageCard } from '@/shared/components/ui/PageCard';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
 import { TimesheetDayActions } from '../../components/timesheet/TimesheetDayActions';
 import { TimesheetInlineEntryRow } from '../../components/timesheet/TimesheetInlineEntryRow';
+import { TimesheetMyReportView } from '../../components/timesheet/TimesheetMyReportView';
 import { TimesheetSavedEntriesTable } from '../../components/timesheet/TimesheetSavedEntriesTable';
 import { TimesheetStatusChip } from '../../components/timesheet/TimesheetStatusChip';
 import { DEFAULT_INLINE_ROW, PRIORITIES, TASK_STATUSES } from '../../constants/timesheetEnums';
 import { timesheetInlineRowSchema } from '../../schemas/timesheetEntrySchema';
+import { fetchTimesheetDay } from '../../api/timesheetApi';
 import {
   useReopenTimesheetDay,
   useTimesheetCategories,
@@ -166,6 +170,8 @@ export function TimesheetDayPage() {
   const [draftRows, setDraftRows] = useState([]);
   const [editingKey, setEditingKey] = useState(null);
   const [draftErrors, setDraftErrors] = useState({});
+  const [showMyReport, setShowMyReport] = useState(false);
+  const [pendingEditEntryId, setPendingEditEntryId] = useState(null);
 
   const maxHours = data?.settings?.maxHoursPerDay ?? 12;
   const maxPastDays = data?.settings?.maxPastDays ?? 7;
@@ -231,6 +237,15 @@ export function TimesheetDayPage() {
     setDraftErrors({});
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    if (!pendingEditEntryId || !data?.entries) return;
+    const entry = data.entries.find((e) => e.id === pendingEditEntryId);
+    if (entry) {
+      loadEntryIntoDrafts({ ...apiEntryToDisplay(entry), id: entry.id }, workDate);
+      setPendingEditEntryId(null);
+    }
+  }, [data, pendingEditEntryId, workDate]);
 
   const handleAddRow = () => {
     setDraftRows((rows) => [...rows, createEmptyDraftRow(workDate, defaultCategoryId)]);
@@ -350,6 +365,60 @@ export function TimesheetDayPage() {
     }
   };
 
+  const handleReportEdit = async (row) => {
+    try {
+      if (row.canReopen && row.dayStatus === 'SUBMITTED') {
+        await reopenMutation.mutateAsync(row.workDate);
+      }
+      setShowMyReport(false);
+      setSearchParams({ date: row.workDate });
+      setPendingEditEntryId(row.entryId);
+    } catch (e) {
+      show(e?.message ?? 'Could not open entry for editing', 'error');
+    }
+  };
+
+  const handleReportDelete = async (row) => {
+    if (!row.canModify) {
+      show('This entry cannot be deleted', 'warning');
+      return;
+    }
+    try {
+      if (row.canReopen && row.dayStatus === 'SUBMITTED') {
+        await reopenMutation.mutateAsync(row.workDate);
+      }
+      const day = await fetchTimesheetDay(row.workDate);
+      if (!day.editable) {
+        show('This timesheet cannot be edited', 'error');
+        return;
+      }
+      const next = (day.entries ?? []).filter((e) => e.id !== row.entryId);
+      await upsertMutation.mutateAsync({
+        date: row.workDate,
+        payload: { status: 'DRAFT', entries: serializeEntriesForApi(next) },
+      });
+      show('Record removed');
+      if (row.workDate === workDate) refetch();
+    } catch (e) {
+      show(e?.message ?? 'Failed to delete', 'error');
+    }
+  };
+
+  if (showMyReport) {
+    return (
+      <Box>
+        <TimesheetMyReportView
+          initialDate={workDate}
+          onBack={() => setShowMyReport(false)}
+          onEdit={handleReportEdit}
+          onDelete={handleReportDelete}
+          showSnackbar={show}
+        />
+        <AppSnackbar snackbar={snackbar} onClose={close} />
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <Box
@@ -380,6 +449,13 @@ export function TimesheetDayPage() {
           >
             Refresh
           </Button>
+          <CrudButton
+            intent="view"
+            startIcon={<AssessmentRoundedIcon />}
+            onClick={() => setShowMyReport(true)}
+          >
+            My Report
+          </CrudButton>
         </Stack>
       </Box>
 
