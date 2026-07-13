@@ -69,7 +69,7 @@ export const TENANT_NAV_CONFIG = [
     module: 'timesheet',
     permission: 'ess.timesheet:read',
     children: [
-      { key: 'timesheet-my', label: 'My Timesheet', path: '/timesheet', permission: 'ess.timesheet:read' },
+      { key: 'timesheet-my', label: 'My Timesheet', path: '/timesheet', permission: 'ess.timesheet:read', exact: true },
       {
         key: 'timesheet-team',
         label: 'Team Timesheets',

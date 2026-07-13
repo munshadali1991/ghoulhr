@@ -99,7 +99,7 @@ export function RolePreviewPanel({ formValues, rbacRoles = [] }) {
         </FormControl>
       </Stack>
 
-      <PageCard sx={{ p: { xs: 2.5, sm: 3.5 }, maxWidth: 640 }}>
+      <PageCard sx={{ p: { xs: 2.5, sm: 3.5 } }}>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
           Viewing as <strong>{roleLabel}</strong> at workflow stage{' '}
           <strong>{perms.previewStatus.replace(/_/g, ' ').toLowerCase()}</strong>.
