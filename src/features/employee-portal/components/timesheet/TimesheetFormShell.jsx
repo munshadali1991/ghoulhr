@@ -12,7 +12,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { BrandedButton } from '@/shared/components/ui/BrandedButton';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * Full-page form shell matching HR onboarding layout (without stepper).
@@ -112,7 +112,7 @@ export function TimesheetFormShell({
             p: { xs: 2, sm: 2.5 },
             borderTop: '1px solid',
             borderColor: 'divider',
-            bgcolor: 'grey.50',
+            bgcolor: (theme) => theme.palette.custom.surfaces.subtle,
             position: { xs: 'sticky', sm: 'static' },
             bottom: 0,
           }}
@@ -126,7 +126,8 @@ export function TimesheetFormShell({
             <Button variant="outlined" onClick={onBack} disabled={saving} fullWidth={isNarrow}>
               Cancel
             </Button>
-            <BrandedButton
+            <CrudButton
+              intent="save"
               type="submit"
               disabled={saving}
               fullWidth={isNarrow}
@@ -137,7 +138,7 @@ export function TimesheetFormShell({
               ) : (
                 primaryLabel
               )}
-            </BrandedButton>
+            </CrudButton>
           </Stack>
         </Box>
       </Card>

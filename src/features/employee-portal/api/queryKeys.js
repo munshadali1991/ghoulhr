@@ -27,6 +27,19 @@ export const employeePortalKeys = {
   notifications: () => [...employeePortalKeys.all, 'notifications'],
   notificationUnreadCount: () => [...employeePortalKeys.all, 'notification-unread-count'],
   timesheetDay: (date) => [...employeePortalKeys.all, 'timesheet-day', date],
+  timesheetReports: (granularity, from, to) => [
+    ...employeePortalKeys.all,
+    'timesheet-reports',
+    granularity,
+    from,
+    to,
+  ],
+  timesheetReportEntries: (from, to) => [
+    ...employeePortalKeys.all,
+    'timesheet-report-entries',
+    from,
+    to,
+  ],
   timesheetSettings: () => [...employeePortalKeys.all, 'timesheet-settings'],
   timesheetCategories: () => [...employeePortalKeys.all, 'timesheet-categories'],
 };

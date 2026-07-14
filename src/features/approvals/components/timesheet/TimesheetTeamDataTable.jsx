@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Box,
-  Checkbox,
   Stack,
   Table,
   TableBody,
@@ -20,7 +19,8 @@ import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 import { TimesheetStatusChip } from '@/features/employee-portal/components/timesheet/TimesheetStatusChip';
 import { getTeamTimesheetRowKey } from '../../utils/teamTimesheetRowKey';
 
-const PAGE_SIZE = 25;
+const DEFAULT_ROWS_PER_PAGE = 10;
+const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
 const COLUMNS = [
   { id: 'employeeName', label: 'Employee', sortable: true },
@@ -48,20 +48,14 @@ function compareRows(a, b, orderBy, order) {
 /**
  * @param {{
  *   rows: object[],
- *   selectedIds: Set<string>,
  *   selectedRowId: string | null,
- *   onToggleRow: (row: object) => void,
- *   onToggleAllActionable: () => void,
  *   onRowClick: (rowKey: string, row: object) => void,
  *   showEmployeeColumn?: boolean,
  * }} props
  */
 export function TimesheetTeamDataTable({
   rows,
-  selectedIds,
   selectedRowId,
-  onToggleRow,
-  onToggleAllActionable,
   onRowClick,
   showEmployeeColumn = true,
 }) {
@@ -69,12 +63,7 @@ export function TimesheetTeamDataTable({
   const [orderBy, setOrderBy] = useState('workDate');
   const [order, setOrder] = useState('desc');
   const [page, setPage] = useState(0);
-
-  const actionableRows = useMemo(() => rows.filter((r) => r.canAct && r.id), [rows]);
-  const allActionableSelected =
-    actionableRows.length > 0 &&
-    actionableRows.every((r) => selectedIds.has(r.id));
-  const someActionableSelected = actionableRows.some((r) => selectedIds.has(r.id));
+  const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_ROWS_PER_PAGE);
 
   const sortedRows = useMemo(() => {
     const copy = [...rows];
@@ -82,10 +71,19 @@ export function TimesheetTeamDataTable({
     return copy;
   }, [rows, orderBy, order]);
 
+  useEffect(() => {
+    setPage(0);
+  }, [rows]);
+
+  useEffect(() => {
+    const maxPage = Math.max(0, Math.ceil(sortedRows.length / rowsPerPage) - 1);
+    if (page > maxPage) setPage(maxPage);
+  }, [sortedRows.length, rowsPerPage, page]);
+
   const pagedRows = useMemo(() => {
-    const start = page * PAGE_SIZE;
-    return sortedRows.slice(start, start + PAGE_SIZE);
-  }, [sortedRows, page]);
+    const start = page * rowsPerPage;
+    return sortedRows.slice(start, start + rowsPerPage);
+  }, [sortedRows, page, rowsPerPage]);
 
   const handleSort = (columnId) => {
     const isAsc = orderBy === columnId && order === 'asc';
@@ -94,9 +92,26 @@ export function TimesheetTeamDataTable({
     setPage(0);
   };
 
+  const handleRowsPerPageChange = (event) => {
+    setRowsPerPage(Number(event.target.value));
+    setPage(0);
+  };
+
   const visibleColumns = showEmployeeColumn
     ? COLUMNS
     : COLUMNS.filter((c) => c.id !== 'employeeName');
+
+  const pagination = (
+    <TablePagination
+      component="div"
+      count={sortedRows.length}
+      page={page}
+      onPageChange={(_, p) => setPage(p)}
+      rowsPerPage={rowsPerPage}
+      onRowsPerPageChange={handleRowsPerPageChange}
+      rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+    />
+  );
 
   if (isMobileLayout) {
     return (
@@ -104,49 +119,25 @@ export function TimesheetTeamDataTable({
         {pagedRows.map((row) => {
           const rowKey = getTeamTimesheetRowKey(row);
           return (
-          <MobileDataCard
-            key={rowKey}
-            onClick={() => onRowClick(rowKey, row)}
-            sx={{
-              cursor: 'pointer',
-              border: '2px solid',
-              borderColor: rowKey === selectedRowId ? 'primary.main' : 'transparent',
-            }}
-            fields={[
-              ...(row.canAct && row.id
-                ? [
-                    {
-                      label: 'Select',
-                      value: (
-                        <Checkbox
-                          checked={selectedIds.has(row.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={() => onToggleRow(row)}
-                          inputProps={{ 'aria-label': `Select ${row.employeeName}` }}
-                        />
-                      ),
-                    },
-                  ]
-                : []),
-              ...(showEmployeeColumn ? [{ label: 'Employee', value: row.employeeName }] : []),
-              { label: 'Date', value: dayjs(row.workDate).format('DD MMM YYYY') },
-              { label: 'Hours', value: Number(row.totalHours).toFixed(1) },
-              { label: 'Entries', value: row.entryCount },
-              { label: 'Status', value: <TimesheetStatusChip status={row.status} /> },
-            ]}
-          />
+            <MobileDataCard
+              key={rowKey}
+              onClick={() => onRowClick(rowKey, row)}
+              sx={{
+                cursor: 'pointer',
+                border: '2px solid',
+                borderColor: rowKey === selectedRowId ? 'primary.main' : 'transparent',
+              }}
+              fields={[
+                ...(showEmployeeColumn ? [{ label: 'Employee', value: row.employeeName }] : []),
+                { label: 'Date', value: dayjs(row.workDate).format('DD MMM YYYY') },
+                { label: 'Hours', value: Number(row.totalHours).toFixed(1) },
+                { label: 'Entries', value: row.entryCount },
+                { label: 'Status', value: <TimesheetStatusChip status={row.status} /> },
+              ]}
+            />
           );
         })}
-        {sortedRows.length > PAGE_SIZE ? (
-          <TablePagination
-            component="div"
-            count={sortedRows.length}
-            page={page}
-            onPageChange={(_, p) => setPage(p)}
-            rowsPerPage={PAGE_SIZE}
-            rowsPerPageOptions={[PAGE_SIZE]}
-          />
-        ) : null}
+        {pagination}
       </Stack>
     );
   }
@@ -156,15 +147,6 @@ export function TimesheetTeamDataTable({
       <Table size="small">
         <TableHead>
           <TableRow sx={{ bgcolor: 'background.default' }}>
-            <TableCell padding="checkbox">
-              <Checkbox
-                indeterminate={someActionableSelected && !allActionableSelected}
-                checked={allActionableSelected}
-                onChange={onToggleAllActionable}
-                disabled={actionableRows.length === 0}
-                inputProps={{ 'aria-label': 'Select all actionable timesheets' }}
-              />
-            </TableCell>
             {visibleColumns.map((col) => (
               <TableCell key={col.id} align={col.align ?? 'left'}>
                 {col.sortable ? (
@@ -185,7 +167,7 @@ export function TimesheetTeamDataTable({
         <TableBody>
           {pagedRows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={visibleColumns.length + 1}>
+              <TableCell colSpan={visibleColumns.length}>
                 <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
                   No timesheets match your filters.
                 </Typography>
@@ -195,49 +177,30 @@ export function TimesheetTeamDataTable({
             pagedRows.map((row) => {
               const rowKey = getTeamTimesheetRowKey(row);
               return (
-              <TableRow
-                key={rowKey}
-                hover
-                selected={rowKey === selectedRowId}
-                sx={{ cursor: 'pointer' }}
-                onClick={() => onRowClick(rowKey, row)}
-              >
-                <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
-                  <Checkbox
-                    checked={row.id ? selectedIds.has(row.id) : false}
-                    disabled={!row.canAct || !row.id}
-                    onChange={() => onToggleRow(row)}
-                    inputProps={{ 'aria-label': `Select ${row.employeeName}` }}
-                  />
-                </TableCell>
-                {showEmployeeColumn ? <TableCell>{row.employeeName}</TableCell> : null}
-                <TableCell>{dayjs(row.workDate).format('DD MMM YYYY')}</TableCell>
-                <TableCell align="right">{Number(row.totalHours).toFixed(1)}</TableCell>
-                <TableCell align="right">{row.entryCount}</TableCell>
-                <TableCell>
-                  <TimesheetStatusChip status={row.status} />
-                </TableCell>
-                <TableCell>
-                  {row.submittedAt ? dayjs(row.submittedAt).format('DD MMM YYYY') : '—'}
-                </TableCell>
-              </TableRow>
+                <TableRow
+                  key={rowKey}
+                  hover
+                  selected={rowKey === selectedRowId}
+                  sx={{ cursor: 'pointer' }}
+                  onClick={() => onRowClick(rowKey, row)}
+                >
+                  {showEmployeeColumn ? <TableCell>{row.employeeName}</TableCell> : null}
+                  <TableCell>{dayjs(row.workDate).format('DD MMM YYYY')}</TableCell>
+                  <TableCell align="right">{Number(row.totalHours).toFixed(1)}</TableCell>
+                  <TableCell align="right">{row.entryCount}</TableCell>
+                  <TableCell>
+                    <TimesheetStatusChip status={row.status} />
+                  </TableCell>
+                  <TableCell>
+                    {row.submittedAt ? dayjs(row.submittedAt).format('DD MMM YYYY') : '—'}
+                  </TableCell>
+                </TableRow>
               );
             })
           )}
         </TableBody>
       </Table>
-      {sortedRows.length > PAGE_SIZE ? (
-        <Box sx={{ borderTop: 1, borderColor: 'divider' }}>
-          <TablePagination
-            component="div"
-            count={sortedRows.length}
-            page={page}
-            onPageChange={(_, p) => setPage(p)}
-            rowsPerPage={PAGE_SIZE}
-            rowsPerPageOptions={[PAGE_SIZE]}
-          />
-        </Box>
-      ) : null}
+      <Box sx={{ borderTop: 1, borderColor: 'divider' }}>{pagination}</Box>
     </TableContainer>
   );
 }

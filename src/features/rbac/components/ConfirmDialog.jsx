@@ -6,6 +6,7 @@ import {
   DialogContentText,
   DialogTitle,
 } from '@mui/material';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * @param {{
@@ -31,6 +32,9 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }) {
+  const isDestructive = confirmColor === 'error';
+  const isWarning = confirmColor === 'warning';
+
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
       <DialogTitle>{title}</DialogTitle>
@@ -38,17 +42,23 @@ export function ConfirmDialog({
         <DialogContentText>{message}</DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel} disabled={isPending}>
+        <Button variant="outlined" onClick={onCancel} disabled={isPending}>
           {cancelLabel}
         </Button>
-        <Button
-          variant="contained"
-          color={confirmColor}
-          onClick={onConfirm}
-          disabled={isPending}
-        >
-          {confirmLabel}
-        </Button>
+        {isDestructive || isWarning ? (
+          <Button
+            variant="contained"
+            color={confirmColor}
+            onClick={onConfirm}
+            disabled={isPending}
+          >
+            {confirmLabel}
+          </Button>
+        ) : (
+          <CrudButton intent="save" onClick={onConfirm} disabled={isPending}>
+            {confirmLabel}
+          </CrudButton>
+        )}
       </DialogActions>
     </Dialog>
   );

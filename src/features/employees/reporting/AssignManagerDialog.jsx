@@ -12,6 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import { assignReportingManager } from '@/features/employees/api/reportingManagersApi';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * @param {{
@@ -253,12 +254,12 @@ export function AssignManagerDialog({
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} disabled={submitting}>
+        <Button variant="outlined" onClick={onClose} disabled={submitting}>
           Cancel
         </Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={submitting}>
+        <CrudButton intent="create" onClick={handleSubmit} disabled={submitting}>
           {submitting ? 'Assigning…' : 'Assign'}
-        </Button>
+        </CrudButton>
       </DialogActions>
     </Dialog>
   );

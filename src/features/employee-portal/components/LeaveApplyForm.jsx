@@ -21,6 +21,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { Controller } from 'react-hook-form';
 import dayjs from 'dayjs';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { FormLabelRow } from './FormLabelRow';
 import { FormSectionCard } from './FormSectionCard';
 import { LeaveCcEmployeePicker } from './LeaveCcEmployeePicker';
@@ -598,15 +599,14 @@ export function LeaveApplyForm({
         >
           Cancel
         </Button>
-        <Button
+        <CrudButton
+          intent="save"
           type="submit"
-          variant="contained"
-          color="secondary"
           disabled={submitting}
           sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 140 } }}
         >
           Submit request
-        </Button>
+        </CrudButton>
       </Stack>
     </Box>
   );

@@ -32,7 +32,7 @@ export function ApproveTimesheetDialog({
         <Button onClick={onCancel} disabled={isPending}>
           Cancel
         </Button>
-        <Button variant="contained" onClick={onConfirm} disabled={isPending}>
+        <Button variant="contained" color="success" onClick={onConfirm} disabled={isPending}>
           Approve
         </Button>
       </DialogActions>

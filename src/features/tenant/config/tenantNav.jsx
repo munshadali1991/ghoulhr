@@ -6,6 +6,7 @@ import AttachMoneyRoundedIcon from '@mui/icons-material/AttachMoneyRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import BeachAccessRoundedIcon from '@mui/icons-material/BeachAccessRounded';
 import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
+import AssignmentTurnedInRoundedIcon from '@mui/icons-material/AssignmentTurnedInRounded';
 import {
   DEFAULT_SETTINGS_PATH,
   settingsNavChildren,
@@ -25,6 +26,7 @@ const ICONS = {
   leave: BeachAccessRoundedIcon,
   attendance: EventNoteRoundedIcon,
   timesheet: ScheduleRoundedIcon,
+  performance: AssignmentTurnedInRoundedIcon,
   payroll: AttachMoneyRoundedIcon,
   settings: SettingsRoundedIcon,
 };
@@ -67,12 +69,40 @@ export const TENANT_NAV_CONFIG = [
     module: 'timesheet',
     permission: 'ess.timesheet:read',
     children: [
-      { key: 'timesheet-my', label: 'My Timesheet', path: '/timesheet', permission: 'ess.timesheet:read' },
+      { key: 'timesheet-my', label: 'My Timesheet', path: '/timesheet', permission: 'ess.timesheet:read', exact: true },
       {
         key: 'timesheet-team',
         label: 'Team Timesheets',
         path: '/timesheet/team',
         permission: 'approvals.timesheet:read',
+      },
+    ],
+  },
+  {
+    key: 'performance',
+    label: 'Performance',
+    expandPathPrefix: '/performance',
+    module: 'performance',
+    permission: 'ess.performance:read',
+    children: [
+      {
+        key: 'performance-my',
+        label: 'My assessments',
+        path: '/performance',
+        permission: 'ess.performance:read',
+        exact: true,
+      },
+      {
+        key: 'performance-team',
+        label: 'Team reviews',
+        path: '/performance/team',
+        permission: 'performance.review:read',
+      },
+      {
+        key: 'performance-manage',
+        label: 'Manage & assign',
+        path: '/performance/manage',
+        permission: 'performance.hr:read',
       },
     ],
   },
@@ -150,15 +180,29 @@ function isNavPathActive(pathname, itemPath, expandPathPrefix) {
  * @param {import('@/app/providers/authContext').AuthSession | null | undefined} [session]
  */
 export function buildTenantNavItems(pathname, session) {
-  const dashboardItems = buildDashboardNavItems(session).map((item) => {
+  const dashboardChildren = buildDashboardNavItems(session).map((item) => {
     const Icon = ICONS[item.iconKey] ?? DashboardRoundedIcon;
     return {
       ...item,
       icon: <Icon />,
       active: isNavPathActive(pathname, item.path),
-      submenuOpen: false,
     };
   });
+
+  const onDashboard = isDashboardPath(pathname);
+  const dashboardSection =
+    dashboardChildren.length > 0
+      ? [
+          {
+            key: 'dashboards',
+            label: 'Dashboard',
+            icon: <DashboardRoundedIcon />,
+            active: onDashboard,
+            submenuOpen: onDashboard,
+            children: dashboardChildren,
+          },
+        ]
+      : [];
 
   const moduleItems = filterTenantNavConfig(session).map((item) => {
     const Icon = ICONS[item.key];
@@ -173,14 +217,15 @@ export function buildTenantNavItems(pathname, session) {
       submenuOpen,
       children: item.children?.map((child) => ({
         ...child,
-        active:
-          Boolean(child.path) &&
-          (pathname === child.path || pathname.startsWith(`${child.path}/`)),
+        active: child.exact
+          ? pathname === child.path
+          : Boolean(child.path) &&
+            (pathname === child.path || pathname.startsWith(`${child.path}/`)),
       })),
     };
   });
 
-  return [...dashboardItems, ...moduleItems];
+  return [...dashboardSection, ...moduleItems];
 }
 
 /**
@@ -211,7 +256,11 @@ export function getTenantPageTitle(pathname, session) {
       return item.label;
     }
     for (const child of item.children ?? []) {
-      if (child.path && (pathname === child.path || pathname.startsWith(`${child.path}/`))) {
+      if (!child.path) continue;
+      const matches = child.exact
+        ? pathname === child.path
+        : pathname === child.path || pathname.startsWith(`${child.path}/`);
+      if (matches) {
         return child.label;
       }
     }
@@ -220,6 +269,10 @@ export function getTenantPageTitle(pathname, session) {
   if (pathname.startsWith('/timesheet/team') || pathname.startsWith('/timesheet/requests')) {
     return 'Team Timesheets';
   }
+  if (pathname.startsWith('/performance/team')) return 'Team reviews';
+  if (pathname.startsWith('/performance/manage')) return 'Manage & assign';
+  if (pathname.match(/^\/performance\/[^/]+$/)) return 'Performance assessment';
+  if (pathname === '/performance') return 'My assessments';
   if (pathname.startsWith('/employees')) return 'Employees';
   if (pathname.startsWith('/payroll')) return 'Payroll';
   return 'Dashboard';

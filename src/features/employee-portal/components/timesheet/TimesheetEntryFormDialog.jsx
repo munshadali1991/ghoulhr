@@ -11,6 +11,7 @@ import {
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { timesheetEntrySchema } from '../../schemas/timesheetEntrySchema';
 import { DEFAULT_ENTRY, PRIORITIES, TASK_STATUSES } from '../../constants/timesheetEnums';
 
@@ -138,9 +139,9 @@ export function TimesheetEntryFormDialog({ open, initial, onClose, onSave, categ
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained">
+          <CrudButton intent="save" type="submit">
             Save entry
-          </Button>
+          </CrudButton>
         </DialogActions>
       </form>
     </Dialog>

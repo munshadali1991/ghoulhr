@@ -1,6 +1,6 @@
 /** Shared table styling for attendance day detail sections */
 export const attendanceTableHeadSx = {
-  bgcolor: '#f0f7ff',
+  bgcolor: (theme) => theme.palette.custom.attendance.tableHead,
   '& .MuiTableCell-root': {
     color: 'text.secondary',
     fontWeight: 600,

@@ -70,17 +70,17 @@ export function DepartmentFormPage({
       readOnly={readOnly}
     >
       {actionError ? (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={onClearActionError}>
+        <Alert severity="error" sx={{ mb: 2 }} onClose={onClearActionError}>
           {actionError}
         </Alert>
       ) : null}
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         <Grid size={{ xs: 12 }}>
           <SettingsField label="Department name" required error={errors.name?.message}>
             <TextField
               fullWidth
-              size="medium"
+              size="small"
               placeholder="e.g. Engineering"
               {...register('name')}
               error={!!errors.name}
@@ -94,13 +94,13 @@ export function DepartmentFormPage({
           <SettingsField
             label="Description"
             error={errors.code?.message}
-            description="Optional short label shown in lists and employee profiles."
+            description="Optional short label shown in lists and employee profiles (stored as the department code)."
           >
             <TextField
               fullWidth
-              size="medium"
+              size="small"
               multiline
-              minRows={3}
+              minRows={2}
               placeholder="What does this department do?"
               {...register('code')}
               error={!!errors.code}

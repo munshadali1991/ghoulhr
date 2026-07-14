@@ -141,6 +141,12 @@ export function useLeaveSettingsForm(organizationId) {
     setWizardStep((s) => Math.max(0, s - 1));
   }, []);
 
+  const goToWizardStep = useCallback((step) => {
+    if (step < 0 || step > LEAVE_WIZARD_LAST) return;
+    // Only allow navigating to current or earlier steps from the rail (Continue advances).
+    setWizardStep((current) => (step <= current ? step : current));
+  }, []);
+
   const startAddLeave = useCallback(() => {
     const newRow = createEmptyLeaveRow(savedLocations[0]?.id || '');
     const nextIdx = fields.length;
@@ -229,6 +235,7 @@ export function useLeaveSettingsForm(organizationId) {
     handleCancel,
     handleWizardNext,
     handleWizardPrev,
+    goToWizardStep,
     startAddLeave,
     openEditor,
     removeLeaveAt,

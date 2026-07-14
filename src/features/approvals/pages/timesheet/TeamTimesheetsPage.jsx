@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  Badge,
   Box,
-  Chip,
   CircularProgress,
   Drawer,
   Grid,
@@ -20,12 +18,9 @@ import { EmptyStatePanel } from '@/features/employee-portal/components/EmptyStat
 import { TimesheetSummaryCards } from '@/features/employee-portal/components/timesheet/TimesheetSummaryCards';
 import { TimesheetApprovalDetailPanel } from '../../components/TimesheetApprovalDetailPanel';
 import { TimesheetApprovalToolbar } from '../../components/timesheet/TimesheetApprovalToolbar';
-import { TimesheetEmployeeSummaryCard } from '../../components/timesheet/TimesheetEmployeeSummaryCard';
 import { TimesheetTeamDataTable } from '../../components/timesheet/TimesheetTeamDataTable';
-import { TimesheetBulkApproveBar } from '../../components/timesheet/TimesheetBulkApproveBar';
-import { BulkApproveTimesheetDialog } from '../../components/timesheet/BulkApproveTimesheetDialog';
-import { useBulkApproveTimesheets, useTeamTimesheetDays } from '../../hooks/useApprovalsQueries';
-import { getTeamTimesheetRowKey, isPlaceholderRowKey } from '../../utils/teamTimesheetRowKey';
+import { useTeamTimesheetDays } from '../../hooks/useApprovalsQueries';
+import { getTeamTimesheetRowKey } from '../../utils/teamTimesheetRowKey';
 
 function currentMonthRange() {
   const now = dayjs();
@@ -53,6 +48,14 @@ function presetRange(preset) {
   return currentMonthRange();
 }
 
+function matchesEmployeeSearch(row, query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const name = String(row.employeeName ?? '').toLowerCase();
+  const code = String(row.employeeCode ?? '').toLowerCase();
+  return name.includes(q) || code.includes(q);
+}
+
 export function TeamTimesheetsPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -62,14 +65,10 @@ export function TeamTimesheetsPage() {
   const defaultRange = useMemo(() => currentMonthRange(), []);
   const from = searchParams.get('from') || defaultRange.from;
   const to = searchParams.get('to') || defaultRange.to;
-  const status = searchParams.get('status') ?? 'SUBMITTED';
-  const employeeId = searchParams.get('employeeId') || '';
 
-  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [employeeSearch, setEmployeeSearch] = useState('');
   const [selectedRowId, setSelectedRowId] = useState(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
-  const [bulkMode, setBulkMode] = useState('selected');
 
   const updateParams = useCallback(
     (patch) => {
@@ -82,6 +81,8 @@ export function TeamTimesheetsPage() {
             next.set(key, value);
           }
         });
+        next.delete('status');
+        next.delete('employeeId');
         return next;
       });
     },
@@ -92,123 +93,31 @@ export function TeamTimesheetsPage() {
     () => ({
       from,
       to,
-      status: status || undefined,
-      employeeId: employeeId || undefined,
+      status: 'SUBMITTED',
     }),
-    [from, to, status, employeeId],
+    [from, to],
   );
 
   const teamQuery = useTeamTimesheetDays(queryParams);
-  const employeeRangeQuery = useTeamTimesheetDays(
-    { from, to, employeeId: employeeId || undefined },
-    { enabled: Boolean(employeeId) },
+
+  const days = useMemo(() => {
+    const allDays = teamQuery.data?.days ?? [];
+    return allDays.filter((row) => matchesEmployeeSearch(row, employeeSearch));
+  }, [teamQuery.data?.days, employeeSearch]);
+
+  const submittedCount = days.length;
+  const totalHours = useMemo(
+    () => days.reduce((sum, row) => sum + Number(row.totalHours ?? 0), 0),
+    [days],
   );
-  const bulkMutation = useBulkApproveTimesheets();
-
-  const days = teamQuery.data?.days ?? [];
-  const employees = teamQuery.data?.employees ?? [];
-  const pendingCount = teamQuery.data?.pendingCount ?? 0;
-  const submittedCount = teamQuery.data?.submittedCount ?? 0;
-
-  const actionableRows = useMemo(() => days.filter((d) => d.canAct && d.id), [days]);
-  const pendingInViewCount = actionableRows.length;
-
-  const selectedEmployee = useMemo(() => {
-    if (!employeeId) return null;
-    return employees.find((e) => e.id === employeeId) ?? null;
-  }, [employeeId, employees]);
-
-  const employeeStats = useMemo(() => {
-    if (!employeeId || !employeeRangeQuery.data) return null;
-    const empDays = employeeRangeQuery.data.days ?? [];
-    const summary = { PENDING: 0, SUBMITTED: 0, APPROVED: 0, REJECTED: 0 };
-    let hours = 0;
-    let notSubmitted = 0;
-    for (const d of empDays) {
-      hours += Number(d.totalHours);
-      summary[d.status] = (summary[d.status] ?? 0) + 1;
-      if (d.status === 'PENDING') notSubmitted += 1;
-    }
-    return {
-      totalDays: empDays.length,
-      totalHours: hours,
-      pendingCount: notSubmitted,
-      statusSummary: summary,
-    };
-  }, [employeeId, employeeRangeQuery.data]);
 
   useEffect(() => {
-    setSelectedIds(new Set());
-  }, [from, to, status, employeeId]);
-
-  useEffect(() => {
-    if (!employeeId) return;
-    if (!employees.some((e) => e.id === employeeId)) {
-      updateParams({ employeeId: '' });
-    }
-  }, [employees, employeeId, updateParams]);
-
-  const toggleRow = (row) => {
-    if (!row.id) return;
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(row.id)) next.delete(row.id);
-      else next.add(row.id);
-      return next;
-    });
-  };
-
-  const toggleAllActionable = () => {
-    const allSelected = actionableRows.every((r) => selectedIds.has(r.id));
-    if (allSelected) {
-      setSelectedIds(new Set());
-      return;
-    }
-    setSelectedIds(new Set(actionableRows.map((r) => r.id)));
-  };
+    setSelectedRowId(null);
+  }, [from, to, employeeSearch]);
 
   const handleRowClick = (rowKey) => {
     setSelectedRowId(rowKey);
     if (isMobile) setMobileDrawerOpen(true);
-  };
-
-  const handleActionComplete = () => {
-    setSelectedIds(new Set());
-    setSelectedRowId(null);
-    if (isMobile) setMobileDrawerOpen(false);
-  };
-
-  const openBulkDialog = (mode) => {
-    setBulkMode(mode);
-    setBulkDialogOpen(true);
-  };
-
-  const bulkCount = bulkMode === 'selected' ? selectedIds.size : pendingInViewCount;
-
-  const handleBulkConfirm = async () => {
-    try {
-      let result;
-      if (bulkMode === 'selected') {
-        result = await bulkMutation.mutateAsync({ ids: [...selectedIds] });
-      } else {
-        result = await bulkMutation.mutateAsync({
-          from,
-          to,
-          employeeId: employeeId || undefined,
-        });
-      }
-      setBulkDialogOpen(false);
-      setSelectedIds(new Set());
-      const { approvedCount, failures } = result ?? {};
-      if (failures?.length) {
-        show(`Approved ${approvedCount}; ${failures.length} could not be approved`, 'warning');
-      } else {
-        show(`Approved ${approvedCount} timesheet(s)`, 'success');
-      }
-      teamQuery.refetch();
-    } catch (e) {
-      show(e?.message ?? 'Bulk approve failed', 'error');
-    }
   };
 
   const selectedRow = useMemo(
@@ -217,16 +126,11 @@ export function TeamTimesheetsPage() {
   );
 
   const detailPanel =
-    selectedRowId && selectedRow && isPlaceholderRowKey(selectedRowId) ? (
-      <EmptyStatePanel
-        title="Not submitted yet"
-        description={`${selectedRow.employeeName} has not submitted a timesheet for ${dayjs(selectedRow.workDate).format('DD MMM YYYY')}.`}
-      />
-    ) : selectedRowId && selectedRow?.id ? (
+    selectedRowId && selectedRow?.id ? (
       <TimesheetApprovalDetailPanel
         key={selectedRow.id}
         requestId={selectedRow.id}
-        onActionComplete={handleActionComplete}
+        readOnly
         onSuccess={show}
         onError={(msg) => show(msg, 'error')}
       />
@@ -244,24 +148,15 @@ export function TeamTimesheetsPage() {
           <Typography variant="h6" fontWeight={700}>
             Team Timesheets
           </Typography>
-          {submittedCount > 0 ? (
-            <Badge badgeContent={submittedCount} color="info">
-              <Chip label="Awaiting approval" size="small" color="info" variant="outlined" />
-            </Badge>
-          ) : null}
         </Stack>
 
         <TimesheetApprovalToolbar
           from={from}
           to={to}
-          status={status}
-          employeeId={employeeId}
-          employees={employees}
-          submittedCount={submittedCount}
+          employeeSearch={employeeSearch}
           onFromChange={(value) => updateParams({ from: value })}
           onToChange={(value) => updateParams({ to: value })}
-          onStatusChange={(value) => updateParams({ status: value || undefined })}
-          onEmployeeChange={(value) => updateParams({ employeeId: value || undefined })}
+          onEmployeeSearchChange={setEmployeeSearch}
           onPreset={(preset) => {
             const range = presetRange(preset);
             updateParams({ from: range.from, to: range.to });
@@ -276,46 +171,25 @@ export function TeamTimesheetsPage() {
           <Alert severity="error">{teamQuery.error.message}</Alert>
         ) : (
           <>
-            <TimesheetSummaryCards
-              totalHours={teamQuery.data?.totalHours ?? 0}
-              statusSummary={teamQuery.data?.statusSummary ?? {}}
-              submittedCount={submittedCount}
-            />
-
-            {selectedEmployee && employeeStats ? (
-              <TimesheetEmployeeSummaryCard
-                employee={selectedEmployee}
-                totalDays={employeeStats.totalDays}
-                totalHours={employeeStats.totalHours}
-                pendingCount={employeeStats.pendingCount}
-                statusSummary={employeeStats.statusSummary}
-              />
-            ) : null}
-
-            <TimesheetBulkApproveBar
-              selectedCount={selectedIds.size}
-              pendingInViewCount={pendingInViewCount}
-              isPending={bulkMutation.isPending}
-              onApproveSelected={() => openBulkDialog('selected')}
-              onApproveAllPending={() => openBulkDialog('range')}
-            />
+            <TimesheetSummaryCards totalHours={totalHours} submittedCount={submittedCount} />
 
             {days.length === 0 ? (
               <EmptyStatePanel
                 title="No timesheets found"
-                description="Try adjusting the date range or filters."
+                description={
+                  employeeSearch.trim()
+                    ? 'No submitted timesheets match your search.'
+                    : 'Try adjusting the date range or filters.'
+                }
               />
             ) : (
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, md: selectedRowId && !isMobile ? 7 : 12 }}>
                   <TimesheetTeamDataTable
                     rows={days}
-                    selectedIds={selectedIds}
                     selectedRowId={selectedRowId}
-                    onToggleRow={toggleRow}
-                    onToggleAllActionable={toggleAllActionable}
                     onRowClick={handleRowClick}
-                    showEmployeeColumn={!employeeId}
+                    showEmployeeColumn
                   />
                 </Grid>
                 {!isMobile && selectedRowId ? (
@@ -346,32 +220,12 @@ export function TeamTimesheetsPage() {
           <TimesheetApprovalDetailPanel
             key={selectedRow.id}
             requestId={selectedRow.id}
-            onActionComplete={() => {
-              setMobileDrawerOpen(false);
-              handleActionComplete();
-            }}
+            readOnly
             onSuccess={show}
             onError={(msg) => show(msg, 'error')}
           />
-        ) : selectedRowId && selectedRow && isPlaceholderRowKey(selectedRowId) ? (
-          <EmptyStatePanel
-            title="Not submitted yet"
-            description={`${selectedRow.employeeName} has not submitted a timesheet for ${dayjs(selectedRow.workDate).format('DD MMM YYYY')}.`}
-          />
         ) : null}
       </Drawer>
-
-      <BulkApproveTimesheetDialog
-        open={bulkDialogOpen}
-        count={bulkCount}
-        mode={bulkMode}
-        from={from}
-        to={to}
-        employeeName={selectedEmployee?.name}
-        isPending={bulkMutation.isPending}
-        onConfirm={handleBulkConfirm}
-        onCancel={() => setBulkDialogOpen(false)}
-      />
 
       <AppSnackbar
         open={snackbar.open}

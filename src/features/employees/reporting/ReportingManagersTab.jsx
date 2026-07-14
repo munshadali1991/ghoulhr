@@ -20,8 +20,9 @@ import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import PersonAddRoundedIcon from '@mui/icons-material/PersonAddRounded';
 import { PageCard } from '@/shared/components/ui/PageCard';
-import { BrandedButton } from '@/shared/components/ui/BrandedButton';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+import { TableRowActions } from '@/shared/components/data/TableRowActions';
 import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 import {
   listReportingManagers,
@@ -236,14 +237,15 @@ export function ReportingManagersTab({ showSnackbar }) {
             Refresh
           </Button>
           {canAssign ? (
-          <BrandedButton
+          <CrudButton
+            intent="create"
             startIcon={<PersonAddRoundedIcon />}
             onClick={handleAssignManagerClick}
             fullWidth
             sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}
           >
             Assign manager
-          </BrandedButton>
+          </CrudButton>
           ) : null}
         </Stack>
       </Stack>
@@ -315,18 +317,12 @@ export function ReportingManagersTab({ showSnackbar }) {
                   },
                 ]}
                 actions={
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0.5} sx={{ width: '100%' }}>
-                    {canAssign ? (
-                    <Button size="small" onClick={() => openAssign(row)} fullWidth>
-                      {row.manager ? 'Change' : 'Assign'}
-                    </Button>
-                    ) : null}
-                    {row.manager ? (
-                      <Button size="small" color="error" onClick={() => handleRemove(row)} fullWidth>
-                        Remove
-                      </Button>
-                    ) : null}
-                  </Stack>
+                  <TableRowActions
+                    onEdit={canAssign ? () => openAssign(row) : undefined}
+                    editLabel={row.manager ? 'Change' : 'Assign'}
+                    onDelete={row.manager ? () => handleRemove(row) : undefined}
+                    deleteLabel="Remove"
+                  />
                 }
               />
             ))}
@@ -396,23 +392,13 @@ export function ReportingManagersTab({ showSnackbar }) {
                         ? new Date(row.effectiveFrom).toLocaleDateString()
                         : '—'}
                     </TableCell>
-                    <TableCell align="right">
-                      <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                        {canAssign ? (
-                        <Button size="small" onClick={() => openAssign(row)}>
-                          {row.manager ? 'Change' : 'Assign'}
-                        </Button>
-                        ) : null}
-                        {row.manager ? (
-                          <Button
-                            size="small"
-                            color="error"
-                            onClick={() => handleRemove(row)}
-                          >
-                            Remove
-                          </Button>
-                        ) : null}
-                      </Stack>
+                    <TableCell align="right" className="table-actions-cell">
+                      <TableRowActions
+                        onEdit={canAssign ? () => openAssign(row) : undefined}
+                        editLabel={row.manager ? 'Change' : 'Assign'}
+                        onDelete={row.manager ? () => handleRemove(row) : undefined}
+                        deleteLabel="Remove"
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

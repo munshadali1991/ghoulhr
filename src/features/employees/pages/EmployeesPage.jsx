@@ -3,7 +3,6 @@ import {
   Alert,
   Box,
   Button,
-  Card,
   CardContent,
   Chip,
   Dialog,
@@ -19,6 +18,7 @@ import {
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
   TextField,
   Typography,
@@ -29,8 +29,9 @@ import {
 } from '@mui/material';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+import { TableRowActions } from '@/shared/components/data/TableRowActions';
 import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
-import { BrandedButton } from '@/shared/components/ui/BrandedButton';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
@@ -48,12 +49,20 @@ import { ReportingManagersTab } from '@/features/employees/reporting/ReportingMa
 import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
 import { EMPLOYEES_MODULE_ACCESS } from '@/features/auth/config/accessRegistry';
 
+const DEFAULT_ROWS_PER_PAGE = 20;
+const ROWS_PER_PAGE_OPTIONS = [10, 20, 50];
+const headerButtonSx = {
+  display: { xs: 'flex', sm: 'inline-flex' },
+  whiteSpace: 'nowrap',
+  px: 2.5,
+  py: 1,
+};
+
 export function EmployeesPage({ organizationId }) {
   const isMobileLayout = useIsMobileLayout();
   const { can, getAllowedTabs } = useAuthorization();
   const employeeTabs = getAllowedTabs(EMPLOYEES_MODULE_ACCESS.tabs);
   const directoryTab = EMPLOYEES_MODULE_ACCESS.tabs[0];
-  const reportingTab = EMPLOYEES_MODULE_ACCESS.tabs[1];
   const canCreate = can(directoryTab?.actions?.create);
   const canOnboard = can(directoryTab?.actions?.onboard);
   const canUpdate = can(directoryTab?.actions?.update);
@@ -62,6 +71,8 @@ export function EmployeesPage({ organizationId }) {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_ROWS_PER_PAGE);
   const [showAddWizard, setShowAddWizard] = useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const { snackbar, show: showSnackbar, close: closeSnackbar } = useAppSnackbar();
@@ -70,6 +81,7 @@ export function EmployeesPage({ organizationId }) {
   const [showEditWizard, setShowEditWizard] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [editInitialValues, setEditInitialValues] = useState(null);
+  const isDirectoryTab = employeeTabs[pageTab]?.key === 'directory';
 
   // Fetch employees on component mount
   useEffect(() => {
@@ -135,6 +147,23 @@ export function EmployeesPage({ organizationId }) {
       emp.employeeCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
       emp.departmentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       emp.designationName?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const maxPage = Math.max(0, Math.ceil(filteredEmployees.length / rowsPerPage) - 1);
+
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (page > maxPage) {
+      setPage(maxPage);
+    }
+  }, [page, maxPage]);
+
+  const paginatedEmployees = filteredEmployees.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage,
   );
 
   // Get role chip color
@@ -216,32 +245,39 @@ export function EmployeesPage({ organizationId }) {
             Manage employee profiles and reporting structure
           </Typography>
         </Box>
-        {pageTab === 0 && canAddEmployee ? (
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+        {isDirectoryTab && canAddEmployee ? (
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
+          >
             <Button
               variant="outlined"
               startIcon={<RefreshRoundedIcon />}
               onClick={fetchEmployees}
               disabled={loading}
               fullWidth
-              sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}
+              sx={headerButtonSx}
             >
               Refresh
             </Button>
-            <BrandedButton
+            <CrudButton
+              intent="create"
               startIcon={<PersonAddRoundedIcon />}
               onClick={() => setShowAddWizard(true)}
               fullWidth
+              sx={headerButtonSx}
             >
               Add Employee
-            </BrandedButton>
+            </CrudButton>
           </Stack>
-        ) : pageTab === 0 ? (
+        ) : isDirectoryTab ? (
           <Button
             variant="outlined"
             startIcon={<RefreshRoundedIcon />}
             onClick={fetchEmployees}
             disabled={loading}
+            sx={headerButtonSx}
           >
             Refresh
           </Button>
@@ -313,10 +349,9 @@ export function EmployeesPage({ organizationId }) {
           </Box>
         ) : isMobileLayout ? (
           <Stack spacing={1.5} sx={{ p: 2 }}>
-            {filteredEmployees.map((employee) => (
+            {paginatedEmployees.map((employee) => (
               <MobileDataCard
                 key={employee.id}
-                onClick={canUpdate ? () => openEditWizard(employee) : undefined}
                 fields={[
                   { label: 'Employee Code', value: employee.employeeCode },
                   { label: 'Name', value: employee.name },
@@ -346,10 +381,29 @@ export function EmployeesPage({ organizationId }) {
                       : '-',
                   },
                 ]}
+                actions={
+                  canUpdate ? (
+                    <TableRowActions onEdit={() => openEditWizard(employee)} />
+                  ) : null
+                }
               />
             ))}
+            <TablePagination
+              component="div"
+              count={filteredEmployees.length}
+              page={page}
+              onPageChange={(_, newPage) => setPage(newPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(event) => {
+                setRowsPerPage(parseInt(event.target.value, 10));
+                setPage(0);
+              }}
+              rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+              labelRowsPerPage="Rows per page"
+            />
           </Stack>
         ) : (
+        <>
         <TableContainer sx={{ overflowX: 'auto' }}>
           <Table size="small" sx={{ minWidth: { xs: 0, md: 720 } }}>
             <TableHead>
@@ -362,15 +416,16 @@ export function EmployeesPage({ organizationId }) {
                 <TableCell><strong>Role</strong></TableCell>
                 <TableCell><strong>Status</strong></TableCell>
                 <TableCell><strong>Join Date</strong></TableCell>
+                {canUpdate ? (
+                  <TableCell align="right"><strong>Actions</strong></TableCell>
+                ) : null}
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredEmployees.map((employee) => (
+              {paginatedEmployees.map((employee) => (
                   <TableRow
                     key={employee.id}
                     hover
-                    sx={{ cursor: 'pointer' }}
-                    onClick={canUpdate ? () => openEditWizard(employee) : undefined}
                   >
                     <TableCell>
                       <Typography variant="body2" fontWeight={600}>
@@ -400,11 +455,34 @@ export function EmployeesPage({ organizationId }) {
                         ? new Date(employee.dateOfJoining).toLocaleDateString()
                         : '-'}
                     </TableCell>
+                    {canUpdate ? (
+                      <TableCell
+                        align="right"
+                        className="table-actions-cell"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <TableRowActions onEdit={() => openEditWizard(employee)} />
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 ))}
             </TableBody>
           </Table>
         </TableContainer>
+        <TablePagination
+          component="div"
+          count={filteredEmployees.length}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(event) => {
+            setRowsPerPage(parseInt(event.target.value, 10));
+            setPage(0);
+          }}
+          rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+          labelRowsPerPage="Rows per page"
+        />
+        </>
         )}
       </PageCard>
         </>
@@ -529,7 +607,7 @@ export function EmployeesPage({ organizationId }) {
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
-          <BrandedButton onClick={() => setSuccessDialogOpen(false)}>Done</BrandedButton>
+          <CrudButton intent="save" onClick={() => setSuccessDialogOpen(false)}>Done</CrudButton>
         </DialogActions>
       </Dialog>
 

@@ -1,5 +1,5 @@
 import { formatDisplayDate, pickRecordTimestamp } from '@/shared/utils/timestamps';
-import { shiftTimeRangeTooltip } from '@/shared/utils/shiftTime';
+import { shiftTimeRangeTooltip, shiftTimeToDayjs } from '@/shared/utils/shiftTime';
 import { ATTENDANCE_CLOCK_STORAGE_KEY } from '../constants';
 
 export function formatOrgDate(value) {
@@ -31,27 +31,43 @@ export function defaultShiftTemplate(locationId = '') {
     end_time: '18:00',
     break_minutes: 60,
     locationId,
+    isActive: true,
   };
 }
 
-export function mapShiftsToFormState(shifts, defaultLocationId = '') {
+export function mapShiftsToFormState(shifts, defaultLocationId = '', validLocationIds = null) {
   const list =
     Array.isArray(shifts) && shifts.length > 0
       ? shifts
       : [defaultShiftTemplate(defaultLocationId)];
 
+  const validSet =
+    validLocationIds instanceof Set
+      ? validLocationIds
+      : Array.isArray(validLocationIds)
+        ? new Set(validLocationIds)
+        : null;
+
   return list.map((s) => {
     const createdAt =
       pickRecordTimestamp(s) ||
       pickRecordTimestamp({ createdAt: s.updatedAt ?? s.updated_at });
+    const storedLocationId = s.locationId || s.location_id || s.location?.id || '';
+    // If the stored branch no longer exists for this org, fall back to a valid
+    // default so an orphaned shift can't permanently block edits/deletes/saves.
+    const resolvedLocationId =
+      storedLocationId && (!validSet || validSet.size === 0 || validSet.has(storedLocationId))
+        ? storedLocationId
+        : defaultLocationId || '';
     return {
       id: s.id,
       name: s.name ?? '',
       start_time: s.start_time ?? s.startTime ?? '',
       end_time: s.end_time ?? s.endTime ?? '',
       break_minutes: s.break_minutes ?? s.breakMinutes ?? 0,
-      locationId: s.locationId || s.location_id || s.location?.id || defaultLocationId || '',
+      locationId: resolvedLocationId,
       sessions: Array.isArray(s.sessions) ? s.sessions : [],
+      isActive: s.isActive !== false,
       createdAt,
     };
   });
@@ -98,7 +114,10 @@ export function locationLabelForId(branchLocations, id) {
   if (!id) return null;
   const loc = branchLocations.find((l) => l.id === id);
   if (!loc) return null;
-  return loc.city ? `${loc.name}, ${loc.city}` : loc.name;
+  const name = String(loc.name || '').trim();
+  const city = String(loc.city || '').trim();
+  if (!city || city.toLowerCase() === name.toLowerCase()) return name || null;
+  return `${name}, ${city}`;
 }
 
 export function shiftRowStatus(row) {
@@ -119,6 +138,27 @@ export function shiftScheduleDescription(row) {
   return net ? `${tooltip} · ${net} net` : tooltip;
 }
 
+/** Compact list meta — one clock format, no duplicate gross span. */
+export function formatShiftListParts(row, clockFormat = '12') {
+  const a = shiftTimeToDayjs(row?.start_time);
+  const b = shiftTimeToDayjs(row?.end_time);
+  const is12 = clockFormat === '12';
+  const fmt = is12 ? 'h:mm A' : 'HH:mm';
+  const time = a && b ? `${a.format(fmt)} – ${b.format(fmt)}` : null;
+  const net = formatDurationHuman(
+    netWorkingMinutes(row?.start_time, row?.end_time, row?.break_minutes),
+  );
+  const overnight =
+    parseTimeToMinutes(row?.start_time) != null &&
+    parseTimeToMinutes(row?.end_time) != null &&
+    parseTimeToMinutes(row?.end_time) <= parseTimeToMinutes(row?.start_time);
+  return {
+    time,
+    net: net ? `${net} net` : null,
+    overnight,
+  };
+}
+
 export function serializeShiftForApi(shift) {
   const base = {
     name: shift.name.trim(),
@@ -126,6 +166,7 @@ export function serializeShiftForApi(shift) {
     end_time: shift.end_time,
     break_minutes: Number(shift.break_minutes) || 0,
     locationId: String(shift.locationId).trim(),
+    isActive: shift.isActive !== false,
     sessions: Array.isArray(shift.sessions)
       ? shift.sessions
           .filter((s) => s?.start_time && s?.end_time)

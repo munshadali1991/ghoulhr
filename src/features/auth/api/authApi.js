@@ -1,4 +1,4 @@
-import { API_BASE_URL, DEFAULT_BOOTSTRAP_KEY } from '@/app/config/appConfig';
+import { getApiBaseUrl, DEFAULT_BOOTSTRAP_KEY } from '@/app/config/appConfig';
 import { SESSION_EXPIRED_EVENT } from '@/features/auth/hooks/useSessionExpiry';
 
 async function parseJsonResponse(response) {
@@ -12,7 +12,7 @@ async function parseJsonResponse(response) {
 }
 
 async function authPost(path, body, extraHeaders = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -41,23 +41,25 @@ async function authPost(path, body, extraHeaders = {}) {
   return payload;
 }
 
-async function loadSessionFromApi() {
-  let res = await fetch(`${API_BASE_URL}/auth/session`, {
+async function loadSessionFromApi(options = {}) {
+  const { suppressSessionExpiredEvent = false } = options;
+
+  let res = await fetch(`${getApiBaseUrl()}/auth/session`, {
     credentials: 'include',
   });
 
   if (res.status === 401) {
-    const r2 = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    const r2 = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
     });
     if (!r2.ok) {
-      if (typeof window !== 'undefined') {
+      if (!suppressSessionExpiredEvent && typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
       }
       return null;
     }
-    res = await fetch(`${API_BASE_URL}/auth/session`, {
+    res = await fetch(`${getApiBaseUrl()}/auth/session`, {
       credentials: 'include',
     });
   }
@@ -80,8 +82,11 @@ async function loadSessionFromApi() {
   };
 }
 
-export async function fetchSession() {
-  return loadSessionFromApi();
+/**
+ * @param {{ suppressSessionExpiredEvent?: boolean }} [options]
+ */
+export async function fetchSession(options) {
+  return loadSessionFromApi(options);
 }
 
 export async function fetchSessionUser() {
@@ -90,7 +95,7 @@ export async function fetchSessionUser() {
 }
 
 export async function logoutRequest() {
-  await fetch(`${API_BASE_URL}/auth/logout`, {
+  await fetch(`${getApiBaseUrl()}/auth/logout`, {
     method: 'POST',
     credentials: 'include',
   });

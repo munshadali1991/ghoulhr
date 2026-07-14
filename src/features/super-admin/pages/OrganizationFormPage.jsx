@@ -14,6 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import { PageCard } from '@/shared/components/ui/PageCard';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import { createOrganization, getOrganizationById, updateOrganization } from '@/features/super-admin/api/organizationsApi';
@@ -625,14 +626,14 @@ export function OrganizationFormPage({ onSaved }) {
             </Accordion>
 
             <Stack direction="row" spacing={1.2}>
-              <Button
+              <CrudButton
+                intent={isEdit ? 'save' : 'create'}
                 type="submit"
-                variant="contained"
                 startIcon={<SaveRoundedIcon />}
                 disabled={loading}
               >
                 {loading ? 'Saving...' : isEdit ? 'Update Organization' : 'Create Organization'}
-              </Button>
+              </CrudButton>
               <Button variant="outlined" onClick={() => navigate('/organizations')}>
                 Cancel
               </Button>

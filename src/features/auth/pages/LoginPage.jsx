@@ -225,7 +225,6 @@ export function LoginPage({
                       brandVariant="login"
                       size="large"
                       disabled={loading}
-                      sx={{ py: 1.25, fontWeight: 700 }}
                     >
                       {loading ? 'Please wait...' : 'Sign In'}
                     </BrandedButton>

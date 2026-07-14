@@ -3,6 +3,7 @@ import LocalCafeRoundedIcon from '@mui/icons-material/LocalCafeRounded';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { PageToolbar, ToolbarButtonGroup } from '../../components/PageToolbar';
 import { MonthCalendarGrid } from '../../components/MonthCalendarGrid';
@@ -168,15 +169,14 @@ export function AttendanceInfoPage() {
               My Regularizations
             </Button>
             {canPunch ? (
-            <Button
-              variant="contained"
-              color="secondary"
+            <CrudButton
+              intent="create"
               size="small"
               disabled={signInMutation.isPending || signOutMutation.isPending}
               onClick={handleAttendanceToggle}
             >
               {signedIn ? 'Sign Out' : 'Sign In'}
-            </Button>
+            </CrudButton>
             ) : null}
           </ToolbarButtonGroup>
         }

@@ -4,9 +4,11 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: '/',
+  base: mode === 'staging' ? '/staging/' : '/',
   plugins: [react()],
   resolve: {
+    // Prevent duplicate React when node_modules is symlinked (staging deploy).
+    dedupe: ['react', 'react-dom'],
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },

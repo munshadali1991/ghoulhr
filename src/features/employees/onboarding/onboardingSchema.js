@@ -507,21 +507,43 @@ export const bankStepSchema = z
     ifscCode: optStr,
     branchName: optStr,
     verificationStatus: optStr,
+    accountNumberOnFile: optStr,
   })
   .superRefine((data, zctx) => {
     const bankFields = ['accountHolderName', 'bankName', 'accountNumber', 'confirmAccountNumber', 'ifscCode'];
-    const any = addAllOrNothingIssues(
-      bankFields,
-      data,
-      zctx,
-      {
-        accountHolderName: 'Account holder name is required when bank details are provided',
-        bankName: 'Bank name is required when bank details are provided',
-        accountNumber: 'Account number is required when bank details are provided',
-        confirmAccountNumber: 'Confirm account number is required when bank details are provided',
-        ifscCode: 'IFSC code is required when bank details are provided',
-      },
-    );
+    const accountOnFile = trimOrEmpty(data.accountNumberOnFile);
+
+    function bankFieldFilled(field) {
+      if (
+        (field === 'accountNumber' || field === 'confirmAccountNumber') &&
+        accountOnFile
+      ) {
+        return true;
+      }
+      return !!trimOrEmpty(data[field]);
+    }
+
+    const any = bankFields.some(bankFieldFilled);
+    const all = bankFields.every(bankFieldFilled);
+    if (any && !all) {
+      bankFields.forEach((f) => {
+        if (bankFieldFilled(f)) return;
+        zctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [f],
+          message:
+            f === 'accountHolderName'
+              ? 'Account holder name is required when bank details are provided'
+              : f === 'bankName'
+                ? 'Bank name is required when bank details are provided'
+                : f === 'accountNumber'
+                  ? 'Account number is required when bank details are provided'
+                  : f === 'confirmAccountNumber'
+                    ? 'Confirm account number is required when bank details are provided'
+                    : 'IFSC code is required when bank details are provided',
+        });
+      });
+    }
 
     if (!any) return;
 
@@ -944,6 +966,7 @@ export function getDefaultOnboardingValues() {
       bankName: '',
       accountNumber: '',
       confirmAccountNumber: '',
+      accountNumberOnFile: '',
       ifscCode: '',
       branchName: '',
       verificationStatus: 'PENDING',
@@ -951,6 +974,8 @@ export function getDefaultOnboardingValues() {
     compliance: {
       panNumber: '',
       aadhaarNumber: '',
+      panOnFile: '',
+      aadhaarOnFile: '',
       uanNumber: '',
       esicNumber: '',
       pfNumber: '',
@@ -990,10 +1015,17 @@ function intOrUndef(v) {
   return Math.round(n);
 }
 
-function emergencyRelationshipLabel(value) {
-  if (!value || typeof value !== 'string') return undefined;
-  const o = EMERGENCY_RELATIONSHIP_OPTIONS.find((x) => x.value === value);
-  return o?.label ?? value;
+/** Map stored relationship (value or legacy label) back to select value. */
+export function emergencyRelationshipValue(stored) {
+  if (!stored || typeof stored !== 'string') return '';
+  const trimmed = stored.trim();
+  if (!trimmed) return '';
+  const byValue = EMERGENCY_RELATIONSHIP_OPTIONS.find((x) => x.value === trimmed);
+  if (byValue) return byValue.value;
+  const byLabel = EMERGENCY_RELATIONSHIP_OPTIONS.find(
+    (x) => x.label.toLowerCase() === trimmed.toLowerCase(),
+  );
+  return byLabel?.value ?? trimmed;
 }
 
 function isFilledExperience(exp) {
@@ -1032,8 +1064,7 @@ export function buildHrOnboardingPayload(v, options = {}) {
 
   const ecName = v.emergency?.contactName?.trim() ?? '';
   const ecPhone = v.emergency?.contactPhone?.trim() ?? '';
-  const ecRelRaw = v.emergency?.relationship?.trim() ?? '';
-  const ecRel = emergencyRelationshipLabel(ecRelRaw) ?? ecRelRaw;
+  const ecRel = v.emergency?.relationship?.trim() ?? '';
   const ecAll = ecName && ecPhone && ecRel;
   const filledExperiences = (v.experience?.experiences || []).filter((exp) => isFilledExperience(exp));
   const primaryExperience = filledExperiences[0] || {};
@@ -1098,15 +1129,21 @@ export function buildHrOnboardingPayload(v, options = {}) {
     bank: {
       accountHolderName: v.bank.accountHolderName || undefined,
       bankName: v.bank.bankName || undefined,
-      accountNumber: v.bank.accountNumber || undefined,
-      confirmAccountNumber: v.bank.confirmAccountNumber || undefined,
+      ...(v.bank.accountNumber?.trim()
+        ? {
+            accountNumber: v.bank.accountNumber.trim(),
+            confirmAccountNumber: v.bank.confirmAccountNumber?.trim() || undefined,
+          }
+        : {}),
       ifscCode: v.bank.ifscCode || undefined,
       branchName: v.bank.branchName || undefined,
       verificationStatus: v.bank.verificationStatus || 'PENDING',
     },
     compliance: {
-      panNumber: v.compliance.panNumber?.trim() || undefined,
-      aadhaarNumber: v.compliance.aadhaarNumber?.trim() || undefined,
+      ...(v.compliance.panNumber?.trim() ? { panNumber: v.compliance.panNumber.trim() } : {}),
+      ...(v.compliance.aadhaarNumber?.trim()
+        ? { aadhaarNumber: v.compliance.aadhaarNumber.trim() }
+        : {}),
       uanNumber: v.compliance.uanNumber?.trim() || undefined,
       esicNumber: v.compliance.esicNumber?.trim() || undefined,
       pfNumber: v.compliance.pfNumber?.trim() || undefined,
@@ -1145,6 +1182,7 @@ export function mapEmployeeToOnboardingValues(employee) {
   const bankDetail = employee.bankDetail || {};
   const accessControl = employee.accessControl || {};
   const emergencyContact = employee.emergencyContactDetail || {};
+  const complianceSummary = employee.complianceSummary || {};
 
   return {
     ...base,
@@ -1205,6 +1243,7 @@ export function mapEmployeeToOnboardingValues(employee) {
       ...base.bank,
       accountHolderName: bankDetail.accountHolderName || '',
       bankName: bankDetail.bankName || '',
+      accountNumberOnFile: bankDetail.accountLastFour || '',
       ifscCode: bankDetail.ifscCode || '',
       branchName: bankDetail.branchName || '',
       verificationStatus: bankDetail.verificationStatus || base.bank.verificationStatus,
@@ -1213,6 +1252,9 @@ export function mapEmployeeToOnboardingValues(employee) {
       ...base.compliance,
       panNumber: '',
       aadhaarNumber: '',
+      panOnFile: complianceSummary.panLastFour || (complianceSummary.hasPan ? '••••' : ''),
+      aadhaarOnFile:
+        complianceSummary.aadhaarLastFour || (complianceSummary.hasAadhaar ? '••••' : ''),
       uanNumber: employee.uanNumber || '',
       esicNumber: employee.esiNumber || '',
       pfNumber: employee.pfNumber || '',
@@ -1222,7 +1264,7 @@ export function mapEmployeeToOnboardingValues(employee) {
     emergency: {
       contactName: emergencyContact.contactName || '',
       contactPhone: emergencyContact.contactPhone || '',
-      relationship: emergencyContact.relationship || '',
+      relationship: emergencyRelationshipValue(emergencyContact.relationship || ''),
     },
     access: {
       ...base.access,

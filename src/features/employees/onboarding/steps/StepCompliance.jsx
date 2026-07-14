@@ -4,8 +4,12 @@ import { Controller, useFormContext } from 'react-hook-form';
 export function StepCompliance() {
   const {
     control,
+    watch,
     formState: { errors },
   } = useFormContext();
+
+  const panOnFile = watch('compliance.panOnFile');
+  const aadhaarOnFile = watch('compliance.aadhaarOnFile');
 
   return (
     <Stack spacing={2.5}>
@@ -33,7 +37,10 @@ export function StepCompliance() {
                 label="PAN"
                 placeholder="ABCDE1234F"
                 error={!!errors.compliance?.panNumber}
-                helperText={errors.compliance?.panNumber?.message}
+                helperText={
+                  errors.compliance?.panNumber?.message ||
+                  (panOnFile ? `PAN ending ${panOnFile} on file — leave blank to keep` : '')
+                }
               />
             )}
           />
@@ -49,7 +56,10 @@ export function StepCompliance() {
                 label="Aadhaar"
                 placeholder="12 digits"
                 error={!!errors.compliance?.aadhaarNumber}
-                helperText={errors.compliance?.aadhaarNumber?.message}
+                helperText={
+                  errors.compliance?.aadhaarNumber?.message ||
+                  (aadhaarOnFile ? `Aadhaar ending ${aadhaarOnFile} on file — leave blank to keep` : '')
+                }
               />
             )}
           />

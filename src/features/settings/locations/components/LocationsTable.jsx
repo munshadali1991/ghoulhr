@@ -1,23 +1,19 @@
 import {
-  Box,
-  IconButton,
   Paper,
   Stack,
-  Switch,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Tooltip,
   Typography,
 } from '@mui/material';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { Controller } from 'react-hook-form';
 import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+import { TableRowActions } from '@/shared/components/data/TableRowActions';
+import { ActiveSwitchCell } from '@/shared/components/data/ActiveSwitchCell';
 import {
   LOCATION_TABLE_COLUMNS,
   LOCATION_TABLE_CONTAINER_SX,
@@ -64,25 +60,13 @@ export function LocationsTable({
         {fields.map((field, index) => {
           const row = watchedLocations?.[index] ?? {};
           const actions = (
-            <>
-              <IconButton size="small" aria-label="Edit location" onClick={() => onEdit(index)} type="button">
-                <EditOutlinedIcon fontSize="small" />
-              </IconButton>
-              <Tooltip title={fields.length <= 1 ? 'At least one location is required' : 'Remove'}>
-                <span>
-                  <IconButton
-                    size="small"
-                    color="error"
-                    aria-label="Remove location"
-                    disabled={fields.length <= 1}
-                    onClick={() => onRemove(index)}
-                    type="button"
-                  >
-                    <DeleteOutlineIcon fontSize="small" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </>
+            <TableRowActions
+              onEdit={() => onEdit(index)}
+              onDelete={() => onRemove(index)}
+              editLabel="Edit location"
+              deleteLabel={fields.length <= 1 ? 'At least one location is required' : 'Remove'}
+              deleteDisabled={fields.length <= 1}
+            />
           );
 
           return (
@@ -109,11 +93,10 @@ export function LocationsTable({
                       name={`locations.${index}.isActive`}
                       control={control}
                       render={({ field: f }) => (
-                        <Switch
+                        <ActiveSwitchCell
                           checked={!!f.value}
-                          onChange={(e) => f.onChange(e.target.checked)}
-                          size="small"
-                          inputProps={{ 'aria-label': `Active for location ${index + 1}` }}
+                          onChange={(next) => f.onChange(next)}
+                          ariaLabel={`Active for location ${index + 1}`}
                         />
                       )}
                     />
@@ -190,40 +173,22 @@ export function LocationsTable({
                     name={`locations.${index}.isActive`}
                     control={control}
                     render={({ field: f }) => (
-                      <Tooltip title={f.value ? 'Active' : 'Inactive'}>
-                        <Switch
-                          checked={!!f.value}
-                          onChange={(e) => f.onChange(e.target.checked)}
-                          size="small"
-                          inputProps={{ 'aria-label': `Active for location ${index + 1}` }}
-                        />
-                      </Tooltip>
+                      <ActiveSwitchCell
+                        checked={!!f.value}
+                        onChange={(next) => f.onChange(next)}
+                        ariaLabel={`Active for location ${index + 1}`}
+                      />
                     )}
                   />
                 </TableCell>
-                <TableCell align="right">
-                  <IconButton
-                    size="small"
-                    aria-label="Edit location"
-                    onClick={() => onEdit(index)}
-                    type="button"
-                  >
-                    <EditOutlinedIcon fontSize="small" />
-                  </IconButton>
-                  <Tooltip title={fields.length <= 1 ? 'At least one location is required' : 'Remove'}>
-                    <span>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        aria-label="Remove location"
-                        disabled={fields.length <= 1}
-                        onClick={() => onRemove(index)}
-                        type="button"
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
+                <TableCell align="right" className="table-actions-cell">
+                  <TableRowActions
+                    onEdit={() => onEdit(index)}
+                    onDelete={() => onRemove(index)}
+                    editLabel="Edit location"
+                    deleteLabel={fields.length <= 1 ? 'At least one location is required' : 'Remove'}
+                    deleteDisabled={fields.length <= 1}
+                  />
                 </TableCell>
               </TableRow>
             );

@@ -84,17 +84,17 @@ export function DesignationFormPage({
       readOnly={readOnly}
     >
       {actionError ? (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={onClearActionError}>
+        <Alert severity="error" sx={{ mb: 2 }} onClose={onClearActionError}>
           {actionError}
         </Alert>
       ) : null}
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         <Grid size={{ xs: 12 }}>
           <SettingsField label="Designation name" required error={errors.name?.message}>
             <TextField
               fullWidth
-              size="medium"
+              size="small"
               placeholder="e.g. Senior Software Engineer"
               {...register('name')}
               error={!!errors.name}
@@ -110,7 +110,7 @@ export function DesignationFormPage({
             control={control}
             render={({ field }) => (
               <SettingsField label="Departments" required error={errors.departmentIds?.message}>
-                <FormControl fullWidth error={!!errors.departmentIds} size="medium">
+                <FormControl fullWidth error={!!errors.departmentIds} size="small">
                   <InputLabel id="designation-dept-label">Departments</InputLabel>
                   <Select
                     labelId="designation-dept-label"

@@ -5,6 +5,13 @@
  * @typedef {'light' | 'dark'} ColorScheme
  */
 
+/** Button height / horizontal padding scale (px). Used by MuiButton + BrandedButton. */
+export const buttonSizes = {
+  small: { height: 32, px: 12 },
+  medium: { height: 40, px: 16 },
+  large: { height: 48, px: 24 },
+};
+
 /** @type {Record<ColorScheme, object>} */
 export const tokens = {
   light: {
@@ -22,6 +29,8 @@ export const tokens = {
       },
       warning: {
         main: '#F59E0B',
+        light: '#FCD34D',
+        dark: '#D97706',
       },
       error: {
         main: '#EF4444',
@@ -67,6 +76,27 @@ export const tokens = {
       inset: 'rgba(0, 0, 0, 0.04)',
       progressTrack: '#E5E7EB',
       wash: '#F9FAFB',
+    },
+    accent: {
+      teal: '#17a2b8',
+      response: '#e57373',
+      comment: '#66bb6a',
+    },
+    chart: {
+      balance: '#90CAF9',
+      consumed: '#EF9A9A',
+    },
+    attendance: {
+      tableHead: '#f0f7ff',
+    },
+    metrics: {
+      strip: '#FFF8E1',
+    },
+    crud: {
+      create: '#10B981',
+      view: '#3B82F6',
+      update: '#F59E0B',
+      delete: '#EF4444',
     },
   },
   dark: {
@@ -124,6 +154,32 @@ export const tokens = {
     },
     surfaces: {
       draftBarShadow: '0 -4px 12px rgba(0, 0, 0, 0.25)',
+      subtle: '#1E293B',
+      muted: '#334155',
+      inset: 'rgba(255, 255, 255, 0.06)',
+      progressTrack: '#475569',
+      wash: '#1E293B',
+    },
+    accent: {
+      teal: '#22d3ee',
+      response: '#f87171',
+      comment: '#4ade80',
+    },
+    chart: {
+      balance: '#60A5FA',
+      consumed: '#F87171',
+    },
+    attendance: {
+      tableHead: '#1e3a5f',
+    },
+    metrics: {
+      strip: '#422006',
+    },
+    crud: {
+      create: '#34D399',
+      view: '#60A5FA',
+      update: '#FBBF24',
+      delete: '#F87171',
     },
   },
 };

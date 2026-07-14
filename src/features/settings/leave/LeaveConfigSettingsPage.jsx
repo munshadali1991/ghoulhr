@@ -28,6 +28,10 @@ export function LeaveConfigSettingsPage({ organizationId }) {
     form.handleSubmit(form.onSubmit)(e);
   };
 
+  const handleListSave = () => {
+    form.handleSubmit(form.onSubmit)();
+  };
+
   return (
     <Box sx={{ width: '100%', maxWidth: '100%' }} data-testid="settings-leave-page">
       {form.error && (
@@ -54,10 +58,14 @@ export function LeaveConfigSettingsPage({ organizationId }) {
             watchedLeaves={form.watchedLeaves}
             filteredDisplayIndices={form.filteredDisplayIndices}
             locationNameById={form.locationNameById}
+            control={form.control}
             isDirty={form.isDirty}
+            isUpdating={form.isUpdating}
             onAdd={canWrite ? form.startAddLeave : undefined}
             onRowClick={form.openEditor}
             onRemove={canWrite ? form.removeLeaveAt : undefined}
+            onSave={canWrite ? handleListSave : undefined}
+            onDiscard={canWrite ? form.handleCancel : undefined}
             readOnly={!canWrite}
           />
         ) : (
@@ -76,6 +84,7 @@ export function LeaveConfigSettingsPage({ organizationId }) {
             onWizardNext={form.handleWizardNext}
             onCancel={form.handleCancel}
             onSubmit={handleWizardSubmit}
+            onSelectStep={form.goToWizardStep}
           />
         )}
       </Box>

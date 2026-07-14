@@ -13,6 +13,39 @@ import { DEFAULT_ACCESS_SCOPE } from '@/features/rbac/constants/accessScopes';
 import { PermissionResourceRow } from '@/features/rbac/components/PermissionResourceRow';
 
 /**
+ * Progress ring for module enablement (secondary fill on divider track).
+ * @param {{ enabled: number, total: number }} props
+ */
+function ModuleProgressRing({ enabled, total }) {
+  const pct = total === 0 ? 0 : Math.round((enabled / total) * 100);
+  return (
+    <Box
+      sx={{
+        width: 26,
+        height: 26,
+        borderRadius: '50%',
+        flexShrink: 0,
+        background:
+          pct === 0
+            ? (t) => t.palette.divider
+            : pct === 100
+              ? (t) => t.palette.secondary.main
+              : (t) =>
+                  `conic-gradient(${t.palette.secondary.main} ${pct}%, ${t.palette.divider} ${pct}% 100%)`,
+        position: 'relative',
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          inset: 4,
+          borderRadius: '50%',
+          bgcolor: 'background.paper',
+        },
+      }}
+    />
+  );
+}
+
+/**
  * @param {{
  *   permissions: import('@/features/rbac/types/rbac.types').RbacPermission[],
  *   activePermissions: Array<{ permissionCode: string, accessScope: string }>,
@@ -102,8 +135,16 @@ export function PermissionModuleAccordion({
         );
         const moduleCodes = moduleEntries.map((e) => e.permissionCode);
         const enabledInModule = moduleCodes.filter((c) => activeCodes.includes(c)).length;
-        const allSelected = moduleCodes.every((c) => activeCodes.includes(c));
+        const allSelected = moduleCodes.length > 0 && moduleCodes.every((c) => activeCodes.includes(c));
         const someSelected = moduleCodes.some((c) => activeCodes.includes(c));
+
+        const actionLabels = [
+          ...new Set(
+            mod.rows.flatMap((row) =>
+              row.permissions.map((p) => p.actionLabel ?? p.action),
+            ),
+          ),
+        ];
 
         return (
           <Accordion
@@ -113,35 +154,90 @@ export function PermissionModuleAccordion({
             disableGutters
             elevation={0}
             sx={{
-              border: 1,
+              borderTop: 1,
               borderColor: 'divider',
-              borderRadius: '8px !important',
-              mb: 1.5,
+              borderRadius: '0 !important',
+              bgcolor: 'transparent',
               '&:before': { display: 'none' },
-              overflow: 'hidden',
+              '&:first-of-type': { borderTop: 0 },
             }}
           >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon sx={{ color: 'text.disabled' }} />}
+              sx={{
+                px: 0.5,
+                minHeight: 52,
+                '& .MuiAccordionSummary-content': {
+                  alignItems: 'center',
+                  my: 1.5,
+                  gap: 1.5,
+                },
+              }}
+            >
+              <ModuleProgressRing enabled={enabledInModule} total={moduleCodes.length} />
+              <Typography variant="body2" fontWeight={600} sx={{ flex: 1 }}>
+                {mod.moduleName}
+                <Typography
+                  component="span"
+                  variant="caption"
+                  color="text.disabled"
+                  sx={{ ml: 0.75, fontWeight: 500 }}
+                >
+                  ({enabledInModule}/{moduleCodes.length} enabled)
+                </Typography>
+              </Typography>
               <Checkbox
                 size="small"
                 checked={allSelected}
                 indeterminate={someSelected && !allSelected}
+                color="secondary"
                 onChange={(e) => {
                   e.stopPropagation();
                   onToggleModule(moduleEntries, !allSelected);
                 }}
                 onClick={(e) => e.stopPropagation()}
                 disabled={disabled}
-                sx={{ mr: 1 }}
               />
-              <Typography variant="subtitle2" fontWeight={700}>
-                {mod.moduleName}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                ({enabledInModule}/{moduleCodes.length} enabled)
-              </Typography>
             </AccordionSummary>
-            <AccordionDetails sx={{ p: 0 }}>
+            <AccordionDetails sx={{ px: 0.5, pt: 0, pb: 2, pl: { sm: 5.25 } }}>
+              {actionLabels.length > 0 ? (
+                <Box
+                  sx={{
+                    display: { xs: 'none', md: 'grid' },
+                    gridTemplateColumns: `1fr repeat(${Math.min(actionLabels.length, 4)}, minmax(72px, 90px)) minmax(120px, 150px)`,
+                    gap: 1,
+                    pb: 1,
+                  }}
+                >
+                  <Box />
+                  {actionLabels.slice(0, 4).map((label) => (
+                    <Typography
+                      key={label}
+                      variant="caption"
+                      color="text.disabled"
+                      sx={{
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {label}
+                    </Typography>
+                  ))}
+                  <Typography
+                    variant="caption"
+                    color="text.disabled"
+                    sx={{
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    Scope
+                  </Typography>
+                </Box>
+              ) : null}
               {mod.rows.map((row) => (
                 <PermissionResourceRow
                   key={row.resource}
@@ -150,6 +246,7 @@ export function PermissionModuleAccordion({
                   onToggle={onToggle}
                   onScopeChange={onScopeChange}
                   disabled={disabled}
+                  actionColumnLabels={actionLabels.slice(0, 4)}
                 />
               ))}
             </AccordionDetails>

@@ -1,9 +1,10 @@
-import { Box, Link, Stack, Typography } from '@mui/material';
+import { Box, Link, Typography } from '@mui/material';
 import EventRoundedIcon from '@mui/icons-material/EventRounded';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
-import { DashboardWidgetCard } from '@/shared/components/ui/DashboardWidgetCard';
+import { PageCard } from '@/shared/components/ui/PageCard';
 import { Can } from '@/features/auth/components/Can';
+import { HomeCardEyebrow } from '../home/HomeCardEyebrow';
 
 /**
  * @param {{ holidays: Array<{ date: string; name: string; dayOfWeek: string }> }} props
@@ -12,48 +13,63 @@ export function UpcomingHolidaysWidget({ holidays = [] }) {
   const navigate = useNavigate();
 
   return (
-    <DashboardWidgetCard
-      title="Upcoming Holidays"
-      icon={<EventRoundedIcon color="primary" sx={{ fontSize: 20 }} />}
+    <PageCard
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        p: { xs: 2.5, sm: 3 },
+        overflow: 'auto',
+      }}
     >
+      <HomeCardEyebrow icon={<EventRoundedIcon />}>Upcoming holidays</HomeCardEyebrow>
+
       {holidays.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
           No upcoming holidays
         </Typography>
       ) : (
         holidays.map((h, index) => (
-          <Stack
+          <Box
             key={h.date}
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
             sx={{
-              py: 1,
-              borderBottom: index < holidays.length - 1 ? '1px solid' : 'none',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              gap: 1.5,
+              py: 1.6,
+              borderTop: index === 0 ? 0 : 1,
               borderColor: 'divider',
+              ...(index === 0 ? { pt: 0.25 } : null),
             }}
           >
-            <Box>
-              <Typography variant="body2" fontWeight={600}>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ m: 0, mb: 0.35, fontSize: 13.5, fontWeight: 600, lineHeight: 1.3 }}>
                 {h.name}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {dayjs(h.date).format('DD MMM')} · {h.dayOfWeek}
+              <Typography sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
+                {dayjs(h.date).format('DD MMM')} · {h.dayOfWeek || dayjs(h.date).format('ddd')}
               </Typography>
             </Box>
             <Can permission="ess.leave:apply">
               <Link
                 component="button"
-                variant="body2"
-                color="secondary"
+                underline="hover"
                 onClick={() => navigate('/leave/apply?tab=apply')}
+                sx={{
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  color: 'secondary.main',
+                  flexShrink: 0,
+                  pt: 0.15,
+                }}
               >
                 Apply
               </Link>
             </Can>
-          </Stack>
+          </Box>
         ))
       )}
-    </DashboardWidgetCard>
+    </PageCard>
   );
 }

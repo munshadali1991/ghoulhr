@@ -2,8 +2,10 @@ import {
   bootstrapSuperAdminRequest,
   loginRequest,
 } from '@/features/auth/api/authApi';
-import { getTenantRedirectUrl } from '@/shared/utils/tenant';
-import { getAppBasePath } from '@/shared/utils/tenant';
+import { getAppBasePath, getTenantRedirectUrl } from '@/shared/utils/tenant';
+
+const CROSS_HOST_HANDOFF_ERROR =
+  'Cross-subdomain login failed. Please sign in again or contact support.';
 
 /**
  * @param {{ role?: string, organizationSubdomain?: string } | null | undefined} user
@@ -15,13 +17,57 @@ export function resolvePostAuthRedirect(user) {
 }
 
 /**
- * @param {{ user?: object, entitledModules?: string[], permissions?: string[], roles?: string[] }} authResult
+ * @param {string | null | undefined} handoff
+ */
+function assertCrossHostHandoff(handoff) {
+  if (typeof handoff === 'string' && handoff.length > 0) {
+    return;
+  }
+  throw new Error(CROSS_HOST_HANDOFF_ERROR);
+}
+
+/**
+ * @param {string} redirectUrl
+ * @param {{ handoff?: string }} authResult
+ * @param {string} [pathSuffix]
+ */
+function assignPostAuthRedirect(redirectUrl, authResult, pathSuffix = '') {
+  assertCrossHostHandoff(authResult?.handoff);
+
+  const url = new URL(redirectUrl);
+  const base = getAppBasePath();
+  if (pathSuffix) {
+    url.pathname = base ? `${base}${pathSuffix}` : pathSuffix;
+  }
+  url.searchParams.set('handoff', authResult.handoff);
+  window.location.replace(url.toString());
+}
+
+/**
+ * Completes login after credentials are validated: cross-host redirect with handoff,
+ * or in-place session bootstrap on the current host.
+ *
+ * @param {{ user?: object, handoff?: string, requiresPasswordChange?: boolean, entitledModules?: string[], permissions?: string[], roles?: string[] }} authResult
  * @param {(session: import('@/app/providers/authContext').AuthSession) => void} setSession
  * @returns {boolean} True when a full-page redirect was started.
  */
-export async function applyAuthResult(authResult, setSession) {
+export async function finalizeLogin(authResult, setSession) {
   if (!authResult?.user) {
     throw new Error('Login failed. Invalid response from server.');
+  }
+
+  const mustChangePassword =
+    authResult.requiresPasswordChange || authResult.user?.mustChangePassword;
+
+  const redirectUrl = resolvePostAuthRedirect(authResult.user);
+
+  if (redirectUrl) {
+    if (mustChangePassword) {
+      assignPostAuthRedirect(redirectUrl, authResult, '/change-password');
+      return true;
+    }
+    assignPostAuthRedirect(redirectUrl, authResult);
+    return true;
   }
 
   const { fetchSession } = await import('@/features/auth/api/authApi');
@@ -34,38 +80,20 @@ export async function applyAuthResult(authResult, setSession) {
 
   setSession(session);
 
-  const mustChangePassword =
-    authResult.requiresPasswordChange ||
-    authResult.user?.mustChangePassword ||
-    session.user?.mustChangePassword;
+  const needsPasswordChange =
+    mustChangePassword || session.user?.mustChangePassword;
 
-  if (mustChangePassword) {
-    const redirectUrl = resolvePostAuthRedirect(authResult.user);
-    if (redirectUrl) {
-      const url = new URL(redirectUrl);
-      url.pathname = '/change-password';
-      if (authResult.handoff) {
-        url.searchParams.set('handoff', authResult.handoff);
-      }
-      window.location.assign(url.toString());
-      return true;
-    }
+  if (needsPasswordChange) {
     const base = getAppBasePath();
     window.location.assign(`${base}/change-password`);
     return true;
   }
 
-  const redirectUrl = resolvePostAuthRedirect(authResult.user);
-  if (redirectUrl) {
-    const url = new URL(redirectUrl);
-    if (authResult.handoff) {
-      url.searchParams.set('handoff', authResult.handoff);
-    }
-    window.location.assign(url.toString());
-    return true;
-  }
   return false;
 }
+
+/** @deprecated Use finalizeLogin */
+export const applyAuthResult = finalizeLogin;
 
 /**
  * @param {'tenant' | 'admin'} mode

@@ -3,8 +3,6 @@ import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import { useRef } from 'react';
 
-const METRICS_STRIP_BG = '#FFF8E1';
-
 /**
  * @param {{
  *   summary: import('../types/employeePortal.types').LeaveBalanceSummary,
@@ -32,7 +30,7 @@ export function LeaveBalanceMetricsCarousel({ summary }) {
       sx={{
         display: 'flex',
         alignItems: 'stretch',
-        bgcolor: METRICS_STRIP_BG,
+        bgcolor: (theme) => theme.palette.custom.metrics.strip,
         borderRadius: 1,
         border: '1px solid',
         borderColor: 'divider',

@@ -14,6 +14,7 @@ import { TeamTimesheetsPage } from '@/features/approvals/pages/timesheet/TeamTim
 import { TimesheetDayPage } from '@/features/employee-portal/pages/timesheet/TimesheetDayPage';
 import { ModulePlaceholderPage } from '@/features/org-admin/pages/ModulePlaceholderPage';
 import { EmployeesPage } from '@/features/employees';
+import { MyAssessmentsPage, PerformanceAssessmentPage, TeamPerformancePage, HrPerformancePage } from '@/features/performance';
 import { RequireAccess } from '@/features/auth/components/RequireAccess';
 import { DashboardRouteGuard } from '@/features/auth/components/DashboardRouteGuard';
 import { getDefaultDashboardPath } from '@/features/auth/config/dashboardRegistry';
@@ -161,6 +162,43 @@ export function TenantRoutes({
         <Route
           path="/approvals/timesheet"
           element={<Navigate to="/timesheet/team?status=SUBMITTED" replace />}
+        />
+
+        <Route
+          path="/performance"
+          element={
+            <RequireAccess module="performance" permission="ess.performance:read">
+              <MyAssessmentsPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/performance/team"
+          element={
+            <RequireAccess module="performance" permission="performance.review:read">
+              <TeamPerformancePage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/performance/manage"
+          element={
+            <RequireAccess module="performance" permission="performance.hr:read">
+              <HrPerformancePage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/performance/:assessmentId"
+          element={
+            <RequireAccess
+              module="performance"
+              permissions={['ess.performance:read', 'performance.review:read', 'performance.hr:read']}
+              permissionsMode="any"
+            >
+              <PerformanceAssessmentPage />
+            </RequireAccess>
+          }
         />
 
         <Route

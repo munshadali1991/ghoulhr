@@ -30,6 +30,7 @@ import { useAssignEmployeeRoles, useRbacRoles } from '@/features/rbac/hooks/useR
 import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
 import { useAuth } from '@/app/providers/useAuth';
 import { ConfirmDialog } from '@/features/rbac/components/ConfirmDialog';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 function getInitials(name) {
   return (name ?? '')
@@ -306,17 +307,17 @@ export function EmployeeRoleDialog({ open, employee, onClose }) {
         </DialogContent>
 
         <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={handleClose} disabled={assignMutation.isPending}>
+          <Button variant="outlined" onClick={handleClose} disabled={assignMutation.isPending}>
             Cancel
           </Button>
           {canManage && (
-            <Button
-              variant="contained"
+            <CrudButton
+              intent="save"
               onClick={handleSave}
               disabled={assignMutation.isPending || isLoading}
             >
               {assignMutation.isPending ? 'Saving…' : 'Save assignments'}
-            </Button>
+            </CrudButton>
           )}
         </DialogActions>
       </Dialog>

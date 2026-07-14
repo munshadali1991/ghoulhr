@@ -1,10 +1,14 @@
 import { describe, expect, it, afterEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { ThemeProvider } from '@mui/material/styles';
 import { MemoryRouter, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { OrganizationSettingsToolbar } from '@/features/settings/organization/components/OrganizationSettingsToolbar';
 import { ORGANIZATION_TABS } from '@/features/settings/organization/organizationTabs';
 import { SidebarContent } from '@/shared/components/layout/SidebarContent';
+import { createAppTheme } from '@/shared/theme/createAppTheme';
+
+const appTheme = createAppTheme();
 
 function StubPage({ testId }) {
   return <div data-testid={testId}>{testId}</div>;
@@ -84,16 +88,19 @@ function LayoutWithOutletAndSidebar() {
   const pathname = location.pathname;
 
   return (
-    <div>
-      <div data-testid="pathname">{pathname}</div>
-      <SidebarContent
-        user={{ email: 'test@example.com', role: 'ORG_ADMIN' }}
-        navItems={buildSettingsSidebarNavItems(pathname)}
-        pathname={pathname}
-        onItemClick={() => {}}
-      />
-      <Outlet />
-    </div>
+    <ThemeProvider theme={appTheme}>
+      <div>
+        <div data-testid="pathname">{pathname}</div>
+        <SidebarContent
+          user={{ email: 'test@example.com', role: 'ORG_ADMIN' }}
+          navItems={buildSettingsSidebarNavItems(pathname)}
+          pathname={pathname}
+          onItemClick={() => {}}
+          collapsed={false}
+        />
+        <Outlet />
+      </div>
+    </ThemeProvider>
   );
 }
 

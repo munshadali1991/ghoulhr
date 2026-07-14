@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Alert,
   Box,
+  Button,
   Card,
   CardContent,
   Container,
@@ -170,18 +171,19 @@ export function ChangePasswordPage() {
                 autoComplete="new-password"
               />
 
-              <BrandedButton type="submit" fullWidth loading={loading}>
+              <BrandedButton
+                type="submit"
+                brandVariant="login"
+                size="large"
+                fullWidth
+                disabled={loading}
+              >
                 Update password and continue
               </BrandedButton>
 
-              <BrandedButton
-                type="button"
-                variant="text"
-                fullWidth
-                onClick={() => logout()}
-              >
+              <Button type="button" variant="text" fullWidth onClick={() => logout()}>
                 Sign out
-              </BrandedButton>
+              </Button>
             </Stack>
           </CardContent>
         </Card>

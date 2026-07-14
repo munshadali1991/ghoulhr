@@ -36,11 +36,42 @@ declare module '@mui/material/styles' {
     wash: string;
   }
 
+  interface AccentTokens {
+    teal: string;
+    response: string;
+    comment: string;
+  }
+
+  interface ChartTokens {
+    balance: string;
+    consumed: string;
+  }
+
+  interface AttendanceTokens {
+    tableHead: string;
+  }
+
+  interface MetricsTokens {
+    strip: string;
+  }
+
+  interface CrudTokens {
+    create: string;
+    view: string;
+    update: string;
+    delete: string;
+  }
+
   interface CustomPalette {
     brand: BrandTokens;
     login: LoginTokens;
     card: CardTokens;
     surfaces: SurfaceTokens;
+    accent: AccentTokens;
+    chart: ChartTokens;
+    attendance: AttendanceTokens;
+    metrics: MetricsTokens;
+    crud: CrudTokens;
   }
 
   interface Palette {
@@ -49,6 +80,27 @@ declare module '@mui/material/styles' {
 
   interface PaletteOptions {
     custom?: CustomPalette;
+  }
+
+  interface ButtonSizeToken {
+    height: number;
+    px: number;
+  }
+
+  interface Theme {
+    appButtonSizes: {
+      small: ButtonSizeToken;
+      medium: ButtonSizeToken;
+      large: ButtonSizeToken;
+    };
+  }
+
+  interface ThemeOptions {
+    appButtonSizes?: {
+      small: ButtonSizeToken;
+      medium: ButtonSizeToken;
+      large: ButtonSizeToken;
+    };
   }
 }
 
