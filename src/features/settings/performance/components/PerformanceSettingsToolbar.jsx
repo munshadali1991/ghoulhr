@@ -32,11 +32,11 @@ export function PerformanceSettingsToolbar({
 }) {
   const primaryAction =
     showAddSection && onAddSection ? (
-      <CrudButton intent="create" startIcon={<AddRoundedIcon />} onClick={onAddSection}>
+      <CrudButton intent="create" color="primary" startIcon={<AddRoundedIcon />} onClick={onAddSection}>
         Add section
       </CrudButton>
     ) : showAddRating && onAddRating ? (
-      <CrudButton intent="create" startIcon={<AddRoundedIcon />} onClick={onAddRating}>
+      <CrudButton intent="create" color="primary" startIcon={<AddRoundedIcon />} onClick={onAddRating}>
         Add rating level
       </CrudButton>
     ) : null;
@@ -104,7 +104,7 @@ export function PerformanceSettingsToolbar({
                 minHeight: 40,
                 mr: 3,
                 px: 0.5,
-                fontSize: 13,
+                typography: 'body2',
                 fontWeight: 700,
                 letterSpacing: '0.03em',
                 textTransform: 'uppercase',

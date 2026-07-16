@@ -143,7 +143,7 @@ export function QuestionCard({
           size="small"
           label={typeLabel}
           variant="outlined"
-          sx={{ flexShrink: 0, fontWeight: 600, fontSize: 11 }}
+          sx={{ flexShrink: 0, fontWeight: 600, typography: 'overline' }}
         />
         <Stack
           direction="row"

@@ -119,7 +119,7 @@ export function LoginPage({
               />
 
               <Box sx={{ position: 'relative', zIndex: 1 }}>
-                <Typography variant="h4" fontWeight={800}>
+                <Typography variant="h4" fontWeight={700}>
                   {APP_NAME}
                 </Typography>
                 <Typography sx={{ mt: 1, opacity: 0.95 }}>
@@ -159,7 +159,7 @@ export function LoginPage({
 
             <Grid size={{ xs: 12, md: 6 }}>
               <CardContent sx={{ p: { xs: 2.5, md: 3.5 } }}>
-                <Typography variant="h5" fontWeight={800}>
+                <Typography variant="h5" fontWeight={700}>
                   {title}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 2.5 }}>

@@ -30,7 +30,7 @@ export function SegmentedTabs({ value, options, onChange, sx }) {
             py: 0.75,
             textTransform: 'none',
             fontWeight: 600,
-            fontSize: { xs: '0.75rem', sm: 'inherit' },
+            typography: 'body2',
             border: 'none',
             borderRadius: '4px !important',
             color: 'text.secondary',

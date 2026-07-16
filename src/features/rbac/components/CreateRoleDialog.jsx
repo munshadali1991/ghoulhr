@@ -62,7 +62,7 @@ export function CreateRoleDialog({ open, onClose, onSubmit, isPending }) {
             helperText={error || 'A clear name helps admins assign this role correctly.'}
             disabled={isPending}
             FormHelperTextProps={{
-              sx: { mx: 0, mt: 0.75, fontSize: 11.5, color: error ? undefined : 'text.disabled' },
+              sx: { mx: 0, mt: 0.75, typography: 'caption', color: error ? undefined : 'text.disabled' },
             }}
           />
         </Box>

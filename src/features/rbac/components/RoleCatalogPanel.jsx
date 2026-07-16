@@ -108,7 +108,7 @@ export function RoleCatalogPanel({
               size="small"
               sx={{
                 height: 20,
-                fontSize: 10.5,
+                typography: 'micro',
                 fontWeight: 700,
                 bgcolor: role.isSystem
                   ? (t) => t.palette.custom?.surfaces?.muted ?? 'action.hover'

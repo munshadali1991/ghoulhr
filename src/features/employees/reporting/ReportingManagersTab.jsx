@@ -33,6 +33,13 @@ import { listEmployees } from '@/features/employees/api/employeesApi';
 import { AssignManagerDialog } from './AssignManagerDialog';
 import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
 
+const headerButtonSx = {
+  display: { xs: 'flex', sm: 'inline-flex' },
+  whiteSpace: 'nowrap',
+  px: 2.5,
+  py: 1,
+};
+
 /**
  * @param {{ showSnackbar: (msg: string, severity?: string) => void }} props
  */
@@ -232,7 +239,7 @@ export function ReportingManagersTab({ showSnackbar }) {
             onClick={fetchRows}
             disabled={loading}
             fullWidth
-            sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}
+            sx={headerButtonSx}
           >
             Refresh
           </Button>
@@ -242,7 +249,7 @@ export function ReportingManagersTab({ showSnackbar }) {
             startIcon={<PersonAddRoundedIcon />}
             onClick={handleAssignManagerClick}
             fullWidth
-            sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}
+            sx={headerButtonSx}
           >
             Assign manager
           </CrudButton>

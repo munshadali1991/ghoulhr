@@ -12,6 +12,35 @@ export const buttonSizes = {
   large: { height: 48, px: 24 },
 };
 
+/**
+ * Responsive type scale (rem, base 16). Desktop kicks in at MUI sm (600px).
+ * Used by createAppTheme — keep component code on Typography variants.
+ */
+export const typographyScale = {
+  h4: { xs: '1.375rem', sm: '1.625rem' },
+  h5: { xs: '1.125rem', sm: '1.375rem' },
+  h6: { xs: '1.125rem', sm: '1.25rem' },
+  subtitle1: { xs: '1rem', sm: '1rem' },
+  subtitle2: { xs: '0.875rem', sm: '0.9375rem' },
+  body1: { xs: '0.875rem', sm: '0.875rem' },
+  body2: { xs: '0.8125rem', sm: '0.875rem' },
+  caption: { xs: '0.75rem', sm: '0.75rem' },
+  overline: { xs: '0.6875rem', sm: '0.75rem' },
+  metric: { xs: '1.25rem', sm: '1.5rem' },
+  metricLarge: { xs: '1.5rem', sm: '1.75rem' },
+  micro: { xs: '0.625rem', sm: '0.6875rem' },
+};
+
+const SM_UP = '@media (min-width:600px)';
+
+/** Build a responsive fontSize style object from { xs, sm }. */
+export function responsiveFontSize(size) {
+  return {
+    fontSize: size.xs,
+    [SM_UP]: { fontSize: size.sm },
+  };
+}
+
 /** @type {Record<ColorScheme, object>} */
 export const tokens = {
   light: {

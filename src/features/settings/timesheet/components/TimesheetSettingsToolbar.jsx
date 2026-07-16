@@ -25,7 +25,7 @@ export function TimesheetSettingsToolbar({
       subtitle="Configure daily hour limits, submission windows, employee guidance, and categories."
       primaryAction={
         showAddCategory ? (
-          <CrudButton intent="create" startIcon={<AddIcon />} onClick={onAddCategory}>
+          <CrudButton intent="create" color="primary" startIcon={<AddIcon />} onClick={onAddCategory}>
             Add category
           </CrudButton>
         ) : null

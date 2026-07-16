@@ -22,7 +22,7 @@ export function QuestionTypePicker({ value, onChange, disabled = false }) {
             cursor: disabled ? 'default' : 'pointer',
             borderRadius: 5,
             fontWeight: 600,
-            fontSize: 12.5,
+            typography: 'caption',
           }}
         />
       ))}

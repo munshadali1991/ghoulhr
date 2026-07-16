@@ -120,7 +120,7 @@ function ShiftCard({
             label={ready ? 'Ready' : 'Incomplete'}
             sx={{
               height: 22,
-              fontSize: 11,
+              typography: 'overline',
               fontWeight: 700,
               bgcolor: ready
                 ? (t) =>

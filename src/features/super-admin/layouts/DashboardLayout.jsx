@@ -24,11 +24,6 @@ export function DashboardLayout({
   const { collapsed, toggleCollapsed } = useSidebarCollapsed();
   const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
 
-  const computedNavItems = (navItems ?? []).map((item) => ({
-    ...item,
-    active: location.pathname.startsWith(item.path),
-  }));
-
   const handleItemClick = (item) => {
     if (item.path) {
       return;
@@ -37,7 +32,7 @@ export function DashboardLayout({
 
   const sidebarProps = {
     user,
-    navItems: computedNavItems,
+    navItems: navItems ?? [],
     onItemClick: handleItemClick,
     pathname: location.pathname,
     onNavigate: onCloseMobileDrawer,
@@ -69,7 +64,7 @@ export function DashboardLayout({
               <MenuRoundedIcon />
             </IconButton>
             <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="h6" fontWeight={700}>
+              <Typography variant="h6">
                 Welcome back, {userName}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -124,6 +119,7 @@ export function DashboardLayout({
           component="main"
           sx={{
             flexGrow: 1,
+            minWidth: 0,
             p: { xs: 2, md: 3 },
             width: { md: `calc(100% - ${drawerWidth}px)` },
             mt: '72px',

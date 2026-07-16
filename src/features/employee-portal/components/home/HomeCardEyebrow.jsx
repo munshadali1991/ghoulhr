@@ -1,7 +1,7 @@
 import { Stack, Typography } from '@mui/material';
 
 /**
- * Design.md-style uppercase card eyebrow for employee home widgets.
+ * Uppercase card eyebrow for employee home widgets.
  * @param {{ icon?: import('react').ReactNode, children: import('react').ReactNode, sx?: object }} props
  */
 export function HomeCardEyebrow({ icon, children, sx }) {
@@ -20,17 +20,7 @@ export function HomeCardEyebrow({ icon, children, sx }) {
           {icon}
         </Typography>
       ) : null}
-      <Typography
-        component="p"
-        sx={{
-          m: 0,
-          fontSize: 12,
-          fontWeight: 600,
-          letterSpacing: '0.05em',
-          textTransform: 'uppercase',
-          color: 'text.secondary',
-        }}
-      >
+      <Typography variant="overline" component="p" color="text.secondary" sx={{ m: 0, letterSpacing: '0.05em' }}>
         {children}
       </Typography>
     </Stack>

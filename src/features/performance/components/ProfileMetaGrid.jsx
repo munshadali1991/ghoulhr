@@ -24,7 +24,7 @@ function MetaCell({ label, value, badge }) {
           <Chip
             label={badge}
             size="small"
-            sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700, '& .MuiChip-label': { px: 0.75 } }}
+            sx={{ height: 18, typography: 'micro', fontWeight: 700, '& .MuiChip-label': { px: 0.75 } }}
             color="secondary"
           />
         ) : null}

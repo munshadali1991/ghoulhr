@@ -44,10 +44,10 @@ export function UpcomingHolidaysWidget({ holidays = [] }) {
             }}
           >
             <Box sx={{ minWidth: 0 }}>
-              <Typography sx={{ m: 0, mb: 0.35, fontSize: 13.5, fontWeight: 600, lineHeight: 1.3 }}>
+              <Typography variant="body2" sx={{ m: 0, mb: 0.35, fontWeight: 600, lineHeight: 1.3 }}>
                 {h.name}
               </Typography>
-              <Typography sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
+              <Typography variant="caption" color="text.secondary" sx={{ m: 0, display: 'block' }}>
                 {dayjs(h.date).format('DD MMM')} · {h.dayOfWeek || dayjs(h.date).format('ddd')}
               </Typography>
             </Box>
@@ -55,9 +55,9 @@ export function UpcomingHolidaysWidget({ holidays = [] }) {
               <Link
                 component="button"
                 underline="hover"
+                variant="caption"
                 onClick={() => navigate('/leave/apply?tab=apply')}
                 sx={{
-                  fontSize: 12.5,
                   fontWeight: 600,
                   color: 'secondary.main',
                   flexShrink: 0,

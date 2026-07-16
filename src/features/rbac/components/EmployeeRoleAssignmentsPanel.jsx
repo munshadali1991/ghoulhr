@@ -168,10 +168,9 @@ export function EmployeeRoleAssignmentsPanel() {
   }
 
   const headerSx = {
+    typography: 'overline',
     fontWeight: 600,
-    fontSize: 11.5,
     letterSpacing: '0.04em',
-    textTransform: 'uppercase',
     color: 'text.disabled',
     borderColor: 'divider',
     pb: 1.5,

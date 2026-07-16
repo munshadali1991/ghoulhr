@@ -98,7 +98,7 @@ export function OrgAdminLayout({
             <MenuRoundedIcon />
           </IconButton>
           <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h6" fontWeight={700}>
+            <Typography variant="h6">
               Organization Admin Panel
             </Typography>
             <Typography variant="body2" color="text.secondary" noWrap>

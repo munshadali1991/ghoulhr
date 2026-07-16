@@ -69,14 +69,16 @@ export function HomeNoticeCard({
         )}
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography sx={{ m: 0, mb: 0.6, fontWeight: 600, fontSize: 14.5 }}>{title}</Typography>
+        <Typography variant="subtitle2" sx={{ m: 0, mb: 0.6 }}>
+          {title}
+        </Typography>
         {message ? (
           <Typography
+            variant="body2"
+            color="text.secondary"
             sx={{
               m: 0,
               mb: actionLabel ? 1.5 : 0,
-              fontSize: 13,
-              color: 'text.secondary',
               lineHeight: 1.5,
             }}
           >
@@ -84,7 +86,7 @@ export function HomeNoticeCard({
           </Typography>
         ) : null}
         {actionLabel ? (
-          <Button variant="outlined" size="small" onClick={onAction} sx={{ fontWeight: 600, fontSize: 12.5 }}>
+          <Button variant="outlined" size="small" onClick={onAction} sx={{ fontWeight: 600 }}>
             {actionLabel}
           </Button>
         ) : null}
