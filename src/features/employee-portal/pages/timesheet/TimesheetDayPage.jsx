@@ -174,6 +174,7 @@ export function TimesheetDayPage() {
   const [pendingEditEntryId, setPendingEditEntryId] = useState(null);
 
   const maxHours = data?.settings?.maxHoursPerDay ?? 12;
+  const lastFilledDate = data?.lastFilledDate ?? null;
   const maxPastDays = data?.settings?.maxPastDays ?? 7;
   const minDate = dayjs().subtract(maxPastDays, 'day');
   const maxDate = dayjs();
@@ -504,7 +505,14 @@ export function TimesheetDayPage() {
             alignItems={{ xs: 'stretch', sm: 'center' }}
             spacing={2}
           >
-            <TimesheetStatusChip status={data?.status} size="medium" />
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <TimesheetStatusChip status={data?.status} size="medium" />
+              {lastFilledDate ? (
+                <Typography variant="body2" color="text.secondary">
+                  Last filled: {dayjs(lastFilledDate).format('MMM D, YYYY')}
+                </Typography>
+              ) : null}
+            </Stack>
             <Typography variant="body2" fontWeight={600}>
               {entries.length} record(s) · {projectedHours.toFixed(1)}h / {maxHours}h max
             </Typography>
