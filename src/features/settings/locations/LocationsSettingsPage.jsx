@@ -45,6 +45,7 @@ export function LocationsSettingsPage({ organizationId }) {
             canWrite ? (
               <CrudButton
                 intent="create"
+                color="primary"
                 startIcon={<AddIcon />}
                 onClick={form.openAddDialog}
                 type="button"

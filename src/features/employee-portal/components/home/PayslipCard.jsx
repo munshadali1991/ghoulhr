@@ -54,16 +54,10 @@ export function PayslipCard({ payslip }) {
             justifyContent: 'center',
           }}
         >
-          <Typography sx={{ fontWeight: 700, fontSize: 20, lineHeight: 1 }}>{monthShort}</Typography>
-          <Typography
-            sx={{
-              mt: 0.5,
-              fontSize: 10.5,
-              color: 'text.disabled',
-              lineHeight: 1.3,
-              textAlign: 'center',
-            }}
-          >
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1 }}>
+            {monthShort}
+          </Typography>
+          <Typography variant="micro" color="text.disabled" sx={{ mt: 0.5, textAlign: 'center' }}>
             {paidDays} paid
             <br />
             days
@@ -75,7 +69,8 @@ export function PayslipCard({ payslip }) {
         <Link
           component="button"
           underline="hover"
-          sx={{ fontSize: 13, fontWeight: 600, color: 'secondary.main', display: 'inline-flex', alignItems: 'center', gap: 0.5 }}
+          variant="body2"
+          sx={{ fontWeight: 600, color: 'secondary.main', display: 'inline-flex', alignItems: 'center', gap: 0.5 }}
         >
           <DownloadOutlinedIcon sx={{ fontSize: 15 }} />
           Download
@@ -83,7 +78,8 @@ export function PayslipCard({ payslip }) {
         <Link
           component="button"
           underline="hover"
-          sx={{ fontSize: 13, fontWeight: 600, color: 'secondary.main' }}
+          variant="body2"
+          sx={{ fontWeight: 600, color: 'secondary.main' }}
         >
           Show salary
         </Link>

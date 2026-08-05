@@ -30,19 +30,7 @@ function EndOfDayCountdown() {
     return () => clearInterval(id);
   }, []);
 
-  return (
-    <Typography
-      sx={{
-        fontWeight: 700,
-        fontSize: { xs: 32, sm: 40 },
-        letterSpacing: '0.01em',
-        fontVariantNumeric: 'tabular-nums',
-        lineHeight: 1,
-      }}
-    >
-      {label}
-    </Typography>
-  );
+  return <Typography variant="metricLarge">{label}</Typography>;
 }
 
 /**
@@ -69,24 +57,19 @@ export function AttendanceHomeWidget({ attendance, onToggle, isPending = false }
       <HomeCardEyebrow icon={<WorkOutlineRoundedIcon />}>Today&apos;s shift</HomeCardEyebrow>
 
       <Box sx={{ mb: 0.75 }}>
-        <Typography sx={{ m: 0, mb: 0.5, fontSize: 13, color: 'text.secondary' }}>
+        <Typography variant="body2" color="text.secondary" sx={{ m: 0, mb: 0.5 }}>
           {attendance.date}
         </Typography>
-        <Typography sx={{ m: 0, mb: 2.75, fontWeight: 600, fontSize: 15 }}>
+        <Typography variant="subtitle1" sx={{ m: 0, mb: 2.75, fontWeight: 600 }}>
           {attendance.shift || 'No shift assigned'}
         </Typography>
       </Box>
 
       <EndOfDayCountdown />
       <Typography
-        sx={{
-          mt: 0.75,
-          mb: 2,
-          fontSize: 11,
-          color: 'text.disabled',
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
-        }}
+        variant="overline"
+        color="text.disabled"
+        sx={{ mt: 0.75, mb: 2, display: 'block', letterSpacing: '0.06em' }}
       >
         time until day end
       </Typography>
@@ -105,8 +88,8 @@ export function AttendanceHomeWidget({ attendance, onToggle, isPending = false }
           component="button"
           underline="none"
           onClick={() => navigate('/attendance')}
+          variant="body2"
           sx={{
-            fontSize: 13,
             fontWeight: 600,
             color: 'secondary.main',
             display: 'inline-flex',
@@ -125,7 +108,6 @@ export function AttendanceHomeWidget({ attendance, onToggle, isPending = false }
             onClick={onToggle}
             sx={{
               fontWeight: 600,
-              fontSize: 13,
               px: 2,
               py: 1,
               bgcolor: (t) =>

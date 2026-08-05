@@ -57,7 +57,7 @@ export function OrgStructureToolbar({
               minHeight: 40,
               mr: 2.5,
               px: 0.75,
-              fontSize: 13.5,
+              typography: 'body2',
               fontWeight: 600,
               letterSpacing: '0.02em',
               textTransform: 'uppercase',

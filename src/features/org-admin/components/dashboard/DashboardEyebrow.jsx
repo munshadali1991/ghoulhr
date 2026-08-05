@@ -23,17 +23,7 @@ export function DashboardEyebrow({ icon, children, sx }) {
           {icon}
         </Typography>
       ) : null}
-      <Typography
-        component="p"
-        sx={{
-          m: 0,
-          fontSize: 12,
-          fontWeight: 600,
-          letterSpacing: '0.05em',
-          textTransform: 'uppercase',
-          color: 'text.secondary',
-        }}
-      >
+      <Typography variant="overline" component="p" color="text.secondary" sx={{ m: 0, letterSpacing: '0.05em' }}>
         {children}
       </Typography>
     </Stack>

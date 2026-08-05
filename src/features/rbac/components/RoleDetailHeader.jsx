@@ -39,7 +39,7 @@ export function RoleDetailHeader({ roleDetail, canManage, onEdit }) {
               size="small"
               sx={{
                 height: 22,
-                fontSize: 10.5,
+                typography: 'micro',
                 fontWeight: 700,
                 bgcolor: roleDetail.isSystem
                   ? (t) => t.palette.custom?.surfaces?.muted ?? 'action.hover'
@@ -56,7 +56,7 @@ export function RoleDetailHeader({ roleDetail, canManage, onEdit }) {
               size="small"
               sx={{
                 height: 22,
-                fontSize: 10.5,
+                typography: 'micro',
                 fontWeight: 700,
                 bgcolor: (t) =>
                   t.palette.mode === 'dark'

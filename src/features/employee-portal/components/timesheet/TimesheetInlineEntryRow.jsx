@@ -82,7 +82,7 @@ export function TimesheetInlineEntryRow({
               }}
             >
               <SaveRoundedIcon fontSize="small" />
-              <Box component="span" sx={{ fontSize: 13, fontWeight: 600, pr: 0.5 }}>
+              <Box component="span" sx={{ typography: 'body2', fontWeight: 600, pr: 0.5 }}>
                 Save All
               </Box>
             </IconButton>
@@ -286,7 +286,7 @@ export function TimesheetInlineEntryRow({
               }}
             >
               <SaveRoundedIcon fontSize="small" />
-              <Box component="span" sx={{ fontSize: 13, fontWeight: 600, pr: 0.5 }}>
+              <Box component="span" sx={{ typography: 'body2', fontWeight: 600, pr: 0.5 }}>
                 Save All
               </Box>
             </IconButton>

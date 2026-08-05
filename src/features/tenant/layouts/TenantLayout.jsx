@@ -102,7 +102,7 @@ export function TenantLayout({
             <MenuRoundedIcon />
           </IconButton>
           <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h6" fontWeight={700}>
+            <Typography variant="h6">
               {pageTitle}
             </Typography>
             <Typography variant="body2" color="text.secondary" noWrap>

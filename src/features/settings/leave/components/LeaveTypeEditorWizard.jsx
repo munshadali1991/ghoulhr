@@ -74,7 +74,7 @@ function StepRail({ wizardStep, onSelectStep }) {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 12,
+                  typography: 'caption',
                   fontWeight: 700,
                   mt: 0.15,
                   bgcolor: selected

@@ -29,8 +29,6 @@ export function LeaveSectionCard({ title, children }) {
             fontWeight: 700,
             letterSpacing: '0.12em',
             color: 'text.secondary',
-            fontSize: '0.7rem',
-            lineHeight: 1.4,
           }}
         >
           {title}

@@ -237,11 +237,7 @@ export function LeaveApplyForm({
       </Collapse>
 
       <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h5"
-          fontWeight={700}
-          sx={{ letterSpacing: '-0.01em', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
-        >
+        <Typography variant="h5" fontWeight={700} sx={{ letterSpacing: '-0.01em' }}>
           Applying for Leave
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>

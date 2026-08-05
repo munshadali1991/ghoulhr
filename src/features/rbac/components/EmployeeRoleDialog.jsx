@@ -206,7 +206,7 @@ export function EmployeeRoleDialog({ open, employee, onClose }) {
       >
         <DialogTitle sx={{ pb: 1.5 }}>
           <Stack direction="row" spacing={2} alignItems="center">
-            <Avatar sx={{ width: 44, height: 44, bgcolor: 'primary.main', fontSize: '0.95rem' }}>
+            <Avatar sx={{ width: 44, height: 44, bgcolor: 'primary.main', typography: 'subtitle2' }}>
               {getInitials(employee?.name)}
             </Avatar>
             <Box sx={{ minWidth: 0 }}>

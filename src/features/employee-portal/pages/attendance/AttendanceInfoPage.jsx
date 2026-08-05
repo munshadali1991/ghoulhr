@@ -116,14 +116,13 @@ export function AttendanceInfoPage() {
       <Box sx={{ mt: 0.25 }}>
         {marker.status ? (
           <Typography
-            variant="caption"
+            variant="micro"
             fontWeight={700}
             sx={{
               display: 'block',
               textAlign: 'center',
               bgcolor: STATUS_BG[marker.status] ?? 'transparent',
               borderRadius: 0.5,
-              fontSize: { xs: '0.6rem', sm: '0.75rem' },
               lineHeight: 1.2,
             }}
           >
@@ -143,10 +142,9 @@ export function AttendanceInfoPage() {
           )}
           {marker.shiftCode ? (
             <Typography
-              variant="caption"
+              variant="micro"
               color="text.secondary"
               sx={{
-                fontSize: { xs: '0.55rem', sm: '0.65rem' },
                 display: { xs: 'none', sm: 'block' },
               }}
             >

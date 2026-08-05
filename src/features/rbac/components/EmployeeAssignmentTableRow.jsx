@@ -41,7 +41,7 @@ function RoleChips({ assignments, isLoading }) {
           size="small"
           sx={{
             height: 22,
-            fontSize: 11,
+            typography: 'overline',
             fontWeight: 700,
             ...(a.isPrimary
               ? {
@@ -68,7 +68,7 @@ function PersonCell({ name, code }) {
         sx={{
           width: 32,
           height: 32,
-          fontSize: 12,
+          typography: 'caption',
           fontWeight: 600,
           bgcolor: (t) =>
             t.palette.mode === 'dark'

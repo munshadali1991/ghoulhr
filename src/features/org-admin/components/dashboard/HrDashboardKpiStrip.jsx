@@ -23,30 +23,14 @@ function MetricCell({ icon, label, value, hint, isLoading, emphasize }) {
         <Box sx={{ color: 'text.disabled', display: 'inline-flex', '& > svg': { fontSize: 16 } }}>
           {icon}
         </Box>
-        <Typography
-          sx={{
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            color: 'text.disabled',
-          }}
-        >
+        <Typography variant="overline" color="text.disabled" sx={{ letterSpacing: '0.04em' }}>
           {label}
         </Typography>
       </Stack>
       {isLoading ? (
         <Skeleton variant="text" width={56} height={36} />
       ) : (
-        <Typography
-          sx={{
-            fontWeight: 700,
-            fontSize: 28,
-            lineHeight: 1.1,
-            fontVariantNumeric: 'tabular-nums',
-            color: emphasize || 'text.primary',
-          }}
-        >
+        <Typography variant="metric" color={emphasize || 'text.primary'}>
           {value ?? '—'}
         </Typography>
       )}

@@ -97,7 +97,7 @@ export function ScheduleFormPage({
                     <TableHead>
                       <TableRow>
                         {WEEKDAYS.map((day) => (
-                          <TableCell key={day.value} align="center" sx={{ fontWeight: 600, fontSize: 12 }}>
+                          <TableCell key={day.value} align="center" sx={{ fontWeight: 600, typography: 'caption' }}>
                             {day.short}
                           </TableCell>
                         ))}

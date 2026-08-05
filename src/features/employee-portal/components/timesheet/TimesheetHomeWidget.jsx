@@ -79,18 +79,20 @@ export function TimesheetHomeWidget({ timesheet }) {
               justifyContent: 'center',
             }}
           >
-            <Typography sx={{ fontWeight: 700, fontSize: 17, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+            <Typography variant="subtitle2" sx={{ lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
               {totalHours.toFixed(1)}
             </Typography>
-            <Typography sx={{ fontSize: 9.5, color: 'text.disabled', mt: 0.25 }}>of {TARGET_HOURS}h</Typography>
+            <Typography variant="micro" color="text.disabled" sx={{ mt: 0.25 }}>
+              of {TARGET_HOURS}h
+            </Typography>
           </Box>
         </Box>
 
         <Box>
-          <Typography sx={{ fontWeight: 700, fontSize: 36, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-            {totalHours.toFixed(1)}
+          <Typography variant="metricLarge">{totalHours.toFixed(1)}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            hours logged
           </Typography>
-          <Typography sx={{ mt: 0.5, fontSize: 13, color: 'text.secondary' }}>hours logged</Typography>
           <Box
             sx={{
               display: 'inline-flex',
@@ -100,8 +102,6 @@ export function TimesheetHomeWidget({ timesheet }) {
               px: 1.25,
               py: 0.5,
               borderRadius: 5,
-              fontSize: 11.5,
-              fontWeight: 600,
               bgcolor: (t) =>
                 t.palette.mode === 'dark'
                   ? 'rgba(245, 158, 11, 0.16)'
@@ -110,7 +110,9 @@ export function TimesheetHomeWidget({ timesheet }) {
             }}
           >
             <AccessTimeRoundedIcon sx={{ fontSize: 14 }} />
-            {statusLabel}
+            <Typography variant="caption" component="span" sx={{ fontWeight: 600 }}>
+              {statusLabel}
+            </Typography>
           </Box>
         </Box>
       </Stack>
@@ -129,13 +131,13 @@ export function TimesheetHomeWidget({ timesheet }) {
             px: 1.5,
             py: 1.35,
             mb: 2,
-            fontSize: 13,
             color: 'warning.dark',
-            lineHeight: 1.45,
           }}
         >
           <WarningAmberRoundedIcon sx={{ fontSize: 18, flexShrink: 0, mt: 0.15 }} />
-          <span>You haven&apos;t submitted today&apos;s timesheet yet.</span>
+          <Typography variant="body2" component="span" sx={{ color: 'inherit', lineHeight: 1.45 }}>
+            You haven&apos;t submitted today&apos;s timesheet yet.
+          </Typography>
         </Box>
       ) : null}
 

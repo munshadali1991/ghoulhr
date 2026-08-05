@@ -73,7 +73,7 @@ export function CloneRoleDialog({ open, sourceRole, onClose, onSubmit, isPending
           helperText={error || 'Choose a unique name for the cloned role.'}
           disabled={isPending}
           FormHelperTextProps={{
-            sx: { mx: 0, mt: 0.75, fontSize: 11.5, color: error ? undefined : 'text.disabled' },
+            sx: { mx: 0, mt: 0.75, typography: 'caption', color: error ? undefined : 'text.disabled' },
           }}
           sx={{ mb: 2 }}
         />

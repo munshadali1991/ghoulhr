@@ -71,18 +71,15 @@ function StatRow({ icon, iconTone, label, sub, value, onClick, divider }) {
           {icon}
         </Box>
         <Box>
-          <Typography sx={{ m: 0, fontSize: 13.5, fontWeight: 500 }}>{label}</Typography>
-          <Typography sx={{ m: 0, mt: 0.15, fontSize: 11.5, color: 'text.disabled' }}>{sub}</Typography>
+          <Typography variant="body2" sx={{ m: 0, fontWeight: 500 }}>
+            {label}
+          </Typography>
+          <Typography variant="caption" color="text.disabled" sx={{ m: 0, mt: 0.15, display: 'block' }}>
+            {sub}
+          </Typography>
         </Box>
       </Stack>
-      <Typography
-        sx={{
-          fontWeight: 700,
-          fontSize: 19,
-          fontVariantNumeric: 'tabular-nums',
-          color: isZero ? 'text.disabled' : 'text.primary',
-        }}
-      >
+      <Typography variant="metric" color={isZero ? 'text.disabled' : 'text.primary'}>
         {String(value ?? 0).padStart(2, '0')}
       </Typography>
     </Box>

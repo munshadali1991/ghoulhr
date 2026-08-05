@@ -30,7 +30,7 @@ export function HrDashboardGreetingBar({ userName, organizationSubdomain }) {
         mt: { xs: -2, md: -3 },
         mb: 3.25,
         px: { xs: 2, sm: 3.5 },
-        py: { xs: 2.5, sm: 2.75 },
+        py: { xs: 1.75, sm: 2.5 },
         bgcolor: 'primary.main',
         color: 'primary.contrastText',
         borderBottom: 3,
@@ -41,32 +41,22 @@ export function HrDashboardGreetingBar({ userName, organizationSubdomain }) {
         direction={{ xs: 'column', sm: 'row' }}
         alignItems={{ xs: 'flex-start', sm: 'center' }}
         justifyContent="space-between"
-        spacing={2.5}
+        spacing={2}
         sx={{ maxWidth: 1280, mx: 'auto', width: '100%' }}
       >
         <Box>
           <Typography
+            variant="overline"
             sx={{
               m: 0,
               mb: 0.4,
-              fontSize: 11,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
+              display: 'block',
               color: 'rgba(174, 185, 214, 0.95)',
             }}
           >
             {APP_NAME} · admin
           </Typography>
-          <Typography
-            component="h1"
-            sx={{
-              m: 0,
-              fontWeight: 600,
-              fontSize: { xs: 20, sm: 24 },
-              letterSpacing: '-0.01em',
-              lineHeight: 1.2,
-            }}
-          >
+          <Typography component="h1" variant="h5" sx={{ m: 0, color: 'inherit' }}>
             {title}
           </Typography>
           {organizationSubdomain ? (
@@ -96,10 +86,11 @@ export function HrDashboardGreetingBar({ userName, organizationSubdomain }) {
         >
           <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
             <Typography
+              variant="overline"
               sx={{
                 m: 0,
                 mb: 0.25,
-                fontSize: 11,
+                display: 'block',
                 letterSpacing: '0.04em',
                 color: 'rgba(174, 185, 214, 0.95)',
               }}
@@ -107,12 +98,12 @@ export function HrDashboardGreetingBar({ userName, organizationSubdomain }) {
               Today
             </Typography>
             <Typography
+              variant="subtitle2"
               sx={{
                 m: 0,
-                fontWeight: 600,
-                fontSize: { xs: 16, sm: 19 },
                 letterSpacing: '0.01em',
                 fontVariantNumeric: 'tabular-nums',
+                color: 'inherit',
               }}
             >
               {now.format('ddd, DD MMM YYYY')}
@@ -120,15 +111,15 @@ export function HrDashboardGreetingBar({ userName, organizationSubdomain }) {
           </Box>
           <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
             <Typography
+              variant="overline"
               sx={{
                 m: 0,
                 mb: 0.25,
-                fontSize: 11,
-                letterSpacing: '0.04em',
-                color: 'rgba(174, 185, 214, 0.95)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 0.75,
+                letterSpacing: '0.04em',
+                color: 'rgba(174, 185, 214, 0.95)',
               }}
             >
               <Box
@@ -145,12 +136,12 @@ export function HrDashboardGreetingBar({ userName, organizationSubdomain }) {
               Local time
             </Typography>
             <Typography
+              variant="subtitle2"
               sx={{
                 m: 0,
-                fontWeight: 600,
-                fontSize: { xs: 16, sm: 19 },
                 letterSpacing: '0.01em',
                 fontVariantNumeric: 'tabular-nums',
+                color: 'inherit',
               }}
             >
               {now.format('HH:mm:ss')}

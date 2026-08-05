@@ -36,8 +36,6 @@ export function FormSectionCard({ title, description, flush = false, children })
             fontWeight: 700,
             letterSpacing: '0.1em',
             color: 'text.secondary',
-            fontSize: '0.6875rem',
-            lineHeight: 1.4,
             display: 'block',
           }}
         >

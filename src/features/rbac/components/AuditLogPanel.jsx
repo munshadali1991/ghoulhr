@@ -94,7 +94,7 @@ function ActionTag({ action }) {
       size="small"
       sx={{
         height: 22,
-        fontSize: 11,
+        typography: 'overline',
         fontWeight: 700,
         border: 0,
         ...(ACTION_TAG_SX[action] ?? {
@@ -114,7 +114,7 @@ function ActorCell({ name }) {
         sx={{
           width: 28,
           height: 28,
-          fontSize: 11,
+          typography: 'overline',
           fontWeight: 600,
           bgcolor: (t) => t.palette.custom?.surfaces?.subtle ?? 'action.hover',
           color: 'text.secondary',
@@ -170,10 +170,9 @@ export function AuditLogPanel() {
   const rangeEnd = Math.min((page + 1) * rowsPerPage, total);
 
   const headerSx = {
+    typography: 'overline',
     fontWeight: 600,
-    fontSize: 11.5,
     letterSpacing: '0.04em',
-    textTransform: 'uppercase',
     color: 'text.disabled',
     borderColor: 'divider',
     pb: 1.5,

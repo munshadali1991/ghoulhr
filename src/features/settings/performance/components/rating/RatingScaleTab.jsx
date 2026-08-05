@@ -110,7 +110,7 @@ export function RatingScaleTab({ ratingOptions, form, readOnly = false }) {
                           : 'rgba(59, 130, 246, 0.12)',
                       color: 'secondary.main',
                       fontWeight: 700,
-                      fontSize: 13,
+                      typography: 'body2',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',

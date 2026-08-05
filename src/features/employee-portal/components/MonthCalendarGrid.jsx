@@ -68,11 +68,7 @@ export function MonthCalendarGrid({
             Prev
           </Button>
         )}
-        <Typography
-          variant="subtitle1"
-          fontWeight={700}
-          sx={{ fontSize: { xs: '0.875rem', sm: '1rem' }, textAlign: 'center' }}
-        >
+        <Typography variant="subtitle1" fontWeight={700} sx={{ textAlign: 'center' }}>
           {month.format('MMMM YYYY')}
         </Typography>
         {isCompact ? (
@@ -98,12 +94,11 @@ export function MonthCalendarGrid({
         {weekdayLabels.map((d, i) => (
           <Grid key={`${d}-${i}`} size={1}>
             <Typography
-              variant="caption"
+              variant="overline"
               color="text.secondary"
-              fontWeight={600}
               align="center"
               display="block"
-              sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+              sx={{ letterSpacing: '0.04em' }}
             >
               {d}
             </Typography>
@@ -145,7 +140,6 @@ export function MonthCalendarGrid({
                     borderRadius: '50%',
                     bgcolor: selected ? 'secondary.main' : 'transparent',
                     color: selected ? 'secondary.contrastText' : 'text.primary',
-                    fontSize: { xs: '0.65rem', sm: '0.75rem' },
                   }}
                 >
                   {date.date()}

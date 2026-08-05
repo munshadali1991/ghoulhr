@@ -26,6 +26,7 @@ export function QuickAccessCard({ links = [] }) {
                 key={`${link.label}-${link.href}`}
                 href={link.href}
                 underline="none"
+                variant="body2"
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -33,7 +34,6 @@ export function QuickAccessCard({ links = [] }) {
                   px: 1,
                   py: 1.15,
                   borderRadius: 1,
-                  fontSize: 13.5,
                   fontWeight: 500,
                   color: 'text.primary',
                   transition: 'background 0.12s ease',
