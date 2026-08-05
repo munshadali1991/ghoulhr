@@ -18,6 +18,7 @@ export function DepartmentFormPage({
   onClearActionError,
   onBack,
   onSave,
+  readOnly = false,
 }) {
   const isEdit = Boolean(record?.id);
 
@@ -44,7 +45,6 @@ export function DepartmentFormPage({
           name: values.name,
           code: values.code,
           isActive: values.isActive,
-          createdAt: record?.createdAt ?? null,
         },
         record?.id,
       );
@@ -67,23 +67,25 @@ export function DepartmentFormPage({
       onSubmit={onSubmit}
       isSubmitting={isSaving}
       submitLabel={isEdit ? 'Save changes' : 'Create department'}
+      readOnly={readOnly}
     >
       {actionError ? (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={onClearActionError}>
+        <Alert severity="error" sx={{ mb: 2 }} onClose={onClearActionError}>
           {actionError}
         </Alert>
       ) : null}
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         <Grid size={{ xs: 12 }}>
           <SettingsField label="Department name" required error={errors.name?.message}>
             <TextField
               fullWidth
-              size="medium"
+              size="small"
               placeholder="e.g. Engineering"
               {...register('name')}
               error={!!errors.name}
               autoFocus
+              disabled={readOnly}
             />
           </SettingsField>
         </Grid>
@@ -92,16 +94,17 @@ export function DepartmentFormPage({
           <SettingsField
             label="Description"
             error={errors.code?.message}
-            description="Optional short label shown in lists and employee profiles."
+            description="Optional short label shown in lists and employee profiles (stored as the department code)."
           >
             <TextField
               fullWidth
-              size="medium"
+              size="small"
               multiline
-              minRows={3}
+              minRows={2}
               placeholder="What does this department do?"
               {...register('code')}
               error={!!errors.code}
+              disabled={readOnly}
             />
           </SettingsField>
         </Grid>
@@ -120,6 +123,7 @@ export function DepartmentFormPage({
                     <Switch
                       checked={!!field.value}
                       onChange={(e) => field.onChange(e.target.checked)}
+                      disabled={readOnly}
                     />
                   }
                   label={field.value ? 'Active' : 'Inactive'}

@@ -1,7 +1,11 @@
+import { SETTINGS_ACCESS } from '@/features/auth/config/accessRegistry';
+
 export const ORGANIZATION_TABS = {
   profile: 'profile',
   calendar: 'calendar',
 };
+
+export const ORGANIZATION_TAB_DEFS = SETTINGS_ACCESS.organization.tabs;
 
 export const ORGANIZATION_PROFILE_PATH = '/settings/organization';
 export const ORGANIZATION_CALENDAR_PATH = '/settings/organization/calendar';

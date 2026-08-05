@@ -9,11 +9,17 @@ import {
 } from '@mui/material';
 import { Controller, useFormContext } from 'react-hook-form';
 
-export function StepAccess() {
+export function StepAccess({ isEditMode = false }) {
   const {
     control,
     formState: { errors },
   } = useFormContext();
+
+  const passwordHelperText =
+    errors.access?.temporaryPassword?.message ||
+    (isEditMode
+      ? 'Leave blank to keep the current password. Min 12 chars with upper, lower, number, and special character if set.'
+      : 'Min 12 chars with upper, lower, number, and special character. One is generated if left blank.');
 
   return (
     <Stack spacing={2.5}>
@@ -25,7 +31,9 @@ export function StepAccess() {
           System access
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          System security toggles. Temporary password is optional — one is generated if left blank.
+          {isEditMode
+            ? 'Security toggles and optional password reset. Assign roles in Settings → RBAC → Employees.'
+            : 'Security toggles for portal access. Assign roles in Settings → RBAC → Employees after onboarding.'}
         </Typography>
       </Box>
 
@@ -75,8 +83,8 @@ export function StepAccess() {
                 {...field}
                 fullWidth
                 type="password"
-                label="Temporary password (optional)"
-                helperText="Min 12 chars if set; complexity rules apply on save."
+                label={isEditMode ? 'New password (optional)' : 'Temporary password (optional)'}
+                helperText={passwordHelperText}
                 error={!!errors.access?.temporaryPassword}
               />
             )}

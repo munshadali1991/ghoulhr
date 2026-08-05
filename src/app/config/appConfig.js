@@ -1,30 +1,62 @@
+import { isStagingRuntime } from '@/shared/utils/tenant';
+
 const STORAGE_KEY = 'ghoulhr_session';
 
-// Always route through proxy (port 8080) - it handles subdomain-based tenant routing
-const getCurrentApiUrl = () => {
-  const hostname = window.location.hostname;
+export const APP_NAME = 'peopleAIQ';
+export const APP_BRAND_INITIALS = 'pA';
 
-  // For subdomain access (buggy.localhost, cronjob.localhost, etc.)
-  // Route to proxy on the same subdomain
-  if (hostname.includes('.localhost')) {
+const DEFAULT_STAGING_API_PATH = '/staging/api/v1';
+const DEFAULT_PRODUCTION_API_PATH = '/ghoulhrms/api/v1';
+
+function normalizeEnvPath(value) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+}
+
+function resolveApiPath() {
+  const envPath = import.meta.env.VITE_API_PATH?.trim();
+
+  if (isStagingRuntime()) {
+    if (import.meta.env.MODE === 'staging' && envPath) {
+      return normalizeEnvPath(envPath);
+    }
+    return DEFAULT_STAGING_API_PATH;
+  }
+
+  if (import.meta.env.MODE === 'production' && envPath) {
+    return normalizeEnvPath(envPath);
+  }
+
+  return DEFAULT_PRODUCTION_API_PATH;
+}
+
+/** Resolve API base URL from current host + staging/production path (call per request). */
+export function getApiBaseUrl() {
+  if (typeof window === 'undefined') {
+    return import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+  }
+
+  const { hostname, origin } = window.location;
+  const fromEnv = import.meta.env.VITE_API_BASE_URL?.trim();
+
+  if (hostname.endsWith('.localhost')) {
     const subdomain = hostname.split('.')[0];
     return `http://${subdomain}.localhost:8080`;
   }
 
-  // For production domains (e.g., buggy.ghoulhr.com)
-  if (hostname.includes('.') && hostname !== 'localhost' && hostname !== '127.0.0.1') {
-    const parts = hostname.split('.');
-    if (parts.length > 2) {
-      const subdomain = parts[0];
-      // In production, you might use a different proxy domain
-      return `http://${subdomain}.localhost:8080`;
-    }
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return fromEnv ?? 'http://localhost:8080';
   }
 
-  // Fallback to environment variable or default
-  return import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
-};
+  if (fromEnv) {
+    return fromEnv.replace(/\/$/, '');
+  }
 
-export const API_BASE_URL = getCurrentApiUrl();
+  return `${origin}${resolveApiPath()}`;
+}
+
 export const DEFAULT_BOOTSTRAP_KEY = import.meta.env.VITE_BOOTSTRAP_ADMIN_KEY ?? '';
 export { STORAGE_KEY };

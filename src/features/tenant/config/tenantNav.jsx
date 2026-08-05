@@ -1,41 +1,38 @@
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
+import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import PeopleRoundedIcon from '@mui/icons-material/PeopleRounded';
 import EventNoteRoundedIcon from '@mui/icons-material/EventNoteRounded';
 import AttachMoneyRoundedIcon from '@mui/icons-material/AttachMoneyRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import BeachAccessRoundedIcon from '@mui/icons-material/BeachAccessRounded';
 import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
+import AssignmentTurnedInRoundedIcon from '@mui/icons-material/AssignmentTurnedInRounded';
 import {
   DEFAULT_SETTINGS_PATH,
   settingsNavChildren,
 } from '@/features/settings/shell/settingsNav';
 import { can, hasModule } from '@/features/auth/utils/authorization';
+import {
+  DASHBOARDS,
+  getAllowedDashboards,
+  getDefaultDashboardPath,
+  getDashboardByPath,
+} from '@/features/auth/config/dashboardRegistry';
 
 const ICONS = {
-  home: DashboardRoundedIcon,
+  home: HomeRoundedIcon,
   dashboard: DashboardRoundedIcon,
   employees: PeopleRoundedIcon,
   leave: BeachAccessRoundedIcon,
   attendance: EventNoteRoundedIcon,
   timesheet: ScheduleRoundedIcon,
+  performance: AssignmentTurnedInRoundedIcon,
   payroll: AttachMoneyRoundedIcon,
   settings: SettingsRoundedIcon,
 };
 
-/** Unified tenant nav — ESS + admin items, filtered by RBAC. */
+/** Module nav items (excluding dashboards — those come from dashboardRegistry). */
 export const TENANT_NAV_CONFIG = [
-  {
-    key: 'home',
-    label: 'Home',
-    path: '/home',
-    permissions: ['ess.leave:read', 'ess.attendance:read', 'ess.timesheet:read'],
-  },
-  {
-    key: 'dashboard',
-    label: 'Dashboard',
-    path: '/dashboard',
-    permissions: ['employees:read', 'settings.organization:read', 'payroll:read'],
-  },
   {
     key: 'leave',
     label: 'Leave',
@@ -44,6 +41,12 @@ export const TENANT_NAV_CONFIG = [
     permission: 'ess.leave:read',
     children: [
       { key: 'leave-apply', label: 'Leave Apply', path: '/leave/apply', permission: 'ess.leave:apply' },
+      {
+        key: 'leave-requests',
+        label: 'Leave Requests',
+        path: '/leave/requests',
+        permission: 'approvals.leave:read',
+      },
       { key: 'leave-balances', label: 'Leave Balances', path: '/leave/balances', permission: 'ess.leave:read' },
       { key: 'leave-calendar', label: 'Leave Calendar', path: '/leave/calendar', permission: 'ess.leave:read' },
       { key: 'leave-holidays', label: 'Holiday Calendar', path: '/leave/holidays', permission: 'ess.leave:read' },
@@ -66,8 +69,41 @@ export const TENANT_NAV_CONFIG = [
     module: 'timesheet',
     permission: 'ess.timesheet:read',
     children: [
-      { key: 'timesheet-my', label: 'My Timesheet', path: '/timesheet', permission: 'ess.timesheet:read' },
-      { key: 'timesheet-reports', label: 'My Reports', path: '/timesheet/reports', permission: 'ess.timesheet:read' },
+      { key: 'timesheet-my', label: 'My Timesheet', path: '/timesheet', permission: 'ess.timesheet:read', exact: true },
+      {
+        key: 'timesheet-team',
+        label: 'Team Timesheets',
+        path: '/timesheet/team',
+        permission: 'approvals.timesheet:read',
+      },
+    ],
+  },
+  {
+    key: 'performance',
+    label: 'Performance',
+    expandPathPrefix: '/performance',
+    module: 'performance',
+    permission: 'ess.performance:read',
+    children: [
+      {
+        key: 'performance-my',
+        label: 'My assessments',
+        path: '/performance',
+        permission: 'ess.performance:read',
+        exact: true,
+      },
+      {
+        key: 'performance-team',
+        label: 'Team reviews',
+        path: '/performance/team',
+        permission: 'performance.review:read',
+      },
+      {
+        key: 'performance-manage',
+        label: 'Manage & assign',
+        path: '/performance/manage',
+        permission: 'performance.hr:read',
+      },
     ],
   },
   { key: 'employees', label: 'Employees', path: '/employees', module: 'employees', permission: 'employees:read' },
@@ -80,6 +116,19 @@ export const TENANT_NAV_CONFIG = [
     module: 'settings',
   },
 ];
+
+/**
+ * @param {import('@/app/providers/authContext').AuthSession | null | undefined} session
+ */
+export function buildDashboardNavItems(session) {
+  return getAllowedDashboards(session).map((dashboard) => ({
+    key: dashboard.key,
+    label: dashboard.label,
+    path: dashboard.path,
+    iconKey: dashboard.icon,
+    isDashboard: true,
+  }));
+}
 
 /**
  * @param {import('@/app/providers/authContext').AuthSession | null | undefined} session
@@ -111,13 +160,17 @@ export function filterTenantNavConfig(session) {
   }).filter(Boolean);
 }
 
+function isDashboardPath(pathname) {
+  return DASHBOARDS.some((d) => d.path === pathname || (pathname === '/' && d.sortOrder === 1));
+}
+
 function isNavPathActive(pathname, itemPath, expandPathPrefix) {
   if (expandPathPrefix && pathname.startsWith(expandPathPrefix)) {
     return true;
   }
   if (!itemPath) return false;
-  if (itemPath === '/dashboard' || itemPath === '/home') {
-    return pathname === '/dashboard' || pathname === '/home' || pathname === '/';
+  if (isDashboardPath(itemPath)) {
+    return pathname === itemPath || pathname === '/';
   }
   return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 }
@@ -127,8 +180,31 @@ function isNavPathActive(pathname, itemPath, expandPathPrefix) {
  * @param {import('@/app/providers/authContext').AuthSession | null | undefined} [session]
  */
 export function buildTenantNavItems(pathname, session) {
-  const config = filterTenantNavConfig(session);
-  return config.map((item) => {
+  const dashboardChildren = buildDashboardNavItems(session).map((item) => {
+    const Icon = ICONS[item.iconKey] ?? DashboardRoundedIcon;
+    return {
+      ...item,
+      icon: <Icon />,
+      active: isNavPathActive(pathname, item.path),
+    };
+  });
+
+  const onDashboard = isDashboardPath(pathname);
+  const dashboardSection =
+    dashboardChildren.length > 0
+      ? [
+          {
+            key: 'dashboards',
+            label: 'Dashboard',
+            icon: <DashboardRoundedIcon />,
+            active: onDashboard,
+            submenuOpen: onDashboard,
+            children: dashboardChildren,
+          },
+        ]
+      : [];
+
+  const moduleItems = filterTenantNavConfig(session).map((item) => {
     const Icon = ICONS[item.key];
     const active = isNavPathActive(pathname, item.path, item.expandPathPrefix);
     const submenuOpen =
@@ -141,31 +217,62 @@ export function buildTenantNavItems(pathname, session) {
       submenuOpen,
       children: item.children?.map((child) => ({
         ...child,
-        active:
-          Boolean(child.path) &&
-          (pathname === child.path || pathname.startsWith(`${child.path}/`)),
+        active: child.exact
+          ? pathname === child.path
+          : Boolean(child.path) &&
+            (pathname === child.path || pathname.startsWith(`${child.path}/`)),
       })),
     };
   });
+
+  return [...dashboardSection, ...moduleItems];
 }
 
 /**
  * @param {string} pathname
+ * @param {import('@/app/providers/authContext').AuthSession | null | undefined} [session]
  * @returns {string}
  */
-export function getTenantPageTitle(pathname) {
+export function getTenantPageTitle(pathname, session) {
+  const dashboard = getDashboardByPath(pathname);
+  if (dashboard) return dashboard.label;
+
+  if (pathname.startsWith('/settings')) {
+    if (pathname.startsWith('/settings/organization/calendar')) {
+      return 'Calendar';
+    }
+    for (const child of settingsNavChildren(session)) {
+      if (pathname === child.path || pathname.startsWith(`${child.path}/`)) {
+        return child.label;
+      }
+    }
+    if (pathname.startsWith('/settings/organization')) {
+      return 'Organization';
+    }
+  }
+
   for (const item of TENANT_NAV_CONFIG) {
     if (item.path && isNavPathActive(pathname, item.path, item.expandPathPrefix) && !item.children) {
       return item.label;
     }
     for (const child of item.children ?? []) {
-      if (child.path && (pathname === child.path || pathname.startsWith(`${child.path}/`))) {
+      if (!child.path) continue;
+      const matches = child.exact
+        ? pathname === child.path
+        : pathname === child.path || pathname.startsWith(`${child.path}/`);
+      if (matches) {
         return child.label;
       }
     }
   }
-  if (pathname.startsWith('/home')) return 'Home';
-  if (pathname.startsWith('/dashboard')) return 'Dashboard';
+  if (pathname.startsWith('/leave/requests')) return 'Leave Requests';
+  if (pathname.startsWith('/timesheet/team') || pathname.startsWith('/timesheet/requests')) {
+    return 'Team Timesheets';
+  }
+  if (pathname.startsWith('/performance/team')) return 'Team reviews';
+  if (pathname.startsWith('/performance/manage')) return 'Manage & assign';
+  if (pathname.match(/^\/performance\/[^/]+$/)) return 'Performance assessment';
+  if (pathname === '/performance') return 'My assessments';
   if (pathname.startsWith('/employees')) return 'Employees';
   if (pathname.startsWith('/payroll')) return 'Payroll';
   return 'Dashboard';
@@ -176,10 +283,5 @@ export function getTenantPageTitle(pathname) {
  * @returns {string}
  */
 export function getDefaultLandingPath(session) {
-  const hasEss =
-    can(session, 'ess.leave:read') ||
-    can(session, 'ess.attendance:read') ||
-    can(session, 'ess.timesheet:read');
-  if (hasEss) return '/home';
-  return '/dashboard';
+  return getDefaultDashboardPath(session);
 }

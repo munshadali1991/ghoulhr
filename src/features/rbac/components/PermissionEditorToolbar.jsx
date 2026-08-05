@@ -35,21 +35,27 @@ export function PermissionEditorToolbar({
       justifyContent="space-between"
       spacing={2}
       sx={{ mb: 2 }}
+      flexWrap="wrap"
+      useFlexGap
     >
       <Typography variant="body2" color="text.secondary">
         {enabledCount} of {totalCount} permissions enabled across {moduleCount} modules
       </Typography>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={1.75}
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+      >
         <TextField
           placeholder="Search permissions..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           size="small"
-          sx={{ minWidth: 200 }}
+          sx={{ width: { xs: '100%', sm: 220 } }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
+                <SearchIcon fontSize="small" sx={{ color: 'text.disabled' }} />
               </InputAdornment>
             ),
           }}
@@ -60,9 +66,11 @@ export function PermissionEditorToolbar({
               size="small"
               checked={enabledOnly}
               onChange={(e) => onEnabledOnlyChange(e.target.checked)}
+              color="secondary"
             />
           }
-          label="Enabled only"
+          label={<Typography variant="body2" color="text.secondary">Enabled only</Typography>}
+          sx={{ m: 0, whiteSpace: 'nowrap' }}
         />
       </Stack>
     </Stack>

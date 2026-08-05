@@ -1,8 +1,9 @@
-import { Box, Button } from '@mui/material';
+import { Box } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { FormStatusAlerts } from '@/shared/components/feedback/FormStatusAlerts';
 import { SettingsSection } from '@/shared/components/settings/SettingsSection';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { useLocationsSettingsForm } from './hooks/useLocationsSettingsForm';
 import { LocationEditDialog } from './components/LocationEditDialog';
 import { LocationsEmptyState } from './components/LocationsEmptyState';
@@ -10,19 +11,21 @@ import { LocationsLoadingSkeleton } from './components/LocationsLoadingSkeleton'
 import { LocationsPageHeader } from './components/LocationsPageHeader';
 import { LocationsSaveBar } from './components/LocationsSaveBar';
 import { LocationsTable } from './components/LocationsTable';
+import { useSettingsSectionAccess } from '@/features/settings/hooks/useSettingsSectionAccess';
 
 /**
  * @param {{ organizationId: string }} props
  */
 export function LocationsSettingsPage({ organizationId }) {
   const form = useLocationsSettingsForm(organizationId);
+  const { canWrite } = useSettingsSectionAccess('locations');
 
   if (form.isLoading) {
     return <LocationsLoadingSkeleton />;
   }
 
   return (
-    <Box>
+    <Box data-testid="settings-locations-page">
       <FormStatusAlerts
         loadError={form.error}
         loadErrorMessage="Failed to load locations."
@@ -39,14 +42,17 @@ export function LocationsSettingsPage({ organizationId }) {
           title="Location directory"
           description="Table view stays compact at scale. Scroll inside the table to review many locations."
           actions={
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={form.openAddDialog}
-              type="button"
-            >
-              Add location
-            </Button>
+            canWrite ? (
+              <CrudButton
+                intent="create"
+                color="primary"
+                startIcon={<AddIcon />}
+                onClick={form.openAddDialog}
+                type="button"
+              >
+                Add location
+              </CrudButton>
+            ) : null
           }
         >
           {form.fields.length === 0 ? (
@@ -58,8 +64,8 @@ export function LocationsSettingsPage({ organizationId }) {
               control={form.control}
               editingIndex={form.editingIndex}
               dialogOpen={form.dialogOpen}
-              onEdit={form.openEditDialog}
-              onRemove={form.remove}
+              onEdit={canWrite ? form.openEditDialog : undefined}
+              onRemove={canWrite ? form.remove : undefined}
             />
           )}
         </SettingsSection>
@@ -75,11 +81,13 @@ export function LocationsSettingsPage({ organizationId }) {
           remove={form.remove}
         />
 
-        <LocationsSaveBar
-          isDirty={form.isDirty}
-          isUpdating={form.isUpdating}
-          canSave={form.fields.length > 0}
-        />
+        {canWrite ? (
+          <LocationsSaveBar
+            isDirty={form.isDirty}
+            isUpdating={form.isUpdating}
+            canSave={form.fields.length > 0}
+          />
+        ) : null}
       </form>
     </Box>
   );

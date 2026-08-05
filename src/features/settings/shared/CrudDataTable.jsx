@@ -1,6 +1,5 @@
 import {
   Box,
-  IconButton,
   Paper,
   Skeleton,
   Stack,
@@ -10,13 +9,31 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Tooltip,
   Typography,
 } from '@mui/material';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
+import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+import { TableRowActions } from '@/shared/components/data/TableRowActions';
+import { ActiveSwitchCell } from '@/shared/components/data/ActiveSwitchCell';
 import { EmptyState } from './EmptyState';
 
+/**
+ * @param {{
+ *   columns: { id: string, label: string, align?: string, render?: (row: object) => import('react').ReactNode }[],
+ *   rows: object[],
+ *   rowKey?: string,
+ *   isLoading?: boolean,
+ *   emptyTitle?: string,
+ *   emptyDescription?: string,
+ *   onEdit?: (row: object) => void,
+ *   onDelete?: (row: object) => void,
+ *   onToggleActive?: (row: object, nextActive: boolean) => void,
+ *   activeField?: string,
+ *   readOnly?: boolean,
+ *   renderMobileCard?: (row: object, actions: import('react').ReactNode) => import('react').ReactNode,
+ *   toggleActiveDisabled?: boolean,
+ * }} props
+ */
 export function CrudDataTable({
   columns,
   rows,
@@ -26,7 +43,15 @@ export function CrudDataTable({
   emptyDescription,
   onEdit,
   onDelete,
+  onToggleActive,
+  activeField = 'isActive',
+  readOnly = false,
+  renderMobileCard,
+  toggleActiveDisabled = false,
 }) {
+  const isMobileLayout = useIsMobileLayout();
+  const showActiveColumn = typeof onToggleActive === 'function';
+
   if (isLoading) {
     return (
       <Stack spacing={1}>
@@ -41,9 +66,55 @@ export function CrudDataTable({
     return <EmptyState title={emptyTitle} description={emptyDescription} />;
   }
 
+  const isRowActive = (row) => row?.[activeField] !== false;
+
+  const activeSwitch = (row) =>
+    showActiveColumn ? (
+      <ActiveSwitchCell
+        checked={isRowActive(row)}
+        disabled={readOnly || toggleActiveDisabled}
+        ariaLabel={`Active for ${row.name || row[rowKey] || 'row'}`}
+        onChange={(next) => onToggleActive(row, next)}
+      />
+    ) : null;
+
+  const actionButtons = (row) =>
+    readOnly ? null : (
+      <TableRowActions
+        onEdit={onEdit ? () => onEdit(row) : undefined}
+        onDelete={onDelete ? () => onDelete(row) : undefined}
+      />
+    );
+
+  if (isMobileLayout) {
+    return (
+      <Stack spacing={1.5}>
+        {rows.map((row) => {
+          const fields = columns.map((col) => ({
+            label: col.label,
+            value: col.render ? col.render(row) : row[col.id],
+          }));
+          if (showActiveColumn) {
+            fields.push({ label: 'Active', value: activeSwitch(row) });
+          }
+
+          return renderMobileCard ? (
+            <Box key={row[rowKey]}>{renderMobileCard(row, actionButtons(row))}</Box>
+          ) : (
+            <MobileDataCard
+              key={row[rowKey]}
+              fields={fields}
+              actions={actionButtons(row)}
+            />
+          );
+        })}
+      </Stack>
+    );
+  }
+
   return (
-    <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
-      <Table size="medium" aria-label="Data table">
+    <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, overflowX: 'auto' }}>
+      <Table size="medium" aria-label="Data table" sx={{ minWidth: 640 }}>
         <TableHead>
           <TableRow>
             {columns.map((col) => (
@@ -51,6 +122,11 @@ export function CrudDataTable({
                 {col.label}
               </TableCell>
             ))}
+            {showActiveColumn ? (
+              <TableCell align="center" sx={{ fontWeight: 600, width: 88 }}>
+                Active
+              </TableCell>
+            ) : null}
             <TableCell align="right" sx={{ fontWeight: 600, width: 112 }}>
               Actions
             </TableCell>
@@ -64,24 +140,11 @@ export function CrudDataTable({
                   {col.render ? col.render(row) : row[col.id]}
                 </TableCell>
               ))}
-              <TableCell align="right">
-                <Box sx={{ display: 'inline-flex', gap: 0.5 }}>
-                  <Tooltip title="Edit">
-                    <IconButton size="small" aria-label="Edit row" onClick={() => onEdit?.(row)}>
-                      <EditOutlinedIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      aria-label="Delete row"
-                      onClick={() => onDelete?.(row)}
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
+              {showActiveColumn ? (
+                <TableCell align="center">{activeSwitch(row)}</TableCell>
+              ) : null}
+              <TableCell align="right" className="table-actions-cell">
+                {actionButtons(row)}
               </TableCell>
             </TableRow>
           ))}

@@ -3,8 +3,8 @@ import { OrgAdminLayout } from '@/features/org-admin/layouts/OrgAdminLayout';
 import { OrgAdminHome } from '@/features/org-admin/pages/OrgAdminHome';
 import { ModulePlaceholderPage } from '@/features/org-admin/pages/ModulePlaceholderPage';
 import { EmployeesPage } from '@/features/employees';
-import { SettingsPage } from '@/features/settings';
 import { RequireAccess } from '@/features/auth/components/RequireAccess';
+import { settingsFlatRoutes } from '@/features/settings/shell/settingsRouteConfig';
 
 /**
  * @param {{
@@ -27,15 +27,19 @@ export function OrgAdminRoutes({
   const organizationId = user?.organizationId;
 
   return (
-    <OrgAdminLayout
-      user={user}
-      userName={userName}
-      mobileDrawerOpen={mobileDrawerOpen}
-      onOpenMobileDrawer={onOpenMobileDrawer}
-      onCloseMobileDrawer={onCloseMobileDrawer}
-      onLogout={onLogout}
-    >
-      <Routes>
+    <Routes>
+      <Route
+        element={
+          <OrgAdminLayout
+            user={user}
+            userName={userName}
+            mobileDrawerOpen={mobileDrawerOpen}
+            onOpenMobileDrawer={onOpenMobileDrawer}
+            onCloseMobileDrawer={onCloseMobileDrawer}
+            onLogout={onLogout}
+          />
+        }
+      >
         <Route path="/dashboard" element={<OrgAdminHome user={user} userName={userName} />} />
         <Route
           path="/employees"
@@ -45,14 +49,7 @@ export function OrgAdminRoutes({
             </RequireAccess>
           }
         />
-        <Route
-          path="/settings/*"
-          element={
-            <RequireAccess module="settings">
-              <SettingsPage organizationId={organizationId} />
-            </RequireAccess>
-          }
-        />
+        {settingsFlatRoutes(organizationId)}
         <Route
           path="/attendance"
           element={
@@ -70,7 +67,7 @@ export function OrgAdminRoutes({
           }
         />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </OrgAdminLayout>
+      </Route>
+    </Routes>
   );
 }

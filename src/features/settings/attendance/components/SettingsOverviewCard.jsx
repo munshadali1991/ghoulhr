@@ -1,25 +1,19 @@
-import { Box, Button, Paper, Stack, Typography } from '@mui/material';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import { Box, Paper, Stack, Typography } from '@mui/material';
 
-/** Read-only summary row before opening a full-page settings form. */
-export function SettingsOverviewCard({ title, description, rows, onEdit }) {
+/** Read-only summary card before opening a full-page settings form. */
+export function SettingsOverviewCard({ title, description, children, maxWidth = '100%' }) {
   return (
-    <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
-      <Box
-        sx={{
-          px: { xs: 2, md: 3 },
-          py: 2,
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 2,
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          borderBottom: 1,
-          borderColor: 'divider',
-          bgcolor: (theme) => theme.palette.custom.surfaces.subtle,
-        }}
-      >
-        <Box>
+    <Box sx={{ maxWidth, width: '100%' }}>
+      <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Box
+          sx={{
+            px: { xs: 2, md: 2.5 },
+            py: 2,
+            borderBottom: 1,
+            borderColor: 'divider',
+            bgcolor: (theme) => theme.palette.custom.surfaces.subtle,
+          }}
+        >
           <Typography variant="subtitle1" fontWeight={700}>
             {title}
           </Typography>
@@ -29,29 +23,75 @@ export function SettingsOverviewCard({ title, description, rows, onEdit }) {
             </Typography>
           ) : null}
         </Box>
-        <Button variant="outlined" startIcon={<EditOutlinedIcon />} onClick={onEdit}>
-          Edit
-        </Button>
-      </Box>
-      <Stack spacing={0} divider={<Box sx={{ borderBottom: 1, borderColor: 'divider' }} />}>
-        {rows.map((row) => (
-          <Box
-            key={row.label}
-            sx={{
-              px: { xs: 2, md: 3 },
-              py: 1.75,
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              gap: { xs: 0.5, sm: 4 },
-            }}
+        <Stack spacing={0} divider={<Box sx={{ borderBottom: 1, borderColor: 'divider' }} />}>
+          {children}
+        </Stack>
+      </Paper>
+    </Box>
+  );
+}
+
+export function SettingsOverviewRow({ label, children }) {
+  return (
+    <Box
+      sx={{
+        px: { xs: 2, md: 2.5 },
+        py: 1.75,
+        display: 'flex',
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: { xs: 0.75, sm: 3 },
+      }}
+    >
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ minWidth: 140, fontWeight: 500, pt: { sm: 0.25 } }}
+      >
+        {label}
+      </Typography>
+      <Box sx={{ flex: 1, minWidth: 0 }}>{children}</Box>
+    </Box>
+  );
+}
+
+export function SettingsMetricStrip({ items }) {
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', sm: `repeat(${Math.min(items.length, 3)}, 1fr)` },
+        gap: 1.5,
+      }}
+    >
+      {items.map((item) => (
+        <Box
+          key={item.label}
+          sx={{
+            px: 1.5,
+            py: 1.25,
+            borderRadius: 1.5,
+            bgcolor: (t) => t.palette.custom?.surfaces?.subtle ?? 'action.hover',
+            border: 1,
+            borderColor: 'divider',
+          }}
+        >
+          <Typography
+            variant="caption"
+            color="text.disabled"
+            sx={{ display: 'block', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}
           >
-            <Typography variant="body2" color="text.secondary" sx={{ minWidth: 160, fontWeight: 500 }}>
-              {row.label}
+            {item.label}
+          </Typography>
+          <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5 }}>
+            {item.value}
+          </Typography>
+          {item.hint ? (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+              {item.hint}
             </Typography>
-            <Box sx={{ flex: 1 }}>{row.value}</Box>
-          </Box>
-        ))}
-      </Stack>
-    </Paper>
+          ) : null}
+        </Box>
+      ))}
+    </Box>
   );
 }

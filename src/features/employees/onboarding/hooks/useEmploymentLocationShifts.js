@@ -22,7 +22,7 @@ export function useEmploymentLocationShifts(organizationId) {
   const shifts = useMemo(() => {
     const raw = settings?.shifts;
     if (!Array.isArray(raw) || raw.length === 0) return [];
-    return mapShiftsToFormState(raw, firstBranchId);
+    return mapShiftsToFormState(raw, firstBranchId).filter((s) => s.isActive !== false);
   }, [settings?.shifts, firstBranchId]);
 
   return {

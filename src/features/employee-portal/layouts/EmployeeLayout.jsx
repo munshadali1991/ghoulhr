@@ -11,13 +11,18 @@ import {
 } from '@mui/material';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { APP_NAME } from '@/app/config/appConfig';
 import { useAuth } from '@/app/providers/useAuth';
 import { SidebarContent } from '@/shared/components/layout/SidebarContent';
+import {
+  DRAWER_WIDTH,
+  DRAWER_WIDTH_COLLAPSED,
+  useSidebarCollapsed,
+} from '@/shared/components/layout/sidebarLayout';
+import { useOrganizationBranding } from '@/features/settings/organization/hooks/useOrganizationBranding';
 import { buildEmployeeNavItems, getEmployeePageTitle } from '../config/employeeNav';
 import { EmployeeNotificationsMenu } from '../components/EmployeeNotificationsMenu';
-
-const DRAWER_WIDTH = 280;
 
 /**
  * @param {{
@@ -27,7 +32,6 @@ const DRAWER_WIDTH = 280;
  *   onOpenMobileDrawer: () => void,
  *   onCloseMobileDrawer: () => void,
  *   onLogout: () => void,
- *   children: import('react').ReactNode,
  * }} props
  */
 export function EmployeeLayout({
@@ -37,36 +41,42 @@ export function EmployeeLayout({
   onOpenMobileDrawer,
   onCloseMobileDrawer,
   onLogout,
-  children,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { session } = useAuth();
   const pathname = location.pathname;
+  const { collapsed, toggleCollapsed } = useSidebarCollapsed();
+  const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
 
   const sidebarNavItems = buildEmployeeNavItems(pathname, session);
   const pageTitle = getEmployeePageTitle(pathname);
+  const branding = useOrganizationBranding(user?.organizationId);
+
+  const headerSubtitle = branding.hasCustomName
+    ? branding.displayName
+    : user?.organizationSubdomain ?? APP_NAME;
 
   const handleNavItemClick = (item) => {
     if (item.path) {
-      navigate(item.path);
-      onCloseMobileDrawer?.();
       return;
     }
-    if (item.children?.length && item.children[0].path) {
+    if (item.children?.[0]?.path) {
       navigate(item.children[0].path);
-      onCloseMobileDrawer?.();
     }
+    onCloseMobileDrawer?.();
   };
 
-  const sidebar = (
-    <SidebarContent
-      user={user}
-      navItems={sidebarNavItems}
-      onItemClick={handleNavItemClick}
-      pathname={pathname}
-    />
-  );
+  const sidebarProps = {
+    user,
+    navItems: sidebarNavItems,
+    onItemClick: handleNavItemClick,
+    pathname,
+    onNavigate: onCloseMobileDrawer,
+    brandName: branding.displayName,
+    brandLogo: branding.logo,
+    brandInitials: branding.initials,
+  };
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -78,8 +88,13 @@ export function EmployeeLayout({
           borderBottom: '1px solid',
           borderColor: 'divider',
           bgcolor: 'background.paper',
-          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-          ml: { md: `${DRAWER_WIDTH}px` },
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          ml: { md: `${drawerWidth}px` },
+          transition: (theme) =>
+            theme.transitions.create(['width', 'margin'], {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
         }}
       >
         <Toolbar>
@@ -87,11 +102,11 @@ export function EmployeeLayout({
             <MenuRoundedIcon />
           </IconButton>
           <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h6" fontWeight={700}>
+            <Typography variant="h6">
               {pageTitle}
             </Typography>
             <Typography variant="body2" color="text.secondary" noWrap>
-              Hi {userName}
+              {headerSubtitle}
             </Typography>
           </Box>
           <Stack direction="row" spacing={1} alignItems="center">
@@ -103,7 +118,7 @@ export function EmployeeLayout({
         </Toolbar>
       </AppBar>
 
-      <Box component="nav" sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}>
+      <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
         <Drawer
           variant="temporary"
           open={mobileDrawerOpen}
@@ -114,17 +129,30 @@ export function EmployeeLayout({
             '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH },
           }}
         >
-          {sidebar}
+          <SidebarContent {...sidebarProps} collapsed={false} />
         </Drawer>
         <Drawer
           variant="permanent"
           open
           sx={{
             display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH },
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: drawerWidth,
+              overflowX: 'hidden',
+              transition: (theme) =>
+                theme.transitions.create('width', {
+                  easing: theme.transitions.easing.sharp,
+                  duration: theme.transitions.duration.enteringScreen,
+                }),
+            },
           }}
         >
-          {sidebar}
+          <SidebarContent
+            {...sidebarProps}
+            collapsed={collapsed}
+            onToggleCollapsed={toggleCollapsed}
+          />
         </Drawer>
       </Box>
 
@@ -133,21 +161,29 @@ export function EmployeeLayout({
         sx={{
           flexGrow: 1,
           p: { xs: 2, md: 3 },
-          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          minWidth: 0,
           mt: '72px',
           display: 'flex',
           flexDirection: 'column',
           minHeight: 'calc(100vh - 72px)',
+          transition: (theme) =>
+            theme.transitions.create('width', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
         }}
       >
-        <Box sx={{ flexGrow: 1 }}>{children}</Box>
+        <Box sx={{ flexGrow: 1 }}>
+          <Outlet />
+        </Box>
         <Typography
           variant="caption"
           color="text.secondary"
           align="center"
           sx={{ py: 2, display: 'block' }}
         >
-          GhoulHRMS |{' '}
+          {APP_NAME} |{' '}
           <Link href="#" underline="hover" color="inherit">
             Privacy Policy
           </Link>{' '}

@@ -42,6 +42,10 @@ export function getOrgProfile(organizationId) {
   });
 }
 
+export function getOrgBranding(organizationId) {
+  return settingsFetch('/settings/branding', organizationId);
+}
+
 export function getEmployeeSettings(organizationId) {
   return settingsFetch('/settings/employee', organizationId);
 }
@@ -50,6 +54,28 @@ export function updateEmployeeSettings(organizationId, employeeData) {
   return settingsFetch('/settings/employee', organizationId, {
     method: 'POST',
     body: JSON.stringify(employeeData),
+  });
+}
+
+export function getDepartments(organizationId) {
+  return settingsFetch('/settings/departments', organizationId);
+}
+
+export function updateDepartments(organizationId, departments) {
+  return settingsFetch('/settings/departments', organizationId, {
+    method: 'POST',
+    body: JSON.stringify({ departments }),
+  });
+}
+
+export function getDesignations(organizationId) {
+  return settingsFetch('/settings/designations', organizationId);
+}
+
+export function updateDesignations(organizationId, designations) {
+  return settingsFetch('/settings/designations', organizationId, {
+    method: 'POST',
+    body: JSON.stringify({ designations }),
   });
 }
 
@@ -136,4 +162,15 @@ export function publishOrganizationCalendar(organizationId, year) {
     method: 'POST',
     body: JSON.stringify({ year }),
   });
+}
+
+export function bulkUpsertCalendarHolidays(organizationId, body) {
+  return settingsFetch(
+    '/settings/organization/calendar/holidays/bulk',
+    organizationId,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  );
 }

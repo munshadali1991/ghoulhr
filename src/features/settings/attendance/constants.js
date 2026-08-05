@@ -15,10 +15,26 @@ export const WEEKDAYS = [
 ];
 
 export const TRACKING_MODES = [
-  { value: 'manual', label: 'Manual' },
-  { value: 'biometric', label: 'Biometric' },
-  { value: 'geo', label: 'Geo' },
-  { value: 'ip', label: 'IP-based' },
+  {
+    value: 'manual',
+    label: 'Manual',
+    description: 'Employees record attendance themselves in the app.',
+  },
+  {
+    value: 'biometric',
+    label: 'Biometric',
+    description: 'Attendance is captured from biometric devices.',
+  },
+  {
+    value: 'geo',
+    label: 'Geo',
+    description: 'Check-in uses device location near a workplace.',
+  },
+  {
+    value: 'ip',
+    label: 'IP-based',
+    description: 'Only allowlisted network addresses can check in.',
+  },
 ];
 
 export const ATTENDANCE_CLOCK_STORAGE_KEY = 'ghoulhr-attendance-clock-format';

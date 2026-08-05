@@ -1,20 +1,21 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
   Button,
-  Chip,
   CircularProgress,
   FormControl,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Select,
   Stack,
-  Typography,
+  TablePagination,
+  TextField,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import PublishRoundedIcon from '@mui/icons-material/PublishRounded';
 import EventRoundedIcon from '@mui/icons-material/EventRounded';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import { useQuery } from '@tanstack/react-query';
 import { FormStatusAlerts } from '@/shared/components/feedback/FormStatusAlerts';
 import { SettingsSection } from '@/shared/components/settings/SettingsSection';
@@ -27,25 +28,49 @@ import {
 } from './hooks/useOrganizationCalendar';
 import { CalendarHolidaysTable } from './components/CalendarHolidaysTable';
 import { HolidayEditDialog } from './components/HolidayEditDialog';
+import { HolidayImportDialog } from './components/HolidayImportDialog';
 import { CalendarYearPreview } from './components/CalendarYearPreview';
 
 const currentYear = new Date().getFullYear();
 const YEAR_OPTIONS = [currentYear - 1, currentYear, currentYear + 1];
+const DEFAULT_ROWS_PER_PAGE = 20;
+const ROWS_PER_PAGE_OPTIONS = [10, 20, 50];
 
 /**
- * @param {{ organizationId: string }} props
+ * @param {{
+ *   organizationId: string,
+ *   addHolidayNonce?: number,
+ *   importHolidayNonce?: number,
+ *   onMetaChange?: (meta: { status: string | null, holidayCount: number }) => void,
+ *   canWrite?: boolean,
+ * }} props
  */
-export function OrganizationCalendarTab({ organizationId }) {
+export function OrganizationCalendarTab({
+  organizationId,
+  addHolidayNonce = 0,
+  importHolidayNonce = 0,
+  onMetaChange,
+  canWrite = true,
+}) {
   const [year, setYear] = useState(currentYear);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editRow, setEditRow] = useState(null);
   const [deleteRow, setDeleteRow] = useState(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [formError, setFormError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_ROWS_PER_PAGE);
 
   const { data, isLoading, error } = useOrganizationCalendar(organizationId, year);
-  const { createMutation, updateMutation, deleteMutation, publishMutation } =
-    useOrganizationCalendarMutations(organizationId, year);
+  const {
+    createMutation,
+    updateMutation,
+    deleteMutation,
+    publishMutation,
+    bulkImportMutation,
+  } = useOrganizationCalendarMutations(organizationId, year);
 
   const locationsQuery = useQuery({
     queryKey: ['settings-locations', organizationId],
@@ -63,6 +88,58 @@ export function OrganizationCalendarTab({ organizationId }) {
   const holidays = data?.holidays ?? [];
   const calendar = data?.calendar;
   const isDraft = calendar?.status === 'DRAFT';
+
+  const filteredHolidays = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return holidays;
+    return holidays.filter((h) => {
+      const typeLabel = h.holidayType === 'RESTRICTED' ? 'restricted' : 'general';
+      const location = (h.locationName || 'all locations').toLowerCase();
+      return (
+        h.name?.toLowerCase().includes(q) ||
+        h.holidayDate?.toLowerCase().includes(q) ||
+        typeLabel.includes(q) ||
+        location.includes(q)
+      );
+    });
+  }, [holidays, searchQuery]);
+
+  const maxPage = Math.max(0, Math.ceil(filteredHolidays.length / rowsPerPage) - 1);
+
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery, year]);
+
+  useEffect(() => {
+    if (page > maxPage) {
+      setPage(maxPage);
+    }
+  }, [page, maxPage]);
+
+  const paginatedHolidays = filteredHolidays.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage,
+  );
+
+  useEffect(() => {
+    onMetaChange?.({
+      status: calendar?.status ?? null,
+      holidayCount: holidays.length,
+    });
+  }, [calendar?.status, holidays.length, onMetaChange]);
+
+  useEffect(() => {
+    if (addHolidayNonce > 0 && canWrite) {
+      setEditRow(null);
+      setDialogOpen(true);
+    }
+  }, [addHolidayNonce, canWrite]);
+
+  useEffect(() => {
+    if (importHolidayNonce > 0 && canWrite) {
+      setImportOpen(true);
+    }
+  }, [importHolidayNonce, canWrite]);
 
   const showStatus = (msg) => {
     setStatusMessage(msg);
@@ -108,6 +185,28 @@ export function OrganizationCalendarTab({ organizationId }) {
     }
   };
 
+  const handleImportCommit = async (rows) => {
+    const result = await bulkImportMutation.mutateAsync({
+      year,
+      holidays: rows.map((r) => ({
+        holidayDate: r.holidayDate,
+        name: r.name,
+        holidayType: r.holidayType,
+        locationId: r.locationId || null,
+      })),
+    });
+    const created = result?.created ?? 0;
+    const updated = result?.updated ?? 0;
+    showStatus(
+      `Imported ${created + updated} holidays (${created} created, ${updated} updated)`,
+    );
+    return result;
+  };
+
+  const emptyMessage = searchQuery.trim()
+    ? 'No holidays match your search'
+    : 'No holidays for this year. Add holidays or upload an Excel sheet to build your organization calendar.';
+
   return (
     <Box>
       <FormStatusAlerts
@@ -117,27 +216,6 @@ export function OrganizationCalendarTab({ organizationId }) {
         onDismissFormError={() => setFormError('')}
         successMessage={statusMessage}
       />
-
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" component="h1" fontWeight={700} letterSpacing="-0.02em">
-          Organization calendar
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 640 }}>
-          Manage public and restricted holidays for your organization. Published holidays appear on
-          employee leave and holiday calendars (location-specific rules apply).
-        </Typography>
-        <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>
-          {calendar?.status ? (
-            <Chip
-              label={calendar.status === 'PUBLISHED' ? 'Published' : 'Draft'}
-              color={calendar.status === 'PUBLISHED' ? 'success' : 'warning'}
-              size="small"
-              variant="outlined"
-            />
-          ) : null}
-          <Chip label={`${holidays.length} holidays`} size="small" variant="outlined" />
-        </Stack>
-      </Box>
 
       {isDraft ? (
         <Alert severity="info" sx={{ mb: 2 }}>
@@ -163,28 +241,17 @@ export function OrganizationCalendarTab({ organizationId }) {
             ))}
           </Select>
         </FormControl>
-        <Stack direction="row" spacing={1}>
-          {isDraft ? (
-            <Button
-              variant="outlined"
-              startIcon={<PublishRoundedIcon />}
-              onClick={handlePublish}
-              disabled={publishMutation.isPending || holidays.length === 0}
-            >
-              Publish calendar
-            </Button>
-          ) : null}
+        {isDraft && canWrite ? (
           <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => {
-              setEditRow(null);
-              setDialogOpen(true);
-            }}
+            variant="outlined"
+            startIcon={<PublishRoundedIcon />}
+            onClick={handlePublish}
+            disabled={publishMutation.isPending || holidays.length === 0}
+            sx={{ alignSelf: { xs: 'stretch', sm: 'flex-start' } }}
           >
-            Add holiday
+            Publish calendar
           </Button>
-        </Stack>
+        ) : null}
       </Stack>
 
       <SettingsSection
@@ -199,14 +266,51 @@ export function OrganizationCalendarTab({ organizationId }) {
             </Box>
           ) : (
             <Box sx={{ p: 2 }}>
+              {holidays.length > 0 ? (
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Search by name, date, type, or location…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  sx={{ mb: 2 }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchRoundedIcon color="action" fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              ) : null}
               <CalendarHolidaysTable
-                holidays={holidays}
-                onEdit={(row) => {
-                  setEditRow(row);
-                  setDialogOpen(true);
-                }}
-                onDelete={setDeleteRow}
+                holidays={paginatedHolidays}
+                emptyMessage={emptyMessage}
+                onEdit={
+                  canWrite
+                    ? (row) => {
+                        setEditRow(row);
+                        setDialogOpen(true);
+                      }
+                    : undefined
+                }
+                onDelete={canWrite ? setDeleteRow : undefined}
               />
+              {filteredHolidays.length > 0 ? (
+                <TablePagination
+                  component="div"
+                  count={filteredHolidays.length}
+                  page={page}
+                  onPageChange={(_, newPage) => setPage(newPage)}
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={(event) => {
+                    setRowsPerPage(parseInt(event.target.value, 10));
+                    setPage(0);
+                  }}
+                  rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+                  labelRowsPerPage="Rows per page"
+                />
+              ) : null}
             </Box>
           )}
         </PageCard>
@@ -226,6 +330,17 @@ export function OrganizationCalendarTab({ organizationId }) {
         year={year}
         locations={locations}
         initial={editRow}
+      />
+
+      <HolidayImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        year={year}
+        locations={locations}
+        existingHolidays={holidays}
+        calendarStatus={calendar?.status ?? null}
+        onCommit={handleImportCommit}
+        isCommitting={bulkImportMutation.isPending}
       />
 
       <ConfirmDeleteDialog

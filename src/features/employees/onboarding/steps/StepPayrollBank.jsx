@@ -23,6 +23,19 @@ export function StepPayrollBank() {
     formState: { errors },
   } = useFormContext();
   const acct = watch('bank.accountNumber');
+  const accountOnFile = watch('bank.accountNumberOnFile');
+
+  const accountHelperText =
+    errors.bank?.accountNumber?.message ||
+    (acct
+      ? `Masked: ${maskAccount(acct)}`
+      : accountOnFile
+        ? `Account ending •••• ${accountOnFile} on file — leave blank to keep`
+        : '');
+
+  const confirmHelperText =
+    errors.bank?.confirmAccountNumber?.message ||
+    (!acct && accountOnFile ? 'Leave blank to keep existing account on file' : '');
 
   return (
     <Stack spacing={2.5}>
@@ -47,7 +60,15 @@ export function StepPayrollBank() {
             name="payroll.ctc"
             control={control}
             render={({ field }) => (
-              <TextField {...field} fullWidth type="number" label="CTC (annual)" inputProps={{ min: 0, step: 1000 }} />
+              <TextField
+                {...field}
+                fullWidth
+                type="number"
+                label="CTC (annual)"
+                inputProps={{ min: 0, step: 1000 }}
+                error={!!errors.payroll?.ctc}
+                helperText={errors.payroll?.ctc?.message}
+              />
             )}
           />
         </Grid>
@@ -55,7 +76,15 @@ export function StepPayrollBank() {
           <Controller
             name="payroll.salaryStructure"
             control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="Salary structure" />}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                label="Salary structure"
+                error={!!errors.payroll?.salaryStructure}
+                helperText={errors.payroll?.salaryStructure?.message}
+              />
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
@@ -63,7 +92,14 @@ export function StepPayrollBank() {
             name="payroll.taxRegime"
             control={control}
             render={({ field }) => (
-              <TextField {...field} select fullWidth label="Tax regime">
+              <TextField
+                {...field}
+                select
+                fullWidth
+                label="Tax regime"
+                error={!!errors.payroll?.taxRegime}
+                helperText={errors.payroll?.taxRegime?.message}
+              >
                 {TAX_REGIME_OPTIONS.map((o) => (
                   <MenuItem key={o.value} value={o.value}>
                     {o.label}
@@ -78,7 +114,15 @@ export function StepPayrollBank() {
             name="payroll.basicSalary"
             control={control}
             render={({ field }) => (
-              <TextField {...field} fullWidth type="number" label="Basic salary" inputProps={{ min: 0, step: 100 }} />
+              <TextField
+                {...field}
+                fullWidth
+                type="number"
+                label="Basic salary"
+                inputProps={{ min: 0, step: 100 }}
+                error={!!errors.payroll?.basicSalary}
+                helperText={errors.payroll?.basicSalary?.message}
+              />
             )}
           />
         </Grid>
@@ -87,7 +131,15 @@ export function StepPayrollBank() {
             name="payroll.hra"
             control={control}
             render={({ field }) => (
-              <TextField {...field} fullWidth type="number" label="HRA" inputProps={{ min: 0, step: 100 }} />
+              <TextField
+                {...field}
+                fullWidth
+                type="number"
+                label="HRA"
+                inputProps={{ min: 0, step: 100 }}
+                error={!!errors.payroll?.hra}
+                helperText={errors.payroll?.hra?.message}
+              />
             )}
           />
         </Grid>
@@ -103,6 +155,8 @@ export function StepPayrollBank() {
                 minRows={2}
                 label="Allowances (JSON)"
                 placeholder='{"lta": 5000}'
+                error={!!errors.payroll?.allowancesJson}
+                helperText={errors.payroll?.allowancesJson?.message}
               />
             )}
           />
@@ -135,14 +189,30 @@ export function StepPayrollBank() {
           <Controller
             name="bank.accountHolderName"
             control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="Account holder name" />}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                label="Account holder name"
+                error={!!errors.bank?.accountHolderName}
+                helperText={errors.bank?.accountHolderName?.message}
+              />
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
             name="bank.bankName"
             control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="Bank name" />}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                label="Bank name"
+                error={!!errors.bank?.bankName}
+                helperText={errors.bank?.bankName?.message}
+              />
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
@@ -156,7 +226,8 @@ export function StepPayrollBank() {
                 label="Account number"
                 type="password"
                 autoComplete="new-password"
-                helperText={acct ? `Masked: ${maskAccount(acct)}` : ''}
+                error={!!errors.bank?.accountNumber}
+                helperText={accountHelperText}
               />
             )}
           />
@@ -172,7 +243,7 @@ export function StepPayrollBank() {
                 label="Confirm account number"
                 type="password"
                 error={!!errors.bank?.confirmAccountNumber}
-                helperText={errors.bank?.confirmAccountNumber?.message}
+                helperText={confirmHelperText}
               />
             )}
           />
@@ -181,14 +252,30 @@ export function StepPayrollBank() {
           <Controller
             name="bank.ifscCode"
             control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="IFSC code" />}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                label="IFSC code"
+                error={!!errors.bank?.ifscCode}
+                helperText={errors.bank?.ifscCode?.message}
+              />
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
             name="bank.branchName"
             control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="Branch name" />}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                label="Branch name"
+                error={!!errors.bank?.branchName}
+                helperText={errors.bank?.branchName?.message}
+              />
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>

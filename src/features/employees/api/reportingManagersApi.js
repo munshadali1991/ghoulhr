@@ -10,6 +10,10 @@ export function listReportingManagers({ search = '', filter = 'all' } = {}) {
   });
 }
 
+export function listReportingManagerCandidates() {
+  return apiFetch('/employees/reporting-manager-candidates');
+}
+
 export function getReportingManager(employeeId) {
   return apiFetch(`/employees/${employeeId}/reporting-manager`, {
     method: 'GET',

@@ -10,6 +10,7 @@ export const shiftFormSchema = z
     end_time: z.string().trim().regex(timePattern, 'Valid end time is required'),
     break_minutes: z.coerce.number().min(0, 'Break must be 0 or more'),
     locationId: z.string().trim().min(1, 'Select a branch / location'),
+    isActive: z.boolean(),
   })
   .superRefine((data, ctx) => {
     const startMin = parseTimeToMinutes(data.start_time);

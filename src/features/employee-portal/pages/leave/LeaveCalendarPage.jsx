@@ -18,6 +18,7 @@ import { PageToolbar } from '../../components/PageToolbar';
 import { MonthCalendarGrid } from '../../components/MonthCalendarGrid';
 import { toDateKey } from '../../utils/calendarUtils';
 import { EmptyStatePanel } from '../../components/EmptyStatePanel';
+import { LeaveTransactionList } from '../../components/LeaveTransactionList';
 import { useLeaveCalendar, useLeaveTransactions } from '../../hooks/useEmployeePortalQueries';
 
 export function LeaveCalendarPage() {
@@ -125,7 +126,7 @@ export function LeaveCalendarPage() {
           )}
         </PageCard>
 
-        <PageCard sx={{ flex: 1, minWidth: 280 }}>
+        <PageCard sx={{ flex: 1, minWidth: { xs: 0, lg: 280 }, width: '100%' }}>
           <Box sx={{ p: 2 }}>
             <TextField
               size="small"
@@ -148,26 +149,7 @@ export function LeaveCalendarPage() {
             ) : transactionsQuery.data?.items?.length === 0 ? (
               <EmptyStatePanel title="No Employees are on leave" />
             ) : (
-              <Box component="table" sx={{ width: '100%', fontSize: '0.875rem' }}>
-                <thead>
-                  <tr>
-                    <th align="left">Employee</th>
-                    <th align="left">Days</th>
-                    <th align="left">From-To</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactionsQuery.data.items.map((t) => (
-                    <tr key={`${t.employeeName}-${t.from}`}>
-                      <td>{t.employeeName}</td>
-                      <td>{t.days}</td>
-                      <td>
-                        {t.from} – {t.to}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Box>
+              <LeaveTransactionList items={transactionsQuery.data.items} />
             )}
           </Box>
         </PageCard>

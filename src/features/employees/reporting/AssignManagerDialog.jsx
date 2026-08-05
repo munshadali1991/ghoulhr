@@ -12,6 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import { assignReportingManager } from '@/features/employees/api/reportingManagersApi';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * @param {{
@@ -19,6 +20,8 @@ import { assignReportingManager } from '@/features/employees/api/reportingManage
  *   onClose: () => void;
  *   onSuccess: (result?: { succeededCount?: number; failedCount?: number }) => void;
  *   employees: { id: string; name: string; employeeCode: string; status?: string }[];
+ *   managerCandidates: { id: string; name: string; employeeCode: string; status?: string }[];
+ *   candidatesError?: string;
  *   initialEmployee?: { employeeId: string; employeeName: string; employeeCode: string } | null;
  *   initialManager?: { id: string; name: string; employeeCode: string } | null;
  *   selectedEmployees?: { employeeId: string; employeeName: string; employeeCode: string }[];
@@ -29,6 +32,8 @@ export function AssignManagerDialog({
   onClose,
   onSuccess,
   employees,
+  managerCandidates = [],
+  candidatesError = '',
   initialEmployee = null,
   initialManager = null,
   selectedEmployees = null,
@@ -53,6 +58,19 @@ export function AssignManagerDialog({
     [employees],
   );
 
+  const activeManagerCandidates = useMemo(
+    () =>
+      (managerCandidates || [])
+        .filter((e) => e.status !== 'TERMINATED')
+        .map((e) => ({
+          id: e.id,
+          label: `${e.name} (${e.employeeCode})`,
+          name: e.name,
+          employeeCode: e.employeeCode,
+        })),
+    [managerCandidates],
+  );
+
   const excludedManagerIds = useMemo(() => {
     if (isBulk) {
       return new Set(bulkList.map((e) => e.employeeId));
@@ -64,8 +82,9 @@ export function AssignManagerDialog({
   }, [isBulk, bulkList, employee]);
 
   const managerOptions = useMemo(
-    () => activeEmployees.filter((e) => !excludedManagerIds.has(e.id)),
-    [activeEmployees, excludedManagerIds],
+    () =>
+      activeManagerCandidates.filter((e) => !excludedManagerIds.has(e.id)),
+    [activeManagerCandidates, excludedManagerIds],
   );
 
   const bulkSummary = useMemo(() => {
@@ -93,7 +112,7 @@ export function AssignManagerDialog({
     }
     if (initialManager) {
       const match =
-        activeEmployees.find((e) => e.id === initialManager.id) || {
+        managerOptions.find((e) => e.id === initialManager.id) || {
           id: initialManager.id,
           label: `${initialManager.name} (${initialManager.employeeCode})`,
         };
@@ -101,7 +120,7 @@ export function AssignManagerDialog({
     } else {
       setManager(null);
     }
-  }, [open, isBulk, initialEmployee, initialManager, activeEmployees]);
+  }, [open, isBulk, initialEmployee, initialManager, activeEmployees, managerOptions]);
 
   const handleSubmit = async () => {
     setError('');
@@ -208,6 +227,17 @@ export function AssignManagerDialog({
               <TextField {...params} label="Reporting manager" required />
             )}
           />
+          {candidatesError ? (
+            <Typography variant="body2" color="error">
+              {candidatesError}
+            </Typography>
+          ) : null}
+          {managerOptions.length === 0 && !candidatesError ? (
+            <Typography variant="body2" color="text.secondary">
+              No employees with the Manager role. Assign the Manager role in
+              Settings → RBAC → Employees.
+            </Typography>
+          ) : null}
           <TextField
             label="Effective from"
             type="date"
@@ -224,13 +254,14 @@ export function AssignManagerDialog({
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} disabled={submitting}>
+        <Button variant="outlined" onClick={onClose} disabled={submitting}>
           Cancel
         </Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={submitting}>
+        <CrudButton intent="create" onClick={handleSubmit} disabled={submitting}>
           {submitting ? 'Assigning…' : 'Assign'}
-        </Button>
+        </CrudButton>
       </DialogActions>
     </Dialog>
   );
 }
+

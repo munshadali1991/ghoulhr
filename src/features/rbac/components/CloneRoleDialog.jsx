@@ -8,6 +8,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * @param {{
@@ -54,7 +55,7 @@ export function CloneRoleDialog({ open, sourceRole, onClose, onSubmit, isPending
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Clone role</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 600, pb: 1 }}>Clone role</DialogTitle>
       <DialogContent>
         {sourceRole && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -69,8 +70,12 @@ export function CloneRoleDialog({ open, sourceRole, onClose, onSubmit, isPending
           value={name}
           onChange={(e) => setName(e.target.value)}
           error={Boolean(error)}
-          helperText={error || 'Choose a unique name for the cloned role'}
+          helperText={error || 'Choose a unique name for the cloned role.'}
           disabled={isPending}
+          FormHelperTextProps={{
+            sx: { mx: 0, mt: 0.75, typography: 'caption', color: error ? undefined : 'text.disabled' },
+          }}
+          sx={{ mb: 2 }}
         />
         <TextField
           margin="dense"
@@ -80,15 +85,17 @@ export function CloneRoleDialog({ open, sourceRole, onClose, onSubmit, isPending
           minRows={2}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          helperText="Optional — helps distinguish this role from the original"
+          placeholder="Optional — helps distinguish this role from the original."
           disabled={isPending}
         />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={isPending}>
-          Clone role
+      <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+        <Button variant="outlined" onClick={handleClose} disabled={isPending}>
+          Cancel
         </Button>
+        <CrudButton intent="create" onClick={handleSubmit} disabled={isPending}>
+          Clone role
+        </CrudButton>
       </DialogActions>
     </Dialog>
   );

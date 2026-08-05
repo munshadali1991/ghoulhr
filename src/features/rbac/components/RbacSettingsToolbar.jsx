@@ -1,6 +1,8 @@
-import { Box, Button, Tab, Tabs, Typography } from '@mui/material';
+import { Tab, Tabs } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { RBAC_TABS, rbacPathForTab } from '@/features/rbac/rbacTabs';
+import { SettingsPageToolbar } from '@/shared/components/layout/SettingsPageToolbar';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
+import { RBAC_TABS } from '@/features/rbac/rbacTabs';
 
 const TAB_ITEMS = [
   { value: RBAC_TABS.roles, label: 'Role catalog' },
@@ -31,45 +33,56 @@ export function RbacSettingsToolbar({
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: { xs: 'column', sm: 'row' },
-        alignItems: { xs: 'stretch', sm: 'flex-start' },
-        justifyContent: 'space-between',
-        gap: 2,
-        mb: 2,
-      }}
+    <SettingsPageToolbar
+      title="Roles & permissions"
+      subtitle="Configure who can do what within modules enabled for your organization."
+      primaryAction={
+        showCreateRole ? (
+          <CrudButton intent="create" startIcon={<AddIcon />} onClick={onCreateRole}>
+            Create role
+          </CrudButton>
+        ) : null
+      }
+      sx={{ mb: 0 }}
     >
-      <Box>
-        <Typography variant="h5" component="h1" fontWeight={700} letterSpacing="-0.02em">
-          Roles & Permissions
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 560 }}>
-          Configure who can do what within modules enabled for your organization.
-        </Typography>
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          sx={{ mt: 2, minHeight: 40 }}
-          aria-label="RBAC settings tabs"
-        >
-          {TAB_ITEMS.map((tab) => (
-            <Tab key={tab.value} label={tab.label} value={tab.value} sx={{ minHeight: 40 }} />
-          ))}
-        </Tabs>
-      </Box>
-
-      {showCreateRole && (
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={onCreateRole}
-          sx={{ alignSelf: { xs: 'stretch', sm: 'flex-start' }, flexShrink: 0 }}
-        >
-          Create role
-        </Button>
-      )}
-    </Box>
+      <Tabs
+        value={activeTab}
+        onChange={handleTabChange}
+        variant="scrollable"
+        allowScrollButtonsMobile
+        sx={{
+          mt: 2,
+          minHeight: 40,
+          borderBottom: 1,
+          borderColor: 'divider',
+          '& .MuiTabs-indicator': {
+            height: 2,
+            bgcolor: 'warning.main',
+          },
+        }}
+        aria-label="RBAC settings tabs"
+      >
+        {TAB_ITEMS.map((tab) => (
+          <Tab
+            key={tab.value}
+            label={tab.label}
+            value={tab.value}
+            sx={{
+              minHeight: 40,
+              mr: 2.5,
+              px: 0.75,
+              typography: 'body2',
+              fontWeight: 600,
+              letterSpacing: '0.02em',
+              textTransform: 'uppercase',
+              color: 'text.disabled',
+              '&.Mui-selected': {
+                color: 'text.primary',
+              },
+            }}
+          />
+        ))}
+      </Tabs>
+    </SettingsPageToolbar>
   );
 }

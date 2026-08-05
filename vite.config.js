@@ -4,12 +4,19 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? '/ghoulhrms/' : '/',
+  base: mode === 'staging' ? '/staging/' : '/',
   plugins: [react()],
   resolve: {
+    // Prevent duplicate React when node_modules is symlinked (staging deploy).
+    dedupe: ['react', 'react-dom'],
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
+  },
+  test: {
+    environment: 'jsdom',
+    include: ['src/**/*.test.js', 'src/**/*.test.jsx'],
+    setupFiles: ['src/test/setup.js'],
   },
   server: {
     host: true,

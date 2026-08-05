@@ -20,20 +20,37 @@ import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import PersonAddRoundedIcon from '@mui/icons-material/PersonAddRounded';
 import { PageCard } from '@/shared/components/ui/PageCard';
-import { BrandedButton } from '@/shared/components/ui/BrandedButton';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
+import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
+import { TableRowActions } from '@/shared/components/data/TableRowActions';
+import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 import {
   listReportingManagers,
+  listReportingManagerCandidates,
   removeReportingManager,
 } from '@/features/employees/api/reportingManagersApi';
 import { listEmployees } from '@/features/employees/api/employeesApi';
 import { AssignManagerDialog } from './AssignManagerDialog';
+import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
+
+const headerButtonSx = {
+  display: { xs: 'flex', sm: 'inline-flex' },
+  whiteSpace: 'nowrap',
+  px: 2.5,
+  py: 1,
+};
 
 /**
  * @param {{ showSnackbar: (msg: string, severity?: string) => void }} props
  */
 export function ReportingManagersTab({ showSnackbar }) {
+  const isMobileLayout = useIsMobileLayout();
+  const { can } = useAuthorization();
+  const canAssign = can('employees:reporting-manager:assign');
   const [rows, setRows] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [managerCandidates, setManagerCandidates] = useState([]);
+  const [candidatesError, setCandidatesError] = useState('');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -48,6 +65,7 @@ export function ReportingManagersTab({ showSnackbar }) {
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
+    setCandidatesError('');
     try {
       const [data, empList] = await Promise.all([
         listReportingManagers({ search, filter }),
@@ -58,6 +76,18 @@ export function ReportingManagersTab({ showSnackbar }) {
     } catch (e) {
       showSnackbar(e.message || 'Failed to load reporting managers', 'error');
       setRows([]);
+      setEmployees([]);
+    }
+
+    try {
+      const candidates = await listReportingManagerCandidates();
+      setManagerCandidates(Array.isArray(candidates) ? candidates : []);
+    } catch (e) {
+      setManagerCandidates([]);
+      const message =
+        e.message || 'Failed to load manager candidates (Manager role required)';
+      setCandidatesError(message);
+      showSnackbar(message, 'warning');
     } finally {
       setLoading(false);
     }
@@ -202,21 +232,28 @@ export function ReportingManagersTab({ showSnackbar }) {
             </>
           ) : null}
         </Stack>
-        <Stack direction="row" spacing={1}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
           <Button
             variant="outlined"
             startIcon={<RefreshRoundedIcon />}
             onClick={fetchRows}
             disabled={loading}
+            fullWidth
+            sx={headerButtonSx}
           >
             Refresh
           </Button>
-          <BrandedButton
+          {canAssign ? (
+          <CrudButton
+            intent="create"
             startIcon={<PersonAddRoundedIcon />}
             onClick={handleAssignManagerClick}
+            fullWidth
+            sx={headerButtonSx}
           >
             Assign manager
-          </BrandedButton>
+          </CrudButton>
+          ) : null}
         </Stack>
       </Stack>
 
@@ -240,8 +277,66 @@ export function ReportingManagersTab({ showSnackbar }) {
       </PageCard>
 
       <PageCard>
+        {loading ? (
+          <Box sx={{ py: 6, textAlign: 'center' }}>
+            <CircularProgress size={40} />
+          </Box>
+        ) : rows.length === 0 ? (
+          <Box sx={{ py: 6, textAlign: 'center' }}>
+            <Typography color="text.secondary">
+              {filter === 'unassigned'
+                ? 'All employees have a reporting manager assigned'
+                : 'No employees match your search'}
+            </Typography>
+          </Box>
+        ) : isMobileLayout ? (
+          <Stack spacing={1.5} sx={{ p: 2 }}>
+            {rows.map((row) => (
+              <MobileDataCard
+                key={row.employeeId}
+                fields={[
+                  {
+                    label: 'Select',
+                    value: (
+                      <Checkbox
+                        checked={selectedIds.has(row.employeeId)}
+                        onChange={() => toggleRow(row.employeeId)}
+                        inputProps={{ 'aria-label': `Select ${row.employeeName}` }}
+                      />
+                    ),
+                  },
+                  { label: 'Employee', value: row.employeeName },
+                  { label: 'Code', value: row.employeeCode },
+                  { label: 'Department', value: row.departmentName || '—' },
+                  {
+                    label: 'Reporting manager',
+                    value: row.manager ? (
+                      `${row.manager.name} (${row.manager.employeeCode})`
+                    ) : (
+                      <Chip label="Unassigned" size="small" color="warning" variant="outlined" />
+                    ),
+                  },
+                  {
+                    label: 'Effective from',
+                    value: row.effectiveFrom
+                      ? new Date(row.effectiveFrom).toLocaleDateString()
+                      : '—',
+                  },
+                ]}
+                actions={
+                  <TableRowActions
+                    onEdit={canAssign ? () => openAssign(row) : undefined}
+                    editLabel={row.manager ? 'Change' : 'Assign'}
+                    onDelete={row.manager ? () => handleRemove(row) : undefined}
+                    deleteLabel="Remove"
+                  />
+                }
+              />
+            ))}
+          </Stack>
+        ) : (
         <TableContainer sx={{ overflowX: 'auto' }}>
-          <Table size="small" sx={{ minWidth: 800 }}>
+          <Table size="small" sx={{ minWidth: { xs: 0, md: 800 } }}>
             <TableHead>
               <TableRow sx={{ bgcolor: 'background.default' }}>
                 <TableCell padding="checkbox">
@@ -274,24 +369,7 @@ export function ReportingManagersTab({ showSnackbar }) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={40} />
-                  </TableCell>
-                </TableRow>
-              ) : rows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                    <Typography color="text.secondary">
-                      {filter === 'unassigned'
-                        ? 'All employees have a reporting manager assigned'
-                        : 'No employees match your search'}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                rows.map((row) => (
+              {rows.map((row) => (
                   <TableRow
                     key={row.employeeId}
                     hover
@@ -321,28 +399,20 @@ export function ReportingManagersTab({ showSnackbar }) {
                         ? new Date(row.effectiveFrom).toLocaleDateString()
                         : '—'}
                     </TableCell>
-                    <TableCell align="right">
-                      <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                        <Button size="small" onClick={() => openAssign(row)}>
-                          {row.manager ? 'Change' : 'Assign'}
-                        </Button>
-                        {row.manager ? (
-                          <Button
-                            size="small"
-                            color="error"
-                            onClick={() => handleRemove(row)}
-                          >
-                            Remove
-                          </Button>
-                        ) : null}
-                      </Stack>
+                    <TableCell align="right" className="table-actions-cell">
+                      <TableRowActions
+                        onEdit={canAssign ? () => openAssign(row) : undefined}
+                        editLabel={row.manager ? 'Change' : 'Assign'}
+                        onDelete={row.manager ? () => handleRemove(row) : undefined}
+                        deleteLabel="Remove"
+                      />
                     </TableCell>
                   </TableRow>
-                ))
-              )}
+                ))}
             </TableBody>
           </Table>
         </TableContainer>
+        )}
       </PageCard>
 
       <AssignManagerDialog
@@ -350,6 +420,8 @@ export function ReportingManagersTab({ showSnackbar }) {
         onClose={handleDialogClose}
         onSuccess={handleDialogSuccess}
         employees={employees}
+        managerCandidates={managerCandidates}
+        candidatesError={candidatesError}
         selectedEmployees={bulkTargets}
         initialEmployee={dialogTarget?.employee ?? null}
         initialManager={dialogTarget?.manager ?? null}

@@ -9,12 +9,16 @@ import { LeaveBalancesPage } from '@/features/employee-portal/pages/leave/LeaveB
 import { LeaveBalanceDetailPage } from '@/features/employee-portal/pages/leave/LeaveBalanceDetailPage';
 import { LeaveCalendarPage } from '@/features/employee-portal/pages/leave/LeaveCalendarPage';
 import { HolidayCalendarPage } from '@/features/employee-portal/pages/leave/HolidayCalendarPage';
+import { LeaveRequestsPage } from '@/features/approvals/pages/leave/LeaveRequestsPage';
+import { TeamTimesheetsPage } from '@/features/approvals/pages/timesheet/TeamTimesheetsPage';
 import { TimesheetDayPage } from '@/features/employee-portal/pages/timesheet/TimesheetDayPage';
-import { TimesheetReportsPage } from '@/features/employee-portal/pages/timesheet/TimesheetReportsPage';
 import { ModulePlaceholderPage } from '@/features/org-admin/pages/ModulePlaceholderPage';
 import { EmployeesPage } from '@/features/employees';
-import { SettingsPage } from '@/features/settings';
+import { MyAssessmentsPage, PerformanceAssessmentPage, TeamPerformancePage, HrPerformancePage } from '@/features/performance';
 import { RequireAccess } from '@/features/auth/components/RequireAccess';
+import { DashboardRouteGuard } from '@/features/auth/components/DashboardRouteGuard';
+import { getDefaultDashboardPath } from '@/features/auth/config/dashboardRegistry';
+import { settingsFlatRoutes } from '@/features/settings/shell/settingsRouteConfig';
 import { useAuth } from '@/app/providers/useAuth';
 
 /**
@@ -38,38 +42,36 @@ export function TenantRoutes({
   const organizationId = user?.organizationId;
   const { session } = useAuth();
   const landingPath = getDefaultLandingPath(session);
+  const defaultDashboardPath = getDefaultDashboardPath(session);
 
   return (
-    <TenantLayout
-      user={user}
-      userName={userName}
-      mobileDrawerOpen={mobileDrawerOpen}
-      onOpenMobileDrawer={onOpenMobileDrawer}
-      onCloseMobileDrawer={onCloseMobileDrawer}
-      onLogout={onLogout}
-    >
-      <Routes>
+    <Routes>
+      <Route
+        element={
+          <TenantLayout
+            user={user}
+            userName={userName}
+            mobileDrawerOpen={mobileDrawerOpen}
+            onOpenMobileDrawer={onOpenMobileDrawer}
+            onCloseMobileDrawer={onCloseMobileDrawer}
+            onLogout={onLogout}
+          />
+        }
+      >
         <Route
           path="/home"
           element={
-            <RequireAccess
-              permissions={['ess.leave:read', 'ess.attendance:read', 'ess.timesheet:read']}
-              fallbackTo="/dashboard"
-            >
+            <DashboardRouteGuard dashboardKey="ess">
               <EmployeeHomePage userName={userName} />
-            </RequireAccess>
+            </DashboardRouteGuard>
           }
         />
         <Route
           path="/dashboard"
           element={
-            <RequireAccess
-              permissions={['employees:read', 'settings.organization:read', 'payroll:read']}
-              permissionsMode="any"
-              fallbackTo="/home"
-            >
+            <DashboardRouteGuard dashboardKey="hr">
               <TenantAdminDashboardPage user={user} userName={userName} />
-            </RequireAccess>
+            </DashboardRouteGuard>
           }
         />
         <Route path="/" element={<Navigate to={landingPath} replace />} />
@@ -125,6 +127,16 @@ export function TenantRoutes({
         />
 
         <Route
+          path="/leave/requests"
+          element={
+            <RequireAccess module="leave" permission="approvals.leave:read">
+              <LeaveRequestsPage />
+            </RequireAccess>
+          }
+        />
+        <Route path="/approvals/leave" element={<Navigate to="/leave/requests" replace />} />
+
+        <Route
           path="/timesheet"
           element={
             <RequireAccess module="timesheet" permission="ess.timesheet:read">
@@ -134,11 +146,57 @@ export function TenantRoutes({
         />
         <Route path="/timesheet/add" element={<Navigate to="/timesheet" replace />} />
         <Route path="/timesheet/edit" element={<Navigate to="/timesheet" replace />} />
+        <Route path="/timesheet/reports" element={<Navigate to="/timesheet" replace />} />
         <Route
-          path="/timesheet/reports"
+          path="/timesheet/team"
           element={
-            <RequireAccess module="timesheet" permission="ess.timesheet:read">
-              <TimesheetReportsPage />
+            <RequireAccess module="timesheet" permission="approvals.timesheet:read">
+              <TeamTimesheetsPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/timesheet/requests"
+          element={<Navigate to="/timesheet/team?status=SUBMITTED" replace />}
+        />
+        <Route
+          path="/approvals/timesheet"
+          element={<Navigate to="/timesheet/team?status=SUBMITTED" replace />}
+        />
+
+        <Route
+          path="/performance"
+          element={
+            <RequireAccess module="performance" permission="ess.performance:read">
+              <MyAssessmentsPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/performance/team"
+          element={
+            <RequireAccess module="performance" permission="performance.review:read">
+              <TeamPerformancePage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/performance/manage"
+          element={
+            <RequireAccess module="performance" permission="performance.hr:read">
+              <HrPerformancePage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/performance/:assessmentId"
+          element={
+            <RequireAccess
+              module="performance"
+              permissions={['ess.performance:read', 'performance.review:read', 'performance.hr:read']}
+              permissionsMode="any"
+            >
+              <PerformanceAssessmentPage />
             </RequireAccess>
           }
         />
@@ -151,14 +209,7 @@ export function TenantRoutes({
             </RequireAccess>
           }
         />
-        <Route
-          path="/settings/*"
-          element={
-            <RequireAccess module="settings">
-              <SettingsPage organizationId={organizationId} />
-            </RequireAccess>
-          }
-        />
+        {settingsFlatRoutes(organizationId)}
         <Route
           path="/payroll"
           element={
@@ -167,8 +218,8 @@ export function TenantRoutes({
             </RequireAccess>
           }
         />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </TenantLayout>
+        <Route path="*" element={<Navigate to={defaultDashboardPath} replace />} />
+      </Route>
+    </Routes>
   );
 }

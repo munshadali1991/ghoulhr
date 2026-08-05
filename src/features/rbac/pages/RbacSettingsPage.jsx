@@ -8,7 +8,6 @@ import { AuditLogPanel } from '@/features/rbac/components/AuditLogPanel';
 import { RbacSettingsToolbar } from '@/features/rbac/components/RbacSettingsToolbar';
 import { RbacOverviewStats } from '@/features/rbac/components/RbacOverviewStats';
 import { DraftStatusBar } from '@/features/settings/shell/components/DraftStatusBar';
-import { PageCard } from '@/shared/components/ui/PageCard';
 import { SETTINGS_PAGE_WIDE_MAX_WIDTH } from '@/shared/components/settings/settingsLayout';
 import { useRbacRoles } from '@/features/rbac/hooks/useRbacAdmin';
 import {
@@ -95,7 +94,7 @@ export function RbacSettingsPage() {
   }
 
   return (
-    <Box sx={{ pb: showDraftBar ? 8 : 0 }}>
+    <Box sx={{ pb: showDraftBar ? 8 : 0 }} data-testid="settings-rbac-page">
       <RbacSettingsToolbar
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -105,17 +104,13 @@ export function RbacSettingsPage() {
 
       <RbacOverviewStats roles={roles} />
 
-      <PageCard>
-        <Box sx={{ p: { xs: 2, md: 3 } }}>
-          <RbacTabPanel
-            key={activeTab}
-            activeTab={activeTab}
-            createOpen={createOpen}
-            onCreateOpenChange={setCreateOpen}
-            onDraftStateChange={setDraftState}
-          />
-        </Box>
-      </PageCard>
+      <RbacTabPanel
+        key={activeTab}
+        activeTab={activeTab}
+        createOpen={createOpen}
+        onCreateOpenChange={setCreateOpen}
+        onDraftStateChange={setDraftState}
+      />
 
       {showDraftBar && draftState && (
         <DraftStatusBar

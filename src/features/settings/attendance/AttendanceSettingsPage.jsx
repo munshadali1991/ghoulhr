@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Alert, Box, Skeleton } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { FormStatusAlerts } from '@/shared/components/feedback/FormStatusAlerts';
-import { PageCard } from '@/shared/components/ui/PageCard';
 import { ATTENDANCE_TABS } from './constants';
 import { useAttendanceManager } from './hooks/useAttendanceManager';
 import { AttendanceToolbar } from './components/AttendanceToolbar';
@@ -12,8 +11,12 @@ import { ScheduleTab } from './submodules/schedule/ScheduleTab';
 import { ScheduleFormPage } from './submodules/schedule/ScheduleFormPage';
 import { CheckInTab } from './submodules/check-in/CheckInTab';
 import { CheckInFormPage } from './submodules/check-in/CheckInFormPage';
+import { useSettingsSectionAccess } from '@/features/settings/hooks/useSettingsSectionAccess';
+import { SETTINGS_ACCESS } from '@/features/auth/config/accessRegistry';
 
 export function AttendanceSettingsPage({ organizationId }) {
+  const { canWrite } = useSettingsSectionAccess('attendance');
+  const attendanceTabs = SETTINGS_ACCESS.attendance.tabs ?? [];
   const [activeTab, setActiveTab] = useState(ATTENDANCE_TABS.shifts);
   const [formView, setFormView] = useState(null);
 
@@ -30,6 +33,7 @@ export function AttendanceSettingsPage({ organizationId }) {
     clearActionError,
     saveShift,
     deleteShift,
+    toggleShiftActive,
     saveSchedule,
     saveCheckIn,
   } = useAttendanceManager(organizationId);
@@ -47,6 +51,7 @@ export function AttendanceSettingsPage({ organizationId }) {
   };
 
   const handlePrimaryAction = () => {
+    if (!canWrite) return;
     clearActionError();
     if (activeTab === ATTENDANCE_TABS.shifts) {
       setFormView({ type: 'shift', record: null });
@@ -122,7 +127,7 @@ export function AttendanceSettingsPage({ organizationId }) {
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', width: '100%' }}>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', width: '100%' }} data-testid="settings-attendance-page">
       <FormStatusAlerts
         loadError={error}
         loadErrorMessage="Failed to load attendance settings. Please try again."
@@ -139,58 +144,56 @@ export function AttendanceSettingsPage({ organizationId }) {
 
       <AttendanceToolbar
         activeTab={activeTab}
+        tabs={attendanceTabs}
         onTabChange={handleTabChange}
         onPrimaryAction={handlePrimaryAction}
+        canWrite={canWrite}
         primaryDisabled={
           (activeTab === ATTENDANCE_TABS.shifts && locationsEmpty) ||
           false
         }
       />
 
-      <PageCard>
-        <Box sx={{ p: { xs: 2, md: 3 } }}>
-          {activeTab === ATTENDANCE_TABS.shifts ? (
-            <ShiftsTab
-              shifts={shifts}
-              branchLocations={branchLocations}
-              isLoading={isLoading}
-              isSaving={isSaving}
-              actionError={actionError}
-              onClearActionError={clearActionError}
-              onEdit={(record) => {
-                clearActionError();
-                setFormView({ type: 'shift', record });
-              }}
-              onDelete={deleteShift}
-              locationsEmpty={locationsEmpty}
-            />
-          ) : null}
+      <Box sx={{ mt: 2.5 }}>
+        {activeTab === ATTENDANCE_TABS.shifts ? (
+          <ShiftsTab
+            shifts={shifts}
+            branchLocations={branchLocations}
+            isLoading={isLoading}
+            isSaving={isSaving}
+            actionError={actionError}
+            onClearActionError={clearActionError}
+            onEdit={
+              canWrite
+                ? (record) => {
+                    clearActionError();
+                    setFormView({ type: 'shift', record });
+                  }
+                : undefined
+            }
+            onDelete={canWrite ? deleteShift : undefined}
+            onToggleActive={canWrite ? toggleShiftActive : undefined}
+            readOnly={!canWrite}
+            locationsEmpty={locationsEmpty}
+          />
+        ) : null}
 
-          {activeTab === ATTENDANCE_TABS.schedule ? (
-            <ScheduleTab
-              schedule={schedule}
-              actionError={actionError}
-              onClearActionError={clearActionError}
-              onEdit={() => {
-                clearActionError();
-                setFormView({ type: 'schedule' });
-              }}
-            />
-          ) : null}
+        {activeTab === ATTENDANCE_TABS.schedule ? (
+          <ScheduleTab
+            schedule={schedule}
+            actionError={actionError}
+            onClearActionError={clearActionError}
+          />
+        ) : null}
 
-          {activeTab === ATTENDANCE_TABS.checkin ? (
-            <CheckInTab
-              checkIn={checkIn}
-              actionError={actionError}
-              onClearActionError={clearActionError}
-              onEdit={() => {
-                clearActionError();
-                setFormView({ type: 'checkin' });
-              }}
-            />
-          ) : null}
-        </Box>
-      </PageCard>
+        {activeTab === ATTENDANCE_TABS.checkin ? (
+          <CheckInTab
+            checkIn={checkIn}
+            actionError={actionError}
+            onClearActionError={clearActionError}
+          />
+        ) : null}
+      </Box>
 
       {isSaving ? (
         <Alert severity="info" sx={{ mt: 2 }}>

@@ -15,6 +15,7 @@
  * @property {string} [currency] - Currency code (e.g., "INR", "USD")
  * @property {string} [dateFormat] - Date format (e.g., "DD/MM/YYYY")
  * @property {string} [language] - Language code (e.g., "en", "hi")
+ * @property {string} [financialYearStartMonth] - FY start month 1–12
  */
 
 /**

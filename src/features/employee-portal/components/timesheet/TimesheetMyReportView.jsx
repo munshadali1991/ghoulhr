@@ -24,8 +24,6 @@ import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import FullscreenRoundedIcon from '@mui/icons-material/FullscreenRounded';
-import FullscreenExitRoundedIcon from '@mui/icons-material/FullscreenExitRounded';
 import PictureAsPdfRoundedIcon from '@mui/icons-material/PictureAsPdfRounded';
 import ClearAllRoundedIcon from '@mui/icons-material/ClearAllRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
@@ -33,6 +31,7 @@ import TableChartRoundedIcon from '@mui/icons-material/TableChartRounded';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { PageCard } from '@/shared/components/ui/PageCard';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { TimesheetStatusChip } from './TimesheetStatusChip';
 import {
   useTimesheetDay,
@@ -130,7 +129,6 @@ export function TimesheetMyReportView({
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState('all');
   const [page, setPage] = useState(0);
-  const [fullscreen, setFullscreen] = useState(false);
   const [orderBy, setOrderBy] = useState(showAllRecords ? 'workDate' : 'category');
   const [order, setOrder] = useState(showAllRecords ? 'desc' : 'asc');
 
@@ -432,28 +430,26 @@ export function TimesheetMyReportView({
                       <TableCell>{row.refNumber || ''}</TableCell>
                       <TableCell align="center">
                         <Stack direction="row" spacing={0.5} justifyContent="center">
-                          <Button
+                          <CrudButton
+                            intent="edit"
                             size="small"
-                            variant="contained"
-                            color="success"
                             startIcon={<EditOutlinedIcon />}
                             onClick={() => onEdit(row)}
                             disabled={!row.canModify}
                             sx={{ minWidth: 72, textTransform: 'none', py: 0.25 }}
                           >
                             Edit
-                          </Button>
-                          <Button
+                          </CrudButton>
+                          <CrudButton
+                            intent="delete"
                             size="small"
-                            variant="contained"
-                            color="error"
                             startIcon={<DeleteOutlineIcon />}
                             onClick={() => onDelete(row)}
                             disabled={!row.canModify}
                             sx={{ minWidth: 84, textTransform: 'none', py: 0.25 }}
                           >
                             Delete
-                          </Button>
+                          </CrudButton>
                         </Stack>
                       </TableCell>
                     </TableRow>
@@ -559,11 +555,6 @@ export function TimesheetMyReportView({
           >
             Refresh
           </Button>
-          <Tooltip title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
-            <IconButton onClick={() => setFullscreen((v) => !v)}>
-              {fullscreen ? <FullscreenExitRoundedIcon /> : <FullscreenRoundedIcon />}
-            </IconButton>
-          </Tooltip>
         </Stack>
       </Stack>
 
@@ -603,20 +594,7 @@ export function TimesheetMyReportView({
         )}
       </Stack>
 
-      <PageCard
-        sx={
-          fullscreen
-            ? {
-                position: 'fixed',
-                inset: 16,
-                zIndex: (theme) => theme.zIndex.modal,
-                m: 0,
-                overflow: 'auto',
-                maxHeight: 'calc(100vh - 32px)',
-              }
-            : undefined
-        }
-      >
+      <PageCard>
         {tableContent}
       </PageCard>
     </Box>

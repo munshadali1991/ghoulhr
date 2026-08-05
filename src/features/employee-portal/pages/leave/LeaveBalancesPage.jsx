@@ -12,7 +12,8 @@ import {
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageToolbar } from '../../components/PageToolbar';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
+import { PageToolbar, ToolbarButtonGroup } from '../../components/PageToolbar';
 import { LeaveBalanceCard } from '../../components/LeaveBalanceCard';
 import { useLeaveBalances } from '../../hooks/useEmployeePortalQueries';
 
@@ -33,13 +34,15 @@ export function LeaveBalancesPage() {
       <PageToolbar
         right={
           <>
-            <Button variant="outlined" color="secondary" onClick={() => navigate('/leave/apply')}>
-              Apply
-            </Button>
-            <Button variant="contained" color="secondary" startIcon={<DownloadRoundedIcon />}>
-              Download
-            </Button>
-            <FormControl size="small" sx={{ minWidth: 100 }}>
+            <ToolbarButtonGroup>
+              <CrudButton intent="create" onClick={() => navigate('/leave/apply')}>
+                Apply
+              </CrudButton>
+              <Button variant="outlined" startIcon={<DownloadRoundedIcon />}>
+                Download
+              </Button>
+            </ToolbarButtonGroup>
+            <FormControl size="small" sx={{ minWidth: { sm: 100 } }}>
               <InputLabel>Year</InputLabel>
               <Select label="Year" value={year} onChange={(e) => setYear(Number(e.target.value))}>
                 {yearOptions.map((y) => (

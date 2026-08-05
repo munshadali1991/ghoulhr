@@ -1,17 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Box, Skeleton } from '@mui/material';
 import { FormStatusAlerts } from '@/shared/components/feedback/FormStatusAlerts';
-import { PageCard } from '@/shared/components/ui/PageCard';
+import { useTabAccess } from '@/features/auth/hooks/useAuthorization';
+import { ORG_STRUCTURE_TAB_DEFS } from './orgStructureTabs';
 import { useOrgStructure } from './hooks/useOrgStructure';
 import { OrgStructureToolbar } from './OrgStructureToolbar';
-import { ORG_STRUCTURE_TABS } from './orgStructureTabs';
 import { DepartmentTab } from './departments/DepartmentTab';
 import { DepartmentFormPage } from './departments/DepartmentFormPage';
 import { DesignationTab } from './designations/DesignationTab';
 import { DesignationFormPage } from './designations/DesignationFormPage';
 
 export function OrgStructurePage({ organizationId }) {
-  const [activeTab, setActiveTab] = useState(ORG_STRUCTURE_TABS.departments);
+  const { allowedTabs, firstAllowedKey, canWriteTab, isTabAllowed } =
+    useTabAccess(ORG_STRUCTURE_TAB_DEFS);
+  const [activeTab, setActiveTab] = useState(firstAllowedKey ?? 'departments');
   const [formView, setFormView] = useState(null);
 
   const {
@@ -26,7 +28,18 @@ export function OrgStructurePage({ organizationId }) {
     deleteDepartment,
     saveDesignation,
     deleteDesignation,
+    toggleDepartmentActive,
+    toggleDesignationActive,
   } = useOrgStructure(organizationId);
+
+  useEffect(() => {
+    if (!isTabAllowed(activeTab) && firstAllowedKey) {
+      setActiveTab(firstAllowedKey);
+    }
+  }, [activeTab, firstAllowedKey, isTabAllowed]);
+
+  const activeTabDef = allowedTabs.find((t) => t.key === activeTab) ?? allowedTabs[0];
+  const canWriteActive = activeTabDef ? canWriteTab(activeTabDef) : false;
 
   const closeForm = () => {
     clearActionError();
@@ -39,8 +52,9 @@ export function OrgStructurePage({ organizationId }) {
   };
 
   const handleAdd = () => {
+    if (!canWriteActive) return;
     clearActionError();
-    if (activeTab === ORG_STRUCTURE_TABS.departments) {
+    if (activeTab === 'departments') {
       setFormView({ type: 'department', record: null });
       return;
     }
@@ -48,14 +62,24 @@ export function OrgStructurePage({ organizationId }) {
   };
 
   const openDepartmentEdit = (record) => {
+    if (!canWriteTab(ORG_STRUCTURE_TAB_DEFS[0])) return;
     clearActionError();
     setFormView({ type: 'department', record });
   };
 
   const openDesignationEdit = (record) => {
+    if (!canWriteTab(ORG_STRUCTURE_TAB_DEFS[1])) return;
     clearActionError();
     setFormView({ type: 'designation', record });
   };
+
+  if (!allowedTabs.length) {
+    return (
+      <Alert severity="warning">
+        You do not have permission to view departments or designations.
+      </Alert>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -80,6 +104,7 @@ export function OrgStructurePage({ organizationId }) {
           onClearActionError={clearActionError}
           onBack={closeForm}
           onSave={saveDepartment}
+          readOnly={!canWriteTab(ORG_STRUCTURE_TAB_DEFS[0])}
         />
       </Box>
     );
@@ -100,13 +125,14 @@ export function OrgStructurePage({ organizationId }) {
           onClearActionError={clearActionError}
           onBack={closeForm}
           onSave={saveDesignation}
+          readOnly={!canWriteTab(ORG_STRUCTURE_TAB_DEFS[1])}
         />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', width: '100%' }}>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', width: '100%' }} data-testid="settings-departments-page">
       <FormStatusAlerts
         loadError={error}
         loadErrorMessage="Failed to load organization structure. Please try again."
@@ -114,39 +140,43 @@ export function OrgStructurePage({ organizationId }) {
 
       <OrgStructureToolbar
         activeTab={activeTab}
+        allowedTabs={allowedTabs}
         onTabChange={handleTabChange}
         onAdd={handleAdd}
-        addDisabled={
-          activeTab === ORG_STRUCTURE_TABS.designations && departments.length === 0
-        }
+        canWrite={canWriteActive}
+        addDisabled={activeTab === 'designations' && departments.length === 0}
       />
 
-      <PageCard>
-        <Box sx={{ p: { xs: 2, md: 3 } }}>
-          {activeTab === ORG_STRUCTURE_TABS.departments ? (
-            <DepartmentTab
-              departments={departments}
-              isLoading={isLoading}
-              isSaving={isSaving}
-              actionError={actionError}
-              onClearActionError={clearActionError}
-              onEdit={openDepartmentEdit}
-              onDelete={deleteDepartment}
-            />
-          ) : (
-            <DesignationTab
-              departments={departments}
-              designations={designations}
-              isLoading={isLoading}
-              isSaving={isSaving}
-              actionError={actionError}
-              onClearActionError={clearActionError}
-              onEdit={openDesignationEdit}
-              onDelete={deleteDesignation}
-            />
-          )}
-        </Box>
-      </PageCard>
+      <Box sx={{ mt: 2.5 }}>
+        {activeTab === 'departments' ? (
+          <DepartmentTab
+            departments={departments}
+            isLoading={isLoading}
+            isSaving={isSaving}
+            actionError={actionError}
+            onClearActionError={clearActionError}
+            onEdit={openDepartmentEdit}
+            onDelete={deleteDepartment}
+            onToggleActive={toggleDepartmentActive}
+            onAdd={canWriteActive ? handleAdd : undefined}
+            readOnly={!canWriteTab(ORG_STRUCTURE_TAB_DEFS[0])}
+          />
+        ) : (
+          <DesignationTab
+            departments={departments}
+            designations={designations}
+            isLoading={isLoading}
+            isSaving={isSaving}
+            actionError={actionError}
+            onClearActionError={clearActionError}
+            onEdit={openDesignationEdit}
+            onDelete={deleteDesignation}
+            onToggleActive={toggleDesignationActive}
+            onAdd={canWriteActive ? handleAdd : undefined}
+            readOnly={!canWriteTab(ORG_STRUCTURE_TAB_DEFS[1])}
+          />
+        )}
+      </Box>
 
       {isSaving ? (
         <Alert severity="info" sx={{ mt: 2 }}>

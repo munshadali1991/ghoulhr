@@ -23,7 +23,7 @@ export function FormSectionCard({ title, description, flush = false, children })
     >
       <Box
         sx={{
-          px: 2.5,
+          px: { xs: 1.5, sm: 2.5 },
           py: 1.5,
           borderBottom: '1px solid',
           borderColor: 'divider',
@@ -36,8 +36,6 @@ export function FormSectionCard({ title, description, flush = false, children })
             fontWeight: 700,
             letterSpacing: '0.1em',
             color: 'text.secondary',
-            fontSize: '0.6875rem',
-            lineHeight: 1.4,
             display: 'block',
           }}
         >

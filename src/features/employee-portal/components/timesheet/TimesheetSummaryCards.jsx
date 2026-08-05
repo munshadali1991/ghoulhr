@@ -1,13 +1,15 @@
-import { Grid, Paper, Stack, Typography } from '@mui/material';
-import { TimesheetStatusChip } from './TimesheetStatusChip';
+import { Grid, Paper, Typography } from '@mui/material';
 
 /**
- * @param {{ totalHours: number, statusSummary: Record<string, number> }} props
+ * @param {{
+ *   totalHours: number,
+ *   submittedCount?: number,
+ * }} props
  */
-export function TimesheetSummaryCards({ totalHours, statusSummary }) {
+export function TimesheetSummaryCards({ totalHours, submittedCount = 0 }) {
   return (
     <Grid container spacing={2} sx={{ mb: 3 }}>
-      <Grid size={{ xs: 12, sm: 4 }}>
+      <Grid size={{ xs: 12, sm: 6 }}>
         <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
           <Typography variant="caption" color="text.secondary">
             Total hours
@@ -17,19 +19,14 @@ export function TimesheetSummaryCards({ totalHours, statusSummary }) {
           </Typography>
         </Paper>
       </Grid>
-      <Grid size={{ xs: 12, sm: 8 }}>
+      <Grid size={{ xs: 12, sm: 6 }}>
         <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-            Status summary
+          <Typography variant="caption" color="text.secondary">
+            Submitted timesheets
           </Typography>
-          <Stack direction="row" flexWrap="wrap" gap={1}>
-            {Object.entries(statusSummary).map(([status, count]) => (
-              <Stack key={status} direction="row" alignItems="center" spacing={0.5}>
-                <TimesheetStatusChip status={status === 'MISSING' ? null : status} />
-                <Typography variant="caption">×{count}</Typography>
-              </Stack>
-            ))}
-          </Stack>
+          <Typography variant="h4" fontWeight={700}>
+            {submittedCount}
+          </Typography>
         </Paper>
       </Grid>
     </Grid>

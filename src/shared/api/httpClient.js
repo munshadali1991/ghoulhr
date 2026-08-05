@@ -1,5 +1,6 @@
-import { API_BASE_URL } from '@/app/config/appConfig';
-
+import { getApiBaseUrl } from '@/app/config/appConfig';
+import { SESSION_EXPIRED_EVENT } from '@/features/auth/hooks/useSessionExpiry';
+import { getAppBasePath } from '@/shared/utils/tenant';
 let refreshPromise = null;
 
 function isAuthPublicPath(path) {
@@ -16,11 +17,14 @@ async function refreshTokensOnce() {
   if (refreshPromise) {
     return refreshPromise;
   }
-  refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
+  refreshPromise = fetch(`${getApiBaseUrl()}/auth/refresh`, {
     method: 'POST',
     credentials: 'include',
   }).then((res) => {
     if (!res.ok) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+      }
       const err = new Error('Session expired');
       err.status = 401;
       throw err;
@@ -38,11 +42,18 @@ async function refreshTokensOnce() {
  */
 export async function apiFetch(path, options = {}) {
   const { _skipAuthRetry, ...rest } = options;
-  const url = `${API_BASE_URL}${path}`;
+  const url = `${getApiBaseUrl()}${path}`;
   const headers = {
     ...(rest.headers || {}),
   };
-  if (rest.body !== undefined && rest.body !== null && !headers['Content-Type']) {
+  const isFormData =
+    typeof FormData !== 'undefined' && rest.body instanceof FormData;
+  if (
+    rest.body !== undefined &&
+    rest.body !== null &&
+    !headers['Content-Type'] &&
+    !isFormData
+  ) {
     headers['Content-Type'] = 'application/json';
   }
 
@@ -75,6 +86,16 @@ export async function apiFetch(path, options = {}) {
     } else if (payload?.error) {
       message = String(payload.error);
     }
+
+    if (
+      res.status === 403 &&
+      payload?.code === 'PASSWORD_CHANGE_REQUIRED' &&
+      typeof window !== 'undefined' &&
+      !window.location.pathname.endsWith('/change-password')
+    ) {
+      window.location.assign(`${getAppBasePath()}/change-password`);
+    }
+
     const error = new Error(message);
     error.status = res.status;
     throw error;

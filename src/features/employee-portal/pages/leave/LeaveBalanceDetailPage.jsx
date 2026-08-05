@@ -2,7 +2,6 @@ import {
   Alert,
   Box,
   Breadcrumbs,
-  Button,
   CircularProgress,
   FormControl,
   InputLabel,
@@ -13,6 +12,7 @@ import {
 } from '@mui/material';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { PageToolbar } from '../../components/PageToolbar';
 import { LeaveBalanceMetricsCarousel } from '../../components/LeaveBalanceMetricsCarousel';
 import { LeaveBalanceMonthlyChart } from '../../components/LeaveBalanceMonthlyChart';
@@ -104,10 +104,10 @@ export function LeaveBalanceDetailPage() {
       <PageToolbar
         right={
           <>
-            <Button variant="outlined" color="secondary" onClick={() => navigate('/leave/apply')}>
+            <CrudButton intent="create" onClick={() => navigate('/leave/apply')}>
               Apply
-            </Button>
-            <FormControl size="small" sx={{ minWidth: 100 }}>
+            </CrudButton>
+            <FormControl size="small" sx={{ minWidth: { sm: 100 } }}>
               <InputLabel>Year</InputLabel>
               <Select label="Year" value={year} onChange={(e) => handleYearChange(Number(e.target.value))}>
                 {yearOptions.map((y) => (

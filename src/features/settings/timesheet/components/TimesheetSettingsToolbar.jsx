@@ -1,5 +1,7 @@
-import { Box, Button, Tab, Tabs, Typography } from '@mui/material';
+import { Tab, Tabs } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import { SettingsPageToolbar } from '@/shared/components/layout/SettingsPageToolbar';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { TIMESHEET_TABS } from '../timesheetTabs';
 
 /**
@@ -12,49 +14,39 @@ import { TIMESHEET_TABS } from '../timesheetTabs';
  */
 export function TimesheetSettingsToolbar({
   activeTab,
+  tabs = [],
   onTabChange,
   onAddCategory,
   showAddCategory = false,
 }) {
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: { xs: 'column', sm: 'row' },
-        alignItems: { xs: 'stretch', sm: 'center' },
-        justifyContent: 'space-between',
-        gap: 2,
-        mb: 3,
-      }}
+    <SettingsPageToolbar
+      title="Timesheet settings"
+      subtitle="Configure daily hour limits, submission windows, employee guidance, and categories."
+      primaryAction={
+        showAddCategory ? (
+          <CrudButton intent="create" color="primary" startIcon={<AddIcon />} onClick={onAddCategory}>
+            Add category
+          </CrudButton>
+        ) : null
+      }
     >
-      <Box>
-        <Typography variant="h5" component="h1" fontWeight={700} letterSpacing="-0.02em">
-          Timesheet settings
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 560 }}>
-          Configure daily hour limits, submission windows, employee guidance, and categories.
-        </Typography>
-        <Tabs
-          value={activeTab}
-          onChange={(_, value) => onTabChange(value)}
-          sx={{ mt: 2, minHeight: 40 }}
-          aria-label="Timesheet settings tabs"
-        >
-          <Tab label="General" value={TIMESHEET_TABS.general} sx={{ minHeight: 40 }} />
-          <Tab label="Category" value={TIMESHEET_TABS.category} sx={{ minHeight: 40 }} />
-        </Tabs>
-      </Box>
-
-      {showAddCategory ? (
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={onAddCategory}
-          sx={{ alignSelf: { xs: 'stretch', sm: 'flex-start' }, flexShrink: 0 }}
-        >
-          Add category
-        </Button>
-      ) : null}
-    </Box>
+      <Tabs
+        value={activeTab}
+        onChange={(_, value) => onTabChange(value)}
+        sx={{ mt: 2, minHeight: 40 }}
+        aria-label="Timesheet settings tabs"
+      >
+        {(tabs.length
+          ? tabs
+          : [
+              { key: TIMESHEET_TABS.general, label: 'General' },
+              { key: TIMESHEET_TABS.category, label: 'Category' },
+            ]
+        ).map((tab) => (
+          <Tab key={tab.key} label={tab.label} value={tab.key} sx={{ minHeight: 40 }} />
+        ))}
+      </Tabs>
+    </SettingsPageToolbar>
   );
 }

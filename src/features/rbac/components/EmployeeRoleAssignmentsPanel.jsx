@@ -25,7 +25,12 @@ import { getEmployeeRoles } from '@/features/rbac/api/rbacApi';
 import { useRbacRoles } from '@/features/rbac/hooks/useRbacAdmin';
 import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
 import { EmployeeRoleDialog } from '@/features/rbac/components/EmployeeRoleDialog';
-import { EmployeeAssignmentTableRow } from '@/features/rbac/components/EmployeeAssignmentTableRow';
+import {
+  EmployeeAssignmentCard,
+  EmployeeAssignmentTableRow,
+} from '@/features/rbac/components/EmployeeAssignmentTableRow';
+import { PageCard } from '@/shared/components/ui/PageCard';
+import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 
 const DEFAULT_ROWS_PER_PAGE = 20;
 const ROWS_PER_PAGE_OPTIONS = [10, 20, 50];
@@ -44,6 +49,7 @@ async function fetchAssignmentsForEmployees(employees) {
  * Employee access tab — searchable list with batched role loading per page.
  */
 export function EmployeeRoleAssignmentsPanel() {
+  const isMobileLayout = useIsMobileLayout();
   const { can } = useAuthorization();
   const { data: roles = [], isLoading: rolesLoading } = useRbacRoles();
   const { data: employees = [], isLoading: employeesLoading } = useQuery({
@@ -161,14 +167,25 @@ export function EmployeeRoleAssignmentsPanel() {
     );
   }
 
+  const headerSx = {
+    typography: 'overline',
+    fontWeight: 600,
+    letterSpacing: '0.04em',
+    color: 'text.disabled',
+    borderColor: 'divider',
+    pb: 1.5,
+  };
+
   return (
     <Box>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Assign roles to employees so they can access entitled modules. Click Edit to
-        manage an employee&apos;s roles.
-      </Typography>
-
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2 }} flexWrap="wrap">
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        spacing={1.25}
+        sx={{ mb: 2.25 }}
+        flexWrap="wrap"
+        useFlexGap
+        alignItems={{ md: 'center' }}
+      >
         <TextField
           placeholder="Search employees..."
           value={search}
@@ -177,16 +194,22 @@ export function EmployeeRoleAssignmentsPanel() {
             setPage(0);
           }}
           size="small"
-          sx={{ minWidth: 220 }}
+          sx={{
+            flex: { md: 1 },
+            minWidth: { xs: 0, md: 200 },
+            '& .MuiOutlinedInput-root': {
+              bgcolor: (t) => t.palette.custom?.surfaces?.subtle ?? 'background.default',
+            },
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
+                <SearchIcon fontSize="small" sx={{ color: 'text.disabled' }} />
               </InputAdornment>
             ),
           }}
         />
-        <FormControl size="small" sx={{ minWidth: 180 }}>
+        <FormControl size="small" sx={{ minWidth: { xs: 0, md: 160 }, width: { xs: '100%', md: 'auto' } }}>
           <InputLabel id="role-filter">Filter by role</InputLabel>
           <Select
             labelId="role-filter"
@@ -206,7 +229,7 @@ export function EmployeeRoleAssignmentsPanel() {
             ))}
           </Select>
         </FormControl>
-        <FormControl size="small" sx={{ minWidth: 180 }}>
+        <FormControl size="small" sx={{ minWidth: { xs: 0, md: 160 }, width: { xs: '100%', md: 'auto' } }}>
           <InputLabel id="dept-filter">Department</InputLabel>
           <Select
             labelId="dept-filter"
@@ -231,51 +254,30 @@ export function EmployeeRoleAssignmentsPanel() {
             <Switch
               size="small"
               checked={unassignedOnly}
+              color="secondary"
               onChange={(e) => {
                 setUnassignedOnly(e.target.checked);
                 setPage(0);
               }}
             />
           }
-          label="Unassigned only"
+          label={<Typography variant="body2" color="text.secondary">Unassigned only</Typography>}
+          sx={{ ml: { md: 'auto' }, m: 0 }}
         />
       </Stack>
 
-      <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-        {assignmentsLoading
-          ? 'Loading role assignments...'
-          : filteredEmployees.length === 0
-            ? 'No employees to display'
-            : `Showing ${rangeStart}–${rangeEnd} of ${filteredEmployees.length} employees`}
-      </Typography>
-
-      <Box sx={{ overflowX: 'auto' }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 600 }}>Employee</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Department</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Primary role</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>All roles</TableCell>
-              <TableCell sx={{ fontWeight: 600 }} align="right">
-                Actions
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+      {isMobileLayout ? (
+        <>
+          <Stack spacing={1.5} sx={{ mb: 2 }}>
             {filteredEmployees.length === 0 && !assignmentsLoading && (
-              <TableRow>
-                <TableCell colSpan={5}>
-                  <Typography color="text.secondary" variant="body2">
-                    {unassignedOnly
-                      ? 'All matching employees have roles assigned.'
-                      : 'No employees match your search.'}
-                  </Typography>
-                </TableCell>
-              </TableRow>
+              <Typography color="text.secondary" variant="body2">
+                {unassignedOnly
+                  ? 'All matching employees have roles assigned.'
+                  : 'No employees match your search.'}
+              </Typography>
             )}
             {pageEmployees.map((emp) => (
-              <EmployeeAssignmentTableRow
+              <EmployeeAssignmentCard
                 key={emp.id}
                 employee={emp}
                 assignments={assignmentsForRow[emp.id]}
@@ -283,30 +285,98 @@ export function EmployeeRoleAssignmentsPanel() {
                 onEdit={() => setDrawerEmployee(emp)}
               />
             ))}
-          </TableBody>
-        </Table>
-      </Box>
+          </Stack>
+          <TablePagination
+            component="div"
+            count={filteredEmployees.length}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(event) => {
+              setRowsPerPage(parseInt(event.target.value, 10));
+              setPage(0);
+            }}
+            rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+            labelRowsPerPage="Rows per page"
+          />
+        </>
+      ) : (
+        <PageCard sx={{ p: 1.5 }}>
+          <Box sx={{ overflowX: 'auto' }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={headerSx}>Employee</TableCell>
+                  <TableCell sx={headerSx}>Department</TableCell>
+                  <TableCell sx={headerSx}>Primary role</TableCell>
+                  <TableCell sx={headerSx}>All roles</TableCell>
+                  <TableCell sx={headerSx} align="right">
+                    Actions
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredEmployees.length === 0 && !assignmentsLoading && (
+                  <TableRow>
+                    <TableCell colSpan={5}>
+                      <Typography color="text.secondary" variant="body2">
+                        {unassignedOnly
+                          ? 'All matching employees have roles assigned.'
+                          : 'No employees match your search.'}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {pageEmployees.map((emp) => (
+                  <EmployeeAssignmentTableRow
+                    key={emp.id}
+                    employee={emp}
+                    assignments={assignmentsForRow[emp.id]}
+                    isLoading={assignmentsLoading && !assignmentsForRow[emp.id]}
+                    onEdit={() => setDrawerEmployee(emp)}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </Box>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ px: 0.5, pt: 1 }}
+          >
+            <Typography variant="caption" color="text.secondary">
+              {assignmentsLoading
+                ? 'Loading role assignments...'
+                : filteredEmployees.length === 0
+                  ? 'No employees to display'
+                  : `Showing ${rangeStart}–${rangeEnd} of ${filteredEmployees.length} employees`}
+            </Typography>
+            <TablePagination
+              component="div"
+              count={filteredEmployees.length}
+              page={page}
+              onPageChange={(_, newPage) => setPage(newPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(event) => {
+                setRowsPerPage(parseInt(event.target.value, 10));
+                setPage(0);
+              }}
+              rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+              labelRowsPerPage="Rows per page"
+              sx={{ border: 0, '.MuiToolbar-root': { minHeight: 40, pl: 0 } }}
+            />
+          </Stack>
+        </PageCard>
+      )}
 
-      <TablePagination
-        component="div"
-        count={filteredEmployees.length}
-        page={page}
-        onPageChange={(_, newPage) => setPage(newPage)}
-        rowsPerPage={rowsPerPage}
-        onRowsPerPageChange={(event) => {
-          setRowsPerPage(parseInt(event.target.value, 10));
-          setPage(0);
-        }}
-        rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
-        labelRowsPerPage="Rows per page"
-      />
-
-      {drawerEmployee && (
+      {drawerEmployee ? (
         <EmployeeRoleDialog
           open
           employee={drawerEmployee}
           onClose={() => setDrawerEmployee(null)}
         />
-      )}    </Box>
+      ) : null}
+    </Box>
   );
 }

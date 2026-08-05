@@ -1,12 +1,11 @@
 import { Stack } from '@mui/material';
-import { BrandedButton } from '@/shared/components/ui/BrandedButton';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * @param {{
  *   editable: boolean,
  *   isSaving: boolean,
  *   canSubmit: boolean,
- *   onSaveDraft: () => void,
  *   onSubmit: () => void,
  * }} props
  */
@@ -14,7 +13,6 @@ export function TimesheetDayActions({
   editable,
   isSaving,
   canSubmit,
-  onSaveDraft,
   onSubmit,
 }) {
   if (!editable) return null;
@@ -34,23 +32,15 @@ export function TimesheetDayActions({
         mt: 2,
       }}
     >
-      <BrandedButton
-        variant="outlined"
-        onClick={onSaveDraft}
-        disabled={isSaving}
-        fullWidth
-        sx={{ display: { sm: 'inline-flex' }, width: { sm: 'auto' } }}
-      >
-        Save as draft
-      </BrandedButton>
-      <BrandedButton
+      <CrudButton
+        intent="save"
         onClick={onSubmit}
         disabled={isSaving || !canSubmit}
         fullWidth
         sx={{ display: { sm: 'inline-flex' }, width: { sm: 'auto' } }}
       >
         Submit timesheet
-      </BrandedButton>
+      </CrudButton>
     </Stack>
   );
 }

@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import { PageCard } from '@/shared/components/ui/PageCard';
+import { CrudButton } from '@/shared/components/ui/CrudButton';
 
 /**
  * Full-page SaaS form shell — replaces side drawers for create/edit flows.
@@ -22,6 +23,7 @@ export function RecordFormLayout({
   isSubmitting = false,
   submitLabel = 'Save changes',
   cancelLabel = 'Cancel',
+  readOnly = false,
   children,
 }) {
   return (
@@ -94,14 +96,16 @@ export function RecordFormLayout({
           <Button type="button" variant="outlined" onClick={onBack} disabled={isSubmitting}>
             {cancelLabel}
           </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={isSubmitting}
-            startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : null}
-          >
-            {isSubmitting ? 'Saving…' : submitLabel}
-          </Button>
+          {!readOnly ? (
+            <CrudButton
+              intent="save"
+              type="submit"
+              disabled={isSubmitting}
+              startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : null}
+            >
+              {isSubmitting ? 'Saving…' : submitLabel}
+            </CrudButton>
+          ) : null}
         </Stack>
       </PageCard>
     </Box>

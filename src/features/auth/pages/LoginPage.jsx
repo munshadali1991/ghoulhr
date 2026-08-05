@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { APP_NAME } from '@/app/config/appConfig';
 import {
   Alert,
   Box,
@@ -32,6 +33,7 @@ import { isOnTenantSubdomain } from '@/shared/utils/tenant';
  *   onSubmit: (event: import('react').FormEvent) => void,
  *   loading: boolean,
  *   error: string,
+ *   errorKind?: 'generic' | 'subscription',
  * }} props
  */
 export function LoginPage({
@@ -41,6 +43,7 @@ export function LoginPage({
   onSubmit,
   loading,
   error,
+  errorKind = 'generic',
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const onTenantHost = isOnTenantSubdomain();
@@ -116,8 +119,8 @@ export function LoginPage({
               />
 
               <Box sx={{ position: 'relative', zIndex: 1 }}>
-                <Typography variant="h4" fontWeight={800}>
-                  GhoulHRMS
+                <Typography variant="h4" fontWeight={700}>
+                  {APP_NAME}
                 </Typography>
                 <Typography sx={{ mt: 1, opacity: 0.95 }}>
                   {isAdmin
@@ -156,7 +159,7 @@ export function LoginPage({
 
             <Grid size={{ xs: 12, md: 6 }}>
               <CardContent sx={{ p: { xs: 2.5, md: 3.5 } }}>
-                <Typography variant="h5" fontWeight={800}>
+                <Typography variant="h5" fontWeight={700}>
                   {title}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 2.5 }}>
@@ -211,14 +214,17 @@ export function LoginPage({
                       }}
                     />
 
-                    {error ? <Alert severity="error">{error}</Alert> : null}
+                    {error ? (
+                      <Alert severity={errorKind === 'subscription' ? 'warning' : 'error'}>
+                        {error}
+                      </Alert>
+                    ) : null}
 
                     <BrandedButton
                       type="submit"
                       brandVariant="login"
                       size="large"
                       disabled={loading}
-                      sx={{ py: 1.25, fontWeight: 700 }}
                     >
                       {loading ? 'Please wait...' : 'Sign In'}
                     </BrandedButton>

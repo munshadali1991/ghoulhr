@@ -34,7 +34,7 @@ import {
 import { employeePortalKeys } from '../api/queryKeys';
 
 /**
- * @param {'PENDING' | 'APPROVED'} status
+ * @param {'PENDING' | 'APPROVED' | 'REJECTED'} status
  */
 export function useLeaveRequests(status) {
   return useQuery({
@@ -303,6 +303,7 @@ export function useUpsertTimesheetDay() {
       queryClient.invalidateQueries({
         queryKey: employeePortalKeys.timesheetCategories(),
       });
+      queryClient.invalidateQueries({ queryKey: ['approvals'] });
     },
   });
 }

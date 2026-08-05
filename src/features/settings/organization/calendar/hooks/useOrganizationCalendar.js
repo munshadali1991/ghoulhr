@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  bulkUpsertCalendarHolidays,
   createCalendarHoliday,
   deleteCalendarHoliday,
   fetchOrganizationCalendar,
@@ -56,10 +57,16 @@ export function useOrganizationCalendarMutations(organizationId, year) {
     onSuccess: invalidate,
   });
 
+  const bulkImportMutation = useMutation({
+    mutationFn: (body) => bulkUpsertCalendarHolidays(organizationId, body),
+    onSuccess: invalidate,
+  });
+
   return {
     createMutation,
     updateMutation,
     deleteMutation,
     publishMutation,
+    bulkImportMutation,
   };
 }

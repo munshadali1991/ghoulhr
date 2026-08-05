@@ -4,8 +4,12 @@ import { Controller, useFormContext } from 'react-hook-form';
 export function StepCompliance() {
   const {
     control,
+    watch,
     formState: { errors },
   } = useFormContext();
+
+  const panOnFile = watch('compliance.panOnFile');
+  const aadhaarOnFile = watch('compliance.aadhaarOnFile');
 
   return (
     <Stack spacing={2.5}>
@@ -33,7 +37,10 @@ export function StepCompliance() {
                 label="PAN"
                 placeholder="ABCDE1234F"
                 error={!!errors.compliance?.panNumber}
-                helperText={errors.compliance?.panNumber?.message}
+                helperText={
+                  errors.compliance?.panNumber?.message ||
+                  (panOnFile ? `PAN ending ${panOnFile} on file — leave blank to keep` : '')
+                }
               />
             )}
           />
@@ -49,7 +56,10 @@ export function StepCompliance() {
                 label="Aadhaar"
                 placeholder="12 digits"
                 error={!!errors.compliance?.aadhaarNumber}
-                helperText={errors.compliance?.aadhaarNumber?.message}
+                helperText={
+                  errors.compliance?.aadhaarNumber?.message ||
+                  (aadhaarOnFile ? `Aadhaar ending ${aadhaarOnFile} on file — leave blank to keep` : '')
+                }
               />
             )}
           />
@@ -58,28 +68,60 @@ export function StepCompliance() {
           <Controller
             name="compliance.uanNumber"
             control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="UAN" />}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                label="UAN"
+                error={!!errors.compliance?.uanNumber}
+                helperText={errors.compliance?.uanNumber?.message}
+              />
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
             name="compliance.esicNumber"
             control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="ESIC number" />}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                label="ESIC number"
+                error={!!errors.compliance?.esicNumber}
+                helperText={errors.compliance?.esicNumber?.message}
+              />
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
             name="compliance.pfNumber"
             control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="PF number" />}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                label="PF number"
+                error={!!errors.compliance?.pfNumber}
+                helperText={errors.compliance?.pfNumber?.message}
+              />
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
             name="compliance.passportNumber"
             control={control}
-            render={({ field }) => <TextField {...field} fullWidth label="Passport number" />}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                fullWidth
+                label="Passport number"
+                error={!!errors.compliance?.passportNumber}
+                helperText={errors.compliance?.passportNumber?.message}
+              />
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
@@ -87,7 +129,15 @@ export function StepCompliance() {
             name="compliance.passportExpiry"
             control={control}
             render={({ field }) => (
-              <TextField {...field} fullWidth type="date" label="Passport expiry" InputLabelProps={{ shrink: true }} />
+              <TextField
+                {...field}
+                fullWidth
+                type="date"
+                label="Passport expiry"
+                InputLabelProps={{ shrink: true }}
+                error={!!errors.compliance?.passportExpiry}
+                helperText={errors.compliance?.passportExpiry?.message}
+              />
             )}
           />
         </Grid>

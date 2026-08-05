@@ -1,4 +1,8 @@
 import { DEFAULT_EMPLOYEE_SETTINGS_FORM, REQUIRED_FIELD_OPTIONS } from '../constants';
+import {
+  toApiDepartment,
+  toApiDesignation,
+} from '@/features/settings/org-structure/utils/orgStructure';
 
 /**
  * @param {Record<string, unknown>} settings
@@ -25,11 +29,17 @@ export function employeeSettingsToFormValues(settings) {
  * @param {typeof DEFAULT_EMPLOYEE_SETTINGS_FORM} formData
  */
 export function buildEmployeeSettingsPayload(settings, formData) {
+  const departments = Array.isArray(settings.departments)
+    ? settings.departments.map(toApiDepartment)
+    : settings.departments;
+  const designations = Array.isArray(settings.designations)
+    ? settings.designations.map(toApiDesignation)
+    : settings.designations;
+
   return {
-    ...settings,
     ...formData,
-    departments: settings.departments,
-    designations: settings.designations,
+    departments,
+    designations,
   };
 }
 

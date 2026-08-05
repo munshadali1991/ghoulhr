@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrgProfile, updateOrgProfile } from '@/features/settings/api/settingsApi';
+import { serializeOrgProfileForApi } from '@/features/settings/shell/organizationSettings';
 
 /**
  * Parse settings data - convert JSON strings to objects/arrays
@@ -7,24 +9,22 @@ import { getOrgProfile, updateOrgProfile } from '@/features/settings/api/setting
  */
 function parseSettingsData(data) {
   if (!data || typeof data !== 'object') return {};
-  
+
   const parsed = {};
-  
+
   Object.entries(data).forEach(([key, value]) => {
     if (typeof value === 'string') {
       try {
-        // Try to parse JSON strings (arrays, objects, booleans, numbers)
         const parsedValue = JSON.parse(value);
         parsed[key] = parsedValue;
       } catch {
-        // If parsing fails, keep as string
         parsed[key] = value;
       }
     } else {
       parsed[key] = value;
     }
   });
-  
+
   return parsed;
 }
 
@@ -35,10 +35,8 @@ function parseSettingsData(data) {
 export function useSettings(organizationId) {
   const queryClient = useQueryClient();
 
-  // Create a unique query key that includes organizationId
   const queryKey = ['settings', organizationId];
 
-  // Fetch settings using profile endpoint (returns mapped object)
   const {
     data: settingsData,
     isLoading,
@@ -48,22 +46,27 @@ export function useSettings(organizationId) {
     queryKey,
     queryFn: () => getOrgProfile(organizationId),
     enabled: !!organizationId,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    gcTime: 10 * 60 * 1000,   // Keep in garbage collection for 10 minutes
+    staleTime: 0,
+    gcTime: 10 * 60 * 1000,
   });
 
-  // Mutation for updating settings
   const updateMutation = useMutation({
-    mutationFn: (formData) => updateOrgProfile(organizationId, formData),
-    onSuccess: () => {
-      // Refetch to get the latest data from server
-      queryClient.invalidateQueries({ queryKey });
-      queryClient.refetchQueries({ queryKey });
+    mutationFn: (formData) =>
+      updateOrgProfile(organizationId, serializeOrgProfileForApi(formData)),
+    onSuccess: (_result, variables) => {
+      const saved = serializeOrgProfileForApi(variables);
+      queryClient.setQueryData(queryKey, (old) => ({
+        ...(old && typeof old === 'object' ? old : {}),
+        ...saved,
+      }));
+      void queryClient.invalidateQueries({ queryKey });
     },
   });
 
-  // Transform data for form - parse any JSON strings
-  const settings = settingsData ? parseSettingsData(settingsData) : {};
+  const settings = useMemo(
+    () => (settingsData ? parseSettingsData(settingsData) : {}),
+    [settingsData],
+  );
 
   return {
     settings,

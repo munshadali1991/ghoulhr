@@ -38,7 +38,7 @@ export function LeavePreviewSummary({ balance, loading, active }) {
       {loading ? (
         <Skeleton variant="text" width={56} height={40} sx={{ mt: 0.5 }} />
       ) : (
-        <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5, lineHeight: 1.2 }}>
+        <Typography variant="metricLarge" sx={{ mt: 0.5 }}>
           {balanceDisplay}
           {hasBalance && !loading ? (
             <Typography component="span" variant="body1" color="text.secondary" fontWeight={500} sx={{ ml: 0.75 }}>

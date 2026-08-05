@@ -7,12 +7,14 @@ import { LeaveConfigLoadingSkeleton } from './components/LeaveConfigLoadingSkele
 import { LeaveTypeEditorWizard } from './components/LeaveTypeEditorWizard';
 import { LeaveTypesListView } from './components/LeaveTypesListView';
 import { LocationsRequiredEmpty } from './components/LocationsRequiredEmpty';
+import { useSettingsSectionAccess } from '@/features/settings/hooks/useSettingsSectionAccess';
 
 /**
  * @param {{ organizationId: string }} props
  */
 export function LeaveConfigSettingsPage({ organizationId }) {
   const form = useLeaveSettingsForm(organizationId);
+  const { canWrite } = useSettingsSectionAccess('leave');
 
   if (form.isLoading) {
     return <LeaveConfigLoadingSkeleton />;
@@ -26,8 +28,12 @@ export function LeaveConfigSettingsPage({ organizationId }) {
     form.handleSubmit(form.onSubmit)(e);
   };
 
+  const handleListSave = () => {
+    form.handleSubmit(form.onSubmit)();
+  };
+
   return (
-    <Box sx={{ width: '100%', maxWidth: '100%' }}>
+    <Box sx={{ width: '100%', maxWidth: '100%' }} data-testid="settings-leave-page">
       {form.error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {form.error.message || 'Failed to load leave policies.'}
@@ -52,10 +58,15 @@ export function LeaveConfigSettingsPage({ organizationId }) {
             watchedLeaves={form.watchedLeaves}
             filteredDisplayIndices={form.filteredDisplayIndices}
             locationNameById={form.locationNameById}
+            control={form.control}
             isDirty={form.isDirty}
-            onAdd={form.startAddLeave}
+            isUpdating={form.isUpdating}
+            onAdd={canWrite ? form.startAddLeave : undefined}
             onRowClick={form.openEditor}
-            onRemove={form.removeLeaveAt}
+            onRemove={canWrite ? form.removeLeaveAt : undefined}
+            onSave={canWrite ? handleListSave : undefined}
+            onDiscard={canWrite ? form.handleCancel : undefined}
+            readOnly={!canWrite}
           />
         ) : (
           <LeaveTypeEditorWizard
@@ -73,6 +84,7 @@ export function LeaveConfigSettingsPage({ organizationId }) {
             onWizardNext={form.handleWizardNext}
             onCancel={form.handleCancel}
             onSubmit={handleWizardSubmit}
+            onSelectStep={form.goToWizardStep}
           />
         )}
       </Box>

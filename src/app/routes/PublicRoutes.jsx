@@ -14,6 +14,7 @@ function TenantLoginRoute() {
       onSubmit={login.handleSubmit}
       loading={login.loading}
       error={login.error}
+      errorKind={login.errorKind}
     />
   );
 }
@@ -29,6 +30,7 @@ function AdminLoginRoute() {
       onSubmit={login.handleSubmit}
       loading={login.loading}
       error={login.error}
+      errorKind={login.errorKind}
     />
   );
 }

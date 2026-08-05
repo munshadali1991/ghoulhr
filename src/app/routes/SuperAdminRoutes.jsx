@@ -1,9 +1,9 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { DashboardLayout } from '@/features/super-admin/layouts/DashboardLayout';
 import { OverviewPage } from '@/features/super-admin/pages/OverviewPage';
 import { OrganizationsPage } from '@/features/super-admin/pages/OrganizationsPage';
 import { OrganizationFormPage } from '@/features/super-admin/pages/OrganizationFormPage';
-import { SUPER_ADMIN_NAV_ITEMS } from '@/app/constants';
+import { buildSuperAdminNavItems } from '@/features/super-admin/config/superAdminNav';
 import { useAuth } from '@/app/providers/useAuth';
 
 /**
@@ -21,11 +21,13 @@ export function SuperAdminRoutes({
   orgData,
 }) {
   const { user, logout } = useAuth();
+  const { pathname } = useLocation();
+  const navItems = buildSuperAdminNavItems(pathname);
 
   return (
     <DashboardLayout
       user={user}
-      navItems={SUPER_ADMIN_NAV_ITEMS}
+      navItems={navItems}
       mobileDrawerOpen={mobileDrawerOpen}
       onOpenMobileDrawer={onOpenMobileDrawer}
       onCloseMobileDrawer={onCloseMobileDrawer}
