@@ -4,6 +4,7 @@ import {
   Chip,
   CircularProgress,
   Grid,
+  IconButton,
   Paper,
   Stack,
   Table,
@@ -13,17 +14,23 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import RestoreFromTrashRoundedIcon from '@mui/icons-material/RestoreFromTrashRounded';
+import VpnKeyRoundedIcon from '@mui/icons-material/VpnKeyRounded';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
 import { TableRowActions } from '@/shared/components/data/TableRowActions';
+import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
-import RestoreFromTrashRoundedIcon from '@mui/icons-material/RestoreFromTrashRounded';
-import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
 import { formatSubscriptionType } from '@/features/super-admin/utils/subscriptionPeriodUtils';
+import { regenerateOrgAdminPassword } from '@/features/super-admin/api/organizationsApi';
+import { OrgAdminCredentialsDialog } from '@/features/super-admin/components/OrgAdminCredentialsDialog';
 
 function subscriptionChip(org) {
   const summary = org.subscriptionSummary;
@@ -83,6 +90,11 @@ export function OrganizationsPage({
 }) {
   const navigate = useNavigate();
   const isMobileLayout = useIsMobileLayout();
+  const { snackbar, show: showSnackbar, close: closeSnackbar } = useAppSnackbar();
+  const [regeneratingId, setRegeneratingId] = useState('');
+  const [credentials, setCredentials] = useState(null);
+  const [credentialsOpen, setCredentialsOpen] = useState(false);
+
   const filteredOrganizations = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) {
@@ -95,6 +107,53 @@ export function OrganizationsPage({
       );
     });
   }, [organizations, search]);
+
+  const handleRegeneratePassword = async (org) => {
+    if (!org?.adminEmail) {
+      showSnackbar(
+        'Set an Admin Email for this organization before regenerating the password.',
+        'error',
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Regenerate admin password for "${org.name}"?\n\nAdmin email: ${org.adminEmail}\nThe current password will stop working immediately.`,
+    );
+    if (!confirmed) return;
+
+    setRegeneratingId(org.id);
+    try {
+      const result = await regenerateOrgAdminPassword(org.id);
+      setCredentials(result);
+      setCredentialsOpen(true);
+      showSnackbar('Admin password regenerated', 'success');
+    } catch (err) {
+      showSnackbar(err?.message || 'Failed to regenerate admin password', 'error');
+    } finally {
+      setRegeneratingId('');
+    }
+  };
+
+  const regenerateAction = (org) => (
+    <Tooltip title="Regenerate admin password">
+      <span>
+        <IconButton
+          size="small"
+          color="primary"
+          aria-label="Regenerate admin password"
+          disabled={Boolean(regeneratingId)}
+          onClick={() => handleRegeneratePassword(org)}
+        >
+          {regeneratingId === org.id ? (
+            <CircularProgress size={16} />
+          ) : (
+            <VpnKeyRoundedIcon fontSize="small" />
+          )}
+        </IconButton>
+      </span>
+    </Tooltip>
+  );
 
   return (
     <Grid container spacing={2}>
@@ -119,11 +178,10 @@ export function OrganizationsPage({
                 >
                   <TextField
                     size="small"
-                    label="Search org"
+                    placeholder="Search organizations"
                     value={search}
                     onChange={onSearchChange}
-                    fullWidth={isMobileLayout}
-                    sx={{ minWidth: { sm: 200 } }}
+                    sx={{ minWidth: { sm: 240 } }}
                   />
                   <CrudButton
                     intent="create"
@@ -161,6 +219,7 @@ export function OrganizationsPage({
                         <TableRowActions
                           onEdit={() => navigate(`/organizations/${org.id}/edit`)}
                           onDelete={() => onDelete(org.id)}
+                          extra={regenerateAction(org)}
                         />
                       }
                     />
@@ -202,6 +261,7 @@ export function OrganizationsPage({
                             <TableRowActions
                               onEdit={() => navigate(`/organizations/${org.id}/edit`)}
                               onDelete={() => onDelete(org.id)}
+                              extra={regenerateAction(org)}
                             />
                           </TableCell>
                         </TableRow>
@@ -313,6 +373,23 @@ export function OrganizationsPage({
           </PageCard>
         </Stack>
       </Grid>
+
+      <OrgAdminCredentialsDialog
+        open={credentialsOpen}
+        credentials={credentials}
+        onClose={() => {
+          setCredentialsOpen(false);
+          setCredentials(null);
+        }}
+        onNotify={showSnackbar}
+      />
+
+      <AppSnackbar
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={closeSnackbar}
+      />
     </Grid>
   );
 }

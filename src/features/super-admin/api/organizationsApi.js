@@ -41,3 +41,16 @@ export function getOrganizationById(organizationId) {
 export function getSuperAdminDashboardStats() {
   return apiFetch('/organizations/stats');
 }
+
+export function regenerateOrgAdminPassword(organizationId) {
+  return apiFetch(`/organizations/id/${organizationId}/regenerate-admin-password`, {
+    method: 'POST',
+  });
+}
+
+export function emailOrgAdminCredentials(organizationId, temporaryPassword) {
+  return apiFetch(`/organizations/id/${organizationId}/email-admin-credentials`, {
+    method: 'POST',
+    body: JSON.stringify({ temporaryPassword }),
+  });
+}
