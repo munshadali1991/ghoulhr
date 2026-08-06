@@ -28,6 +28,7 @@ import { TableRowActions } from '@/shared/components/data/TableRowActions';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
+import { formatTenantHostname } from '@/app/config/appConfig';
 import { formatSubscriptionType } from '@/features/super-admin/utils/subscriptionPeriodUtils';
 import { regenerateOrgAdminPassword } from '@/features/super-admin/api/organizationsApi';
 import { OrgAdminCredentialsDialog } from '@/features/super-admin/components/OrgAdminCredentialsDialog';
@@ -51,7 +52,7 @@ function subscriptionChip(org) {
 }
 
 function subdomainLabel(org) {
-  return `${org.subdomain}.ghoulhr.com`;
+  return formatTenantHostname(org.subdomain);
 }
 
 function StatusChip({ status }) {

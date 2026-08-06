@@ -60,3 +60,52 @@ export function getApiBaseUrl() {
 
 export const DEFAULT_BOOTSTRAP_KEY = import.meta.env.VITE_BOOTSTRAP_ADMIN_KEY ?? '';
 export { STORAGE_KEY };
+
+const DEFAULT_PUBLIC_APP_DOMAIN = 'peopleaiq.com';
+
+/**
+ * Public apex domain used in tenant host labels (e.g. nqt.peopleaiq.com).
+ * Prefer VITE_APP_PUBLIC_DOMAIN, then derive from the current host, then default.
+ */
+export function getPublicAppDomain() {
+  const fromEnv = import.meta.env.VITE_APP_PUBLIC_DOMAIN?.trim().toLowerCase();
+  if (fromEnv) {
+    return fromEnv.replace(/^\.+/, '');
+  }
+
+  if (typeof window === 'undefined') {
+    return DEFAULT_PUBLIC_APP_DOMAIN;
+  }
+
+  const hostname = window.location.hostname.toLowerCase();
+  if (
+    !hostname ||
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.endsWith('.localhost')
+  ) {
+    return DEFAULT_PUBLIC_APP_DOMAIN;
+  }
+
+  // Skip bare IPs (e.g. 3.26.99.219)
+  if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(hostname)) {
+    return DEFAULT_PUBLIC_APP_DOMAIN;
+  }
+
+  const parts = hostname.split('.');
+  if (parts.length >= 2) {
+    return parts.slice(-2).join('.');
+  }
+
+  return DEFAULT_PUBLIC_APP_DOMAIN;
+}
+
+export function formatTenantHostname(subdomain) {
+  const slug = String(subdomain || '')
+    .trim()
+    .toLowerCase();
+  if (!slug) {
+    return getPublicAppDomain();
+  }
+  return `${slug}.${getPublicAppDomain()}`;
+}
