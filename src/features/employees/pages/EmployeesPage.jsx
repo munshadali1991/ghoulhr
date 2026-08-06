@@ -1,18 +1,14 @@
 import { useState, useEffect } from 'react';
 import {
-  Alert,
   Box,
   Button,
   CardContent,
   Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Grid,
+  CircularProgress,
   IconButton,
-  Paper,
+  InputAdornment,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
@@ -20,12 +16,10 @@ import {
   TableHead,
   TablePagination,
   TableRow,
-  TextField,
-  Typography,
-  CircularProgress,
-  InputAdornment,
-  Tab,
   Tabs,
+  TextField,
+  Tooltip,
+  Typography,
 } from '@mui/material';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
@@ -34,15 +28,16 @@ import { useIsMobileLayout } from '@/shared/hooks/useIsMobileLayout';
 import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
-import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
-import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
-import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import PersonAddRoundedIcon from '@mui/icons-material/PersonAddRounded';
-import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
-import { getEmployeeById, listEmployees } from '@/features/employees/api/employeesApi';
+import VpnKeyRoundedIcon from '@mui/icons-material/VpnKeyRounded';
+import {
+  getEmployeeById,
+  listEmployees,
+  resetEmployeePassword,
+} from '@/features/employees/api/employeesApi';
+import { EmployeeCredentialsDialog } from '@/features/employees/components/EmployeeCredentialsDialog';
 import { EmployeeOnboardingWizard } from '@/features/employees/onboarding/EmployeeOnboardingWizard';
 import { mapEmployeeToOnboardingValues } from '@/features/employees/onboarding/onboardingSchema';
 import { ReportingManagersTab } from '@/features/employees/reporting/ReportingManagersTab';
@@ -66,6 +61,7 @@ export function EmployeesPage({ organizationId }) {
   const canCreate = can(directoryTab?.actions?.create);
   const canOnboard = can(directoryTab?.actions?.onboard);
   const canUpdate = can(directoryTab?.actions?.update);
+  const canResetPassword = can(directoryTab?.actions?.resetPassword);
   const canAddEmployee = canCreate || canOnboard;
   const [pageTab, setPageTab] = useState(0);
   const [employees, setEmployees] = useState([]);
@@ -74,10 +70,11 @@ export function EmployeesPage({ organizationId }) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_ROWS_PER_PAGE);
   const [showAddWizard, setShowAddWizard] = useState(false);
-  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [credentialsOpen, setCredentialsOpen] = useState(false);
+  const [credentialsTitle, setCredentialsTitle] = useState('Employee Credentials');
   const { snackbar, show: showSnackbar, close: closeSnackbar } = useAppSnackbar();
-  const [newEmployeeCredentials, setNewEmployeeCredentials] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
+  const [credentials, setCredentials] = useState(null);
+  const [regeneratingId, setRegeneratingId] = useState('');
   const [showEditWizard, setShowEditWizard] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [editInitialValues, setEditInitialValues] = useState(null);
@@ -104,15 +101,71 @@ export function EmployeesPage({ organizationId }) {
   };
 
   const handleWizardSuccess = async (result) => {
-    setNewEmployeeCredentials({
-      employee: result.employee,
-      credentials: result.credentials,
+    setCredentials({
+      employeeId: result.employee?.id,
+      employeeCode: result.employee?.employeeCode,
+      name: result.employee?.name,
+      email: result.employee?.email,
+      temporaryPassword: result.credentials?.temporaryPassword,
+      expiresAt: result.credentials?.expiresAt,
+      loginUrl: result.credentials?.loginUrl,
     });
-    setSuccessDialogOpen(true);
+    setCredentialsTitle('Employee Created Successfully');
+    setCredentialsOpen(true);
     setShowAddWizard(false);
     await fetchEmployees();
     showSnackbar('Employee created successfully!', 'success');
   };
+
+  const handleRegenerateCredentials = async (employee) => {
+    const confirmed = window.confirm(
+      `Regenerate login credentials for "${employee.name}"?\n\nEmail: ${employee.email}\nThe current password will stop working immediately.`,
+    );
+    if (!confirmed) return;
+
+    setRegeneratingId(employee.id);
+    try {
+      const result = await resetEmployeePassword(employee.id);
+      setCredentials({
+        employeeId: result.employeeId || employee.id,
+        employeeCode: result.employeeCode || employee.employeeCode,
+        name: result.name || employee.name,
+        email: result.email || employee.email,
+        temporaryPassword: result.temporaryPassword,
+        expiresAt: result.expiresAt,
+        loginUrl: result.loginUrl,
+        organizationName: result.organizationName,
+      });
+      setCredentialsTitle('Employee Password Regenerated');
+      setCredentialsOpen(true);
+      showSnackbar('Employee password regenerated', 'success');
+    } catch (error) {
+      showSnackbar(error.message || 'Failed to regenerate credentials', 'error');
+    } finally {
+      setRegeneratingId('');
+    }
+  };
+
+  const regenerateAction = (employee) =>
+    canResetPassword ? (
+      <Tooltip title="Regenerate credentials">
+        <span>
+          <IconButton
+            size="small"
+            color="primary"
+            aria-label="Regenerate credentials"
+            disabled={Boolean(regeneratingId)}
+            onClick={() => handleRegenerateCredentials(employee)}
+          >
+            {regeneratingId === employee.id ? (
+              <CircularProgress size={16} />
+            ) : (
+              <VpnKeyRoundedIcon fontSize="small" />
+            )}
+          </IconButton>
+        </span>
+      </Tooltip>
+    ) : null;
 
   const openEditWizard = async (employee) => {
     try {
@@ -131,12 +184,6 @@ export function EmployeesPage({ organizationId }) {
     setEditInitialValues(null);
     await fetchEmployees();
     showSnackbar('Employee updated successfully', 'success');
-  };
-
-  // Copy to clipboard
-  const copyToClipboard = (text, label) => {
-    navigator.clipboard.writeText(text);
-    showSnackbar(`${label} copied to clipboard`, 'success');
   };
 
   // Filter employees based on search
@@ -382,8 +429,11 @@ export function EmployeesPage({ organizationId }) {
                   },
                 ]}
                 actions={
-                  canUpdate ? (
-                    <TableRowActions onEdit={() => openEditWizard(employee)} />
+                  canUpdate || canResetPassword ? (
+                    <TableRowActions
+                      onEdit={canUpdate ? () => openEditWizard(employee) : undefined}
+                      extra={regenerateAction(employee)}
+                    />
                   ) : null
                 }
               />
@@ -416,7 +466,7 @@ export function EmployeesPage({ organizationId }) {
                 <TableCell><strong>Role</strong></TableCell>
                 <TableCell><strong>Status</strong></TableCell>
                 <TableCell><strong>Join Date</strong></TableCell>
-                {canUpdate ? (
+                {canUpdate || canResetPassword ? (
                   <TableCell align="right"><strong>Actions</strong></TableCell>
                 ) : null}
               </TableRow>
@@ -455,13 +505,16 @@ export function EmployeesPage({ organizationId }) {
                         ? new Date(employee.dateOfJoining).toLocaleDateString()
                         : '-'}
                     </TableCell>
-                    {canUpdate ? (
+                    {canUpdate || canResetPassword ? (
                       <TableCell
                         align="right"
                         className="table-actions-cell"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <TableRowActions onEdit={() => openEditWizard(employee)} />
+                        <TableRowActions
+                          onEdit={canUpdate ? () => openEditWizard(employee) : undefined}
+                          extra={regenerateAction(employee)}
+                        />
                       </TableCell>
                     ) : null}
                   </TableRow>
@@ -488,128 +541,16 @@ export function EmployeesPage({ organizationId }) {
         </>
       ) : null}
 
-      {/* Success Dialog with Credentials */}
-      <Dialog
-        open={successDialogOpen}
-        onClose={() => setSuccessDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CheckCircleRoundedIcon color="success" />
-            <Typography variant="h6">Employee Created Successfully</Typography>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          {newEmployeeCredentials && (
-            <>
-              <Alert severity="warning" sx={{ mb: 3 }}>
-                <Typography variant="body2" fontWeight={600}>
-                  ⚠️ Important: Save these credentials securely!
-                </Typography>
-                <Typography variant="caption">
-                  The temporary password is shown only once and expires in 7 days.
-                </Typography>
-              </Alert>
-
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Employee Details
-                </Typography>
-                <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
-                  <Grid container spacing={1}>
-                    <Grid size={6}>
-                      <Typography variant="caption">Employee Code</Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        {newEmployeeCredentials.employee.employeeCode}
-                      </Typography>
-                    </Grid>
-                    <Grid size={6}>
-                      <Typography variant="caption">Name</Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        {newEmployeeCredentials.employee.name}
-                      </Typography>
-                    </Grid>
-                    <Grid size={12}>
-                      <Typography variant="caption">Email</Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        {newEmployeeCredentials.employee.email}
-                      </Typography>
-                    </Grid>
-                  </Grid>
-                </Paper>
-              </Box>
-
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Login Credentials
-                </Typography>
-                <Paper sx={{ p: 2, bgcolor: 'warning.light' }}>
-                  <Stack spacing={2}>
-                    <Box>
-                      <Typography variant="caption">Temporary Password</Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                        <Typography
-                          variant="body1"
-                          fontWeight={700}
-                          fontFamily="monospace"
-                          sx={{ flex: 1 }}
-                        >
-                          {showPassword
-                            ? newEmployeeCredentials.credentials.temporaryPassword
-                            : '••••••••••••••••'}
-                        </Typography>
-                        <IconButton
-                          size="small"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? <VisibilityOffRoundedIcon /> : <VisibilityRoundedIcon />}
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            copyToClipboard(
-                              newEmployeeCredentials.credentials.temporaryPassword,
-                              'Password'
-                            )
-                          }
-                        >
-                          <ContentCopyRoundedIcon />
-                        </IconButton>
-                      </Box>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption">Expires At</Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        {new Date(
-                          newEmployeeCredentials.credentials.expiresAt
-                        ).toLocaleDateString()}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption">Login URL</Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        http://localhost:5173 (Employee/Admin tab)
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Paper>
-              </Box>
-
-              <Alert severity="info">
-                <Typography variant="caption">
-                  Share these credentials with the employee securely. They will be required to change
-                  the password on first login.
-                </Typography>
-              </Alert>
-            </>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <CrudButton intent="save" onClick={() => setSuccessDialogOpen(false)}>Done</CrudButton>
-        </DialogActions>
-      </Dialog>
+      <EmployeeCredentialsDialog
+        open={credentialsOpen}
+        title={credentialsTitle}
+        credentials={credentials}
+        onClose={() => {
+          setCredentialsOpen(false);
+          setCredentials(null);
+        }}
+        onNotify={showSnackbar}
+      />
 
       <AppSnackbar
         open={snackbar.open}
