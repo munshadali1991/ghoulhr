@@ -1,15 +1,18 @@
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
 import BusinessRoundedIcon from '@mui/icons-material/BusinessRounded';
+import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 
 const ICONS = {
   dashboard: DashboardRoundedIcon,
   organizations: BusinessRoundedIcon,
+  settings: SettingsRoundedIcon,
 };
 
 /** Nav entries without JSX (paths + keys). */
 export const SUPER_ADMIN_NAV_CONFIG = [
   { key: 'dashboard', label: 'Dashboard', path: '/dashboard' },
   { key: 'organizations', label: 'Organizations', path: '/organizations' },
+  { key: 'settings', label: 'Settings', path: '/settings' },
 ];
 
 /**

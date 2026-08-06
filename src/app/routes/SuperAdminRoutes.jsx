@@ -3,6 +3,7 @@ import { DashboardLayout } from '@/features/super-admin/layouts/DashboardLayout'
 import { OverviewPage } from '@/features/super-admin/pages/OverviewPage';
 import { OrganizationsPage } from '@/features/super-admin/pages/OrganizationsPage';
 import { OrganizationFormPage } from '@/features/super-admin/pages/OrganizationFormPage';
+import { SettingsPage } from '@/features/super-admin/pages/SettingsPage';
 import { buildSuperAdminNavItems } from '@/features/super-admin/config/superAdminNav';
 import { useAuth } from '@/app/providers/useAuth';
 
@@ -67,6 +68,7 @@ export function SuperAdminRoutes({
           path="/organizations/:id/edit"
           element={<OrganizationFormPage onSaved={orgData.refresh} />}
         />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </DashboardLayout>
