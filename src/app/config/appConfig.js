@@ -6,7 +6,7 @@ export const APP_NAME = 'peopleAIQ';
 export const APP_BRAND_INITIALS = 'pA';
 
 const DEFAULT_STAGING_API_PATH = '/staging/api/v1';
-const DEFAULT_PRODUCTION_API_PATH = '/ghoulhrms/api/v1';
+const DEFAULT_PRODUCTION_API_PATH = '/api/v1';
 
 function normalizeEnvPath(value) {
   const trimmed = value.trim();

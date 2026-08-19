@@ -39,9 +39,9 @@ export function PublicRoutes() {
   return (
     <Routes>
       <Route path="/" element={<TenantLoginRoute />} />
-      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="/login" element={<TenantLoginRoute />} />
       <Route path={ADMIN_CP_PATH} element={<AdminLoginRoute />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
