@@ -86,7 +86,7 @@ export function isOrganizationSettingsPath(pathname) {
 }
 
 /** Settings tabs that use a wider content column (tables / dense forms). */
-export const SETTINGS_WIDE_LAYOUT_SLUGS = new Set(['leave', 'attendance', 'performance', 'rbac']);
+export const SETTINGS_WIDE_LAYOUT_SLUGS = new Set(['leave', 'attendance', 'performance', 'rbac', 'skills']);
 
 export function isWideSettingsLayout(slug, pathname = '') {
   if (SETTINGS_WIDE_LAYOUT_SLUGS.has(slug)) {

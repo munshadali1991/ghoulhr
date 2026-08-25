@@ -25,7 +25,7 @@ export const EMPLOYEE_NAV_CONFIG = [
     label: 'Leave',
     expandPathPrefix: '/leave',
     module: 'leave',
-    permission: 'ess.leave:read',
+    permissions: ['ess.leave:read', 'dashboard.ess.team-on-leave:read'],
     children: [
       { key: 'leave-apply', label: 'Leave Apply', path: '/leave/apply', permission: 'ess.leave:apply' },
       {
@@ -37,6 +37,12 @@ export const EMPLOYEE_NAV_CONFIG = [
       { key: 'leave-balances', label: 'Leave Balances', path: '/leave/balances', permission: 'ess.leave:read' },
       { key: 'leave-calendar', label: 'Leave Calendar', path: '/leave/calendar', permission: 'ess.leave:read' },
       { key: 'holiday-calendar', label: 'Holiday Calendar', path: '/leave/holidays', permission: 'ess.leave:read' },
+      {
+        key: 'team-on-leave',
+        label: 'Team On Leave',
+        path: '/leave/team-on-leave',
+        permission: 'dashboard.ess.team-on-leave:read',
+      },
     ],
   },
   {
@@ -44,9 +50,11 @@ export const EMPLOYEE_NAV_CONFIG = [
     label: 'Attendance',
     expandPathPrefix: '/attendance',
     module: 'attendance',
-    permission: 'ess.attendance:read',
+    permissions: ['ess.attendance:read', 'dashboard.ess.who-is-in:read', 'ess.attendance.swipes:read'],
     children: [
-      { key: 'attendance-info', label: 'Attendance Info', path: '/attendance', permission: 'ess.attendance:read' },
+      { key: 'attendance-info', label: 'Attendance Info', path: '/attendance', permission: 'ess.attendance:read', exact: true },
+      { key: 'who-is-in', label: 'Who is in', path: '/attendance/who-is-in', permission: 'dashboard.ess.who-is-in:read' },
+      { key: 'employee-swipes', label: 'Employee Swipes', path: '/attendance/swipes', permission: 'ess.attendance.swipes:read' },
     ],
   },
   {

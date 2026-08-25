@@ -38,6 +38,9 @@ export const DASHBOARDS = [
       { key: 'holidays', read: 'ess.leave:read' },
       { key: 'payslip', read: 'payroll:read' },
       { key: 'quick-access', read: 'ess.leave:read' },
+      { key: 'team-on-leave', read: 'dashboard.ess.team-on-leave:read' },
+      { key: 'track', read: 'dashboard.ess.track:read' },
+      { key: 'who-is-in', read: 'dashboard.ess.who-is-in:read' },
     ],
   },
   {

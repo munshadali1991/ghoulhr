@@ -5,10 +5,13 @@ import { LeaveApplyPage } from '../pages/leave/LeaveApplyPage';
 import { LeaveBalancesPage } from '../pages/leave/LeaveBalancesPage';
 import { LeaveBalanceDetailPage } from '../pages/leave/LeaveBalanceDetailPage';
 import { LeaveCalendarPage } from '../pages/leave/LeaveCalendarPage';
+import { TeamOnLeavePage } from '../pages/leave/TeamOnLeavePage';
 import { HolidayCalendarPage } from '../pages/leave/HolidayCalendarPage';
 import { LeaveRequestsPage } from '@/features/approvals/pages/leave/LeaveRequestsPage';
 import { TeamTimesheetsPage } from '@/features/approvals/pages/timesheet/TeamTimesheetsPage';
 import { AttendanceInfoPage } from '../pages/attendance/AttendanceInfoPage';
+import { WhoIsInPage } from '../pages/attendance/WhoIsInPage';
+import { EmployeeSwipesPage } from '../pages/attendance/EmployeeSwipesPage';
 import { TimesheetDayPage } from '../pages/timesheet/TimesheetDayPage';
 import { PlaceholderPage } from '../pages/PlaceholderPage';
 import { RequireAccess } from '@/features/auth/components/RequireAccess';
@@ -89,6 +92,14 @@ export function EmployeeRoutes({
           }
         />
         <Route
+          path="/leave/team-on-leave"
+          element={
+            <RequireAccess module="leave" permission="dashboard.ess.team-on-leave:read">
+              <TeamOnLeavePage />
+            </RequireAccess>
+          }
+        />
+        <Route
           path="/leave/holidays"
           element={
             <RequireAccess module="leave" permission="ess.leave:read">
@@ -110,6 +121,22 @@ export function EmployeeRoutes({
           element={
             <RequireAccess module="attendance" permission="ess.attendance:read">
               <AttendanceInfoPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/attendance/who-is-in"
+          element={
+            <RequireAccess module="attendance" permission="dashboard.ess.who-is-in:read">
+              <WhoIsInPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/attendance/swipes"
+          element={
+            <RequireAccess module="attendance" permission="ess.attendance.swipes:read">
+              <EmployeeSwipesPage />
             </RequireAccess>
           }
         />

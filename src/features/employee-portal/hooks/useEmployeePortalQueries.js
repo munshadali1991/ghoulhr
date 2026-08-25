@@ -4,6 +4,8 @@ import {
   fetchAttendanceDayDetail,
   fetchAttendanceDays,
   fetchAttendanceSummary,
+  fetchWhoIsIn,
+  fetchEmployeeSwipes,
   fetchEmployeeHome,
   fetchHolidayCalendar,
   fetchLeaveBalances,
@@ -11,6 +13,8 @@ import {
   fetchLeaveCalendar,
   fetchLeaveRequests,
   fetchLeaveTransactions,
+  fetchTeamOnLeave,
+  fetchTeamOnLeaveChart,
   fetchLeavePreview,
   fetchLeaveTypes,
   fetchColleagues,
@@ -32,14 +36,17 @@ import {
   upsertTimesheetDay,
 } from '../api/timesheetApi';
 import { employeePortalKeys } from '../api/queryKeys';
+import { orgTodayKey } from '../utils/orgDayjs';
 
 /**
  * @param {'PENDING' | 'APPROVED' | 'REJECTED'} status
+ * @param {boolean} [enabled=true]
  */
-export function useLeaveRequests(status) {
+export function useLeaveRequests(status, enabled = true) {
   return useQuery({
     queryKey: employeePortalKeys.leaveRequests(status),
     queryFn: () => fetchLeaveRequests(status),
+    enabled,
   });
 }
 
@@ -98,6 +105,27 @@ export function useLeaveTransactions(date, filter, search) {
   });
 }
 
+export function useTeamOnLeave(enabled = true) {
+  return useQuery({
+    queryKey: employeePortalKeys.teamOnLeave(),
+    queryFn: fetchTeamOnLeave,
+    staleTime: 60 * 1000,
+    enabled,
+  });
+}
+
+/**
+ * @param {{ from: string, to: string, type?: string } | null} params
+ * @param {boolean} [enabled=true]
+ */
+export function useTeamOnLeaveChart(params, enabled = true) {
+  return useQuery({
+    queryKey: employeePortalKeys.teamOnLeaveChart(params ?? {}),
+    queryFn: () => fetchTeamOnLeaveChart(params),
+    enabled: Boolean(enabled && params?.from && params?.to),
+  });
+}
+
 /**
  * @param {object | null} params
  */
@@ -142,6 +170,38 @@ export function useAttendanceDayDetail(date) {
   });
 }
 
+/**
+ * @param {string | undefined} date YYYY-MM-DD
+ * @param {boolean} [enabled=true]
+ */
+export function useWhoIsIn(date, enabled = true) {
+  return useQuery({
+    queryKey: employeePortalKeys.whoIsIn(date),
+    queryFn: () => fetchWhoIsIn(date),
+    enabled,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (!data) return false;
+      const tz = data.timezone;
+      const today = tz ? orgTodayKey(tz) : dayjs().format('YYYY-MM-DD');
+      const effectiveDate = date || data.date;
+      return effectiveDate === today ? 60_000 : false;
+    },
+  });
+}
+
+/**
+ * @param {{ from: string, to: string, q?: string, punchType?: string, page?: number, pageSize?: number } | null} params
+ * @param {boolean} [enabled=true]
+ */
+export function useEmployeeSwipes(params, enabled = true) {
+  return useQuery({
+    queryKey: employeePortalKeys.employeeSwipes(params ?? {}),
+    queryFn: () => fetchEmployeeSwipes(params),
+    enabled: Boolean(enabled && params?.from && params?.to),
+  });
+}
+
 export function useEmployeeHome() {
   return useQuery({
     queryKey: employeePortalKeys.home(),
@@ -182,7 +242,7 @@ function patchEmployeeHomeAttendance(queryClient, signedIn) {
 export function useSignInAttendance() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: signInAttendance,
+    mutationFn: (signInLocation) => signInAttendance(signInLocation),
     onSuccess: (data) => {
       patchEmployeeHomeAttendance(queryClient, data?.signedIn ?? true);
       queryClient.invalidateQueries({ queryKey: employeePortalKeys.all });
