@@ -25,29 +25,18 @@ export const EMPLOYEE_NAV_CONFIG = [
     label: 'Leave',
     expandPathPrefix: '/leave',
     module: 'leave',
-    permissions: [
-      'ess.leave:read',
-      'dashboard.ess.team-on-leave:read',
-      'approvals.leave:read',
-      'approvals.attendance:read',
-    ],
+    permission: 'ess.leave:read',
     children: [
       { key: 'leave-apply', label: 'Leave Apply', path: '/leave/apply', permission: 'ess.leave:apply' },
       {
         key: 'leave-requests',
         label: 'Leave Requests',
         path: '/leave/requests',
-        permissions: ['approvals.leave:read', 'approvals.attendance:read'],
+        permission: 'approvals.leave:read',
       },
       { key: 'leave-balances', label: 'Leave Balances', path: '/leave/balances', permission: 'ess.leave:read' },
       { key: 'leave-calendar', label: 'Leave Calendar', path: '/leave/calendar', permission: 'ess.leave:read' },
       { key: 'holiday-calendar', label: 'Holiday Calendar', path: '/leave/holidays', permission: 'ess.leave:read' },
-      {
-        key: 'team-on-leave',
-        label: 'Team On Leave',
-        path: '/leave/team-on-leave',
-        permission: 'dashboard.ess.team-on-leave:read',
-      },
     ],
   },
   {
@@ -55,11 +44,9 @@ export const EMPLOYEE_NAV_CONFIG = [
     label: 'Attendance',
     expandPathPrefix: '/attendance',
     module: 'attendance',
-    permissions: ['ess.attendance:read', 'dashboard.ess.who-is-in:read', 'ess.attendance.swipes:read'],
+    permission: 'ess.attendance:read',
     children: [
-      { key: 'attendance-info', label: 'Attendance Info', path: '/attendance', permission: 'ess.attendance:read', exact: true },
-      { key: 'who-is-in', label: 'Who is in', path: '/attendance/who-is-in', permission: 'dashboard.ess.who-is-in:read' },
-      { key: 'employee-swipes', label: 'Employee Swipes', path: '/attendance/swipes', permission: 'ess.attendance.swipes:read' },
+      { key: 'attendance-info', label: 'Attendance Info', path: '/attendance', permission: 'ess.attendance:read' },
     ],
   },
   {
@@ -93,9 +80,6 @@ export function filterEmployeeNavConfig(session) {
     if (item.children) {
       const children = item.children.filter((child) => {
         if (child.permission && !can(session, child.permission)) return false;
-        if (child.permissions?.length && !child.permissions.some((p) => can(session, p))) {
-          return false;
-        }
         return true;
       });
       if (children.length === 0) return null;

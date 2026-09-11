@@ -134,20 +134,6 @@ export const SETTINGS_ACCESS = {
     apiRead: 'GET /settings/performance/master',
     apiWrite: 'PUT /settings/performance/master',
   },
-  skills: {
-    slug: 'skills',
-    label: 'Skills',
-    module: 'settings',
-    read: 'settings.skills:read',
-    write: 'settings.skills:write',
-    apiRead: 'GET /settings/skills/items',
-    apiWrite: 'POST /settings/skills/items',
-    tabs: [
-      { key: 'categories', label: 'Categories', read: 'settings.skills:read', write: 'settings.skills:write' },
-      { key: 'subcategories', label: 'Subcategories', read: 'settings.skills:read', write: 'settings.skills:write' },
-      { key: 'skills', label: 'Skills', read: 'settings.skills:read', write: 'settings.skills:write' },
-    ],
-  },
   rbac: {
     slug: 'rbac',
     label: 'Roles & Permissions',
@@ -174,7 +160,6 @@ export const SETTINGS_SLUG_ORDER = [
   'attendance',
   'timesheet',
   'performance',
-  'skills',
   'rbac',
 ];
 
@@ -202,13 +187,6 @@ export const EMPLOYEES_MODULE_ACCESS = {
   ],
 };
 
-/** @type {{ module: string, permission: string, apiRead: string }} */
-export const SKILL_SEARCH_ACCESS = {
-  module: 'employees',
-  permission: 'employees.skills:read',
-  apiRead: 'GET /hr/skills/employees',
-};
-
 /** @type {Record<string, { module: string, permission?: string, permissions?: string[], permissionsMode?: string }>} */
 export const ESS_ACCESS = {
   home: {
@@ -222,9 +200,6 @@ export const ESS_ACCESS = {
   attendancePunch: { module: 'attendance', permission: 'ess.attendance:punch' },
   timesheetRead: { module: 'timesheet', permission: 'ess.timesheet:read' },
   timesheetWrite: { module: 'timesheet', permission: 'ess.timesheet:write' },
-  documentsRead: { module: 'documents', permission: 'ess.documents:read' },
-  skillsRead: { module: 'employees', permission: 'ess.skills:read' },
-  skillsWrite: { module: 'employees', permission: 'ess.skills:write' },
 };
 
 /** @type {Record<string, { permission: string }>} */
@@ -243,14 +218,6 @@ export const PAYROLL_ACCESS = {
   run: 'payroll:run',
 };
 
-/** @type {{ module: string, essRead: string, read: string, write: string }} */
-export const DOCUMENTS_ACCESS = {
-  module: 'documents',
-  essRead: 'ess.documents:read',
-  read: 'documents:read',
-  write: 'documents:write',
-};
-
 export {
   DASHBOARDS,
   getAllowedDashboards,
@@ -265,11 +232,9 @@ export {
 export const ACCESS_REGISTRY = {
   settings: SETTINGS_ACCESS,
   employees: EMPLOYEES_MODULE_ACCESS,
-  skillSearch: SKILL_SEARCH_ACCESS,
   ess: ESS_ACCESS,
   approvals: APPROVALS_ACCESS,
   payroll: PAYROLL_ACCESS,
-  documents: DOCUMENTS_ACCESS,
   dashboards: DASHBOARDS,
 };
 

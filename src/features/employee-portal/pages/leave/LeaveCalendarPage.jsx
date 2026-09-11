@@ -3,8 +3,6 @@ import {
   Box,
   CircularProgress,
   FormControl,
-  IconButton,
-  InputAdornment,
   InputLabel,
   MenuItem,
   Select,
@@ -13,53 +11,21 @@ import {
   Typography,
 } from '@mui/material';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
-import FilterListRoundedIcon from '@mui/icons-material/FilterListRounded';
 import dayjs from 'dayjs';
-import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useMemo, useState } from 'react';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { PageToolbar } from '../../components/PageToolbar';
 import { MonthCalendarGrid } from '../../components/MonthCalendarGrid';
 import { toDateKey } from '../../utils/calendarUtils';
+import { EmptyStatePanel } from '../../components/EmptyStatePanel';
 import { LeaveTransactionList } from '../../components/LeaveTransactionList';
-import { LeaveCalendarHolidaysList } from '../../components/LeaveCalendarHolidaysList';
 import { useLeaveCalendar, useLeaveTransactions } from '../../hooks/useEmployeePortalQueries';
-import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
-import { orgNow } from '../../utils/orgDayjs';
-
-function initialLeaveFilter(searchParams, canTeam) {
-  if (!canTeam) return 'me';
-  return searchParams.get('filter') === 'team' ? 'team' : 'me';
-}
 
 export function LeaveCalendarPage() {
-  const { can } = useAuthorization();
-  const canTeam = can('dashboard.ess.team-on-leave:read');
-  const [searchParams] = useSearchParams();
   const [month, setMonth] = useState(() => dayjs().startOf('month'));
   const [selectedDate, setSelectedDate] = useState(() => dayjs());
-  const [filter, setFilter] = useState(() =>
-    initialLeaveFilter(searchParams, canTeam),
-  );
+  const [filter, setFilter] = useState('me');
   const [search, setSearch] = useState('');
-  const [orgTimezone, setOrgTimezone] = useState(null);
-
-  useEffect(() => {
-    if (!canTeam && filter === 'team') setFilter('me');
-  }, [canTeam, filter]);
-
-  useEffect(() => {
-    if (!orgTimezone) return;
-    const now = orgNow(orgTimezone);
-    const browserToday = dayjs().format('YYYY-MM-DD');
-    setSelectedDate((prev) =>
-      prev.format('YYYY-MM-DD') === browserToday ? now : prev,
-    );
-    setMonth((prev) => {
-      const browserMonth = dayjs().startOf('month');
-      return prev.isSame(browserMonth, 'month') ? now.startOf('month') : prev;
-    });
-  }, [orgTimezone]);
 
   const year = month.year();
   const monthNum = month.month() + 1;
@@ -67,12 +33,6 @@ export function LeaveCalendarPage() {
 
   const calendarQuery = useLeaveCalendar(year, monthNum, filter);
   const transactionsQuery = useLeaveTransactions(dateKey, filter, search);
-
-  useEffect(() => {
-    if (calendarQuery.data?.timezone) {
-      setOrgTimezone(calendarQuery.data.timezone);
-    }
-  }, [calendarQuery.data?.timezone]);
 
   const teamOnLeaveCount = calendarQuery.data?.teamOnLeaveCount ?? 0;
 
@@ -103,41 +63,11 @@ export function LeaveCalendarPage() {
       ({ date }) => {
         const key = toDateKey(date);
         const marker = calendarQuery.data?.days?.[key];
-        const count = Number(marker?.onLeaveCount ?? 0);
-        const showTeamBadge = filter === 'team' && count > 0;
-        const showMeDot = filter === 'me' && marker?.onLeave;
-        if (!marker?.holiday && !showTeamBadge && !showMeDot) return null;
+        if (!marker?.holiday && !marker?.onLeave) return null;
 
         return (
-          <Stack
-            direction="row"
-            spacing={0.5}
-            justifyContent="center"
-            alignItems="center"
-            sx={{ mt: 0.25, minHeight: 18 }}
-          >
-            {showTeamBadge ? (
-              <Box
-                sx={{
-                  minWidth: 18,
-                  height: 18,
-                  px: 0.5,
-                  borderRadius: '50%',
-                  bgcolor: 'action.hover',
-                  color: 'text.secondary',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  typography: 'caption',
-                  fontWeight: 600,
-                  fontSize: 11,
-                  lineHeight: 1,
-                }}
-              >
-                {count}
-              </Box>
-            ) : null}
-            {showMeDot ? (
+          <Stack direction="row" spacing={0.25} justifyContent="center" sx={{ mt: 0.25 }}>
+            {marker.onLeave ? (
               <Box
                 sx={{
                   width: 6,
@@ -147,7 +77,7 @@ export function LeaveCalendarPage() {
                 }}
               />
             ) : null}
-            {marker?.holiday ? (
+            {marker.holiday ? (
               <Box
                 sx={{
                   width: 6,
@@ -161,31 +91,25 @@ export function LeaveCalendarPage() {
           </Stack>
         );
       },
-    [calendarQuery.data?.days, filter],
+    [calendarQuery.data?.days],
   );
 
   return (
     <>
       <PageToolbar
         left={
-          canTeam ? (
-            <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel>Filter Type</InputLabel>
-              <Select
-                label="Filter Type"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-              >
-                <MenuItem value="me">Me</MenuItem>
-                <MenuItem value="team">My Team</MenuItem>
-              </Select>
-            </FormControl>
-          ) : null
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel>Filter Type</InputLabel>
+            <Select label="Filter Type" value={filter} onChange={(e) => setFilter(e.target.value)}>
+              <MenuItem value="me">Me</MenuItem>
+              <MenuItem value="team">My Team</MenuItem>
+            </Select>
+          </FormControl>
         }
       />
 
       <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2}>
-        <PageCard sx={{ flex: 2, p: 2, minHeight: 360 }}>
+        <PageCard sx={{ flex: 2, p: 2 }}>
           {calendarQuery.isLoading ? (
             <CircularProgress size={32} />
           ) : calendarQuery.error ? (
@@ -202,57 +126,30 @@ export function LeaveCalendarPage() {
           )}
         </PageCard>
 
-        <PageCard sx={{ flex: 1, minWidth: { xs: 0, lg: 320 }, width: '100%', minHeight: 280 }}>
+        <PageCard sx={{ flex: 1, minWidth: { xs: 0, lg: 280 }, width: '100%' }}>
           <Box sx={{ p: 2 }}>
-            <Typography variant="h6" fontWeight={700} sx={{ m: 0, mb: 0.25 }}>
-              {selectedDate.format('DD ddd')}
+            <TextField
+              size="small"
+              fullWidth
+              placeholder="Search Employee"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              slotProps={{
+                input: {
+                  endAdornment: <SearchRoundedIcon fontSize="small" color="action" />,
+                },
+              }}
+              sx={{ mb: 2 }}
+            />
+            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
+              Leave Transactions ({transactionsQuery.data?.items?.length ?? 0})
             </Typography>
-            {(transactionsQuery.data?.holidays?.length ?? 0) > 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                {transactionsQuery.data.holidays[0].holidayType}
-                {transactionsQuery.data.holidays[0].name
-                  ? ` · ${transactionsQuery.data.holidays[0].name}`
-                  : ''}
-              </Typography>
-            ) : (
-              <Box sx={{ mb: 1.5 }} />
-            )}
-
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-              <TextField
-                size="small"
-                fullWidth
-                placeholder="Search Employee"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                slotProps={{
-                  input: {
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <SearchRoundedIcon fontSize="small" color="action" />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-              <IconButton size="small" aria-label="Filter" disabled>
-                <FilterListRoundedIcon fontSize="small" />
-              </IconButton>
-            </Stack>
-
             {transactionsQuery.isLoading ? (
               <CircularProgress size={24} />
-            ) : transactionsQuery.error ? (
-              <Alert severity="error">{transactionsQuery.error.message}</Alert>
+            ) : transactionsQuery.data?.items?.length === 0 ? (
+              <EmptyStatePanel title="No Employees are on leave" />
             ) : (
-              <>
-                <LeaveTransactionList
-                  items={transactionsQuery.data?.items ?? []}
-                />
-                <LeaveCalendarHolidaysList
-                  holidays={transactionsQuery.data?.holidays ?? []}
-                />
-              </>
+              <LeaveTransactionList items={transactionsQuery.data.items} />
             )}
           </Box>
         </PageCard>

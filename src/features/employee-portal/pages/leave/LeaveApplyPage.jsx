@@ -1,11 +1,12 @@
-import { Alert, Box, CircularProgress } from '@mui/material';
+import { Alert, Box, CircularProgress, Stack } from '@mui/material';
 import { useSearchParams } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { SegmentedTabs } from '../../components/SegmentedTabs';
+import { LeaveTypeNav } from '../../components/LeaveTypeNav';
 import { LeaveApplyForm } from '../../components/LeaveApplyForm';
 import { LeaveRequestAccordionCard } from '../../components/LeaveRequestAccordionCard';
 import { EmptyStatePanel } from '../../components/EmptyStatePanel';
@@ -26,6 +27,7 @@ const TAB_OPTIONS = [
 export function LeaveApplyPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get('tab') || 'apply';
+  const [leaveTypeNav, setLeaveTypeNav] = useState('leave');
   const { snackbar, show, close } = useAppSnackbar();
 
   const form = useLeaveApplyForm();
@@ -97,23 +99,32 @@ export function LeaveApplyPage() {
         </Box>
 
       {tab === 'apply' && (
-        <PageCard sx={{ width: '100%', minWidth: 0, p: { xs: 1.5, sm: 2, md: 3 } }}>
-          {typesLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-              <CircularProgress size={32} />
-            </Box>
-          ) : (
-            <LeaveApplyForm
-              form={form}
-              leaveTypes={typesData?.types ?? []}
-              approvers={typesData?.approvers ?? []}
-              hasAssignedManager={Boolean(typesData?.hasAssignedManager)}
-              rules={typesData?.rules ?? []}
-              onSubmit={handleSubmit}
-              submitting={submitMutation.isPending}
-            />
-          )}
-        </PageCard>
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={2}
+          alignItems="flex-start"
+          sx={{ width: '100%', minWidth: 0 }}
+        >
+          <Box sx={{ width: { xs: '100%', md: 'auto' }, minWidth: 0 }}>
+            <LeaveTypeNav value={leaveTypeNav} onChange={setLeaveTypeNav} />
+          </Box>
+          <PageCard sx={{ flex: 1, width: '100%', minWidth: 0, p: { xs: 1.5, sm: 2, md: 3 } }}>
+            {typesLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+                <CircularProgress size={32} />
+              </Box>
+            ) : (
+              <LeaveApplyForm
+                form={form}
+                leaveTypes={typesData?.types ?? []}
+                approvers={typesData?.approvers ?? []}
+                rules={typesData?.rules ?? []}
+                onSubmit={handleSubmit}
+                submitting={submitMutation.isPending}
+              />
+            )}
+          </PageCard>
+        </Stack>
       )}
 
       {tab === 'pending' && (

@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import {
   Box,
   FormControl,
-  IconButton,
   MenuItem,
   Select,
   Stack,
@@ -11,9 +9,7 @@ import {
   Typography,
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import { ACCESS_SCOPES } from '@/features/rbac/constants/accessScopes';
-import { PermissionPreviewDialog } from './PermissionPreviewDialog';
 
 const SCOPE_DESCRIPTIONS = {
   SELF: "Access only to the employee's own records",
@@ -40,25 +36,11 @@ export function PermissionResourceRow({
   disabled = false,
   actionColumnLabels = [],
 }) {
-  const [previewPerm, setPreviewPerm] = useState(null);
   const activePerms = row.permissions.filter((p) => activeByCode.has(p.code));
   const primaryPerm = activePerms[0];
   const hasAnyActive = activePerms.length > 0;
 
   const useColumns = actionColumnLabels.length > 0;
-
-  const previewButton = (perm) => (
-    <Tooltip title="Preview what this permission unlocks">
-      <IconButton
-        size="small"
-        aria-label={`Preview ${perm.code}`}
-        onClick={() => setPreviewPerm(perm)}
-        sx={{ p: 0.25, color: 'text.secondary' }}
-      >
-        <VisibilityOutlinedIcon sx={{ fontSize: 16 }} />
-      </IconButton>
-    </Tooltip>
-  );
 
   return (
     <Box
@@ -75,7 +57,7 @@ export function PermissionResourceRow({
             display: 'grid',
             gridTemplateColumns: {
               xs: '1fr',
-              md: `1fr repeat(${Math.min(actionColumnLabels.length, 4)}, minmax(72px, 100px)) minmax(120px, 150px)`,
+              md: `1fr repeat(${Math.min(actionColumnLabels.length, 4)}, minmax(72px, 90px)) minmax(120px, 150px)`,
             },
             gap: 1,
             alignItems: 'center',
@@ -98,7 +80,7 @@ export function PermissionResourceRow({
                 direction="row"
                 alignItems="center"
                 justifyContent={{ md: 'center' }}
-                spacing={0.25}
+                spacing={0.5}
               >
                 <Switch
                   size="small"
@@ -117,7 +99,6 @@ export function PermissionResourceRow({
                     />
                   </Tooltip>
                 ) : null}
-                {previewButton(perm)}
               </Stack>
             );
           })}
@@ -178,7 +159,6 @@ export function PermissionResourceRow({
                       <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
                     </Tooltip>
                   ) : null}
-                  {previewButton(perm)}
                 </Stack>
               );
             })}
@@ -212,12 +192,6 @@ export function PermissionResourceRow({
           ) : null}
         </Stack>
       )}
-
-      <PermissionPreviewDialog
-        open={Boolean(previewPerm)}
-        permission={previewPerm}
-        onClose={() => setPreviewPerm(null)}
-      />
     </Box>
   );
 }

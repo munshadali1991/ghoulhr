@@ -1,8 +1,8 @@
-import { Alert, Box, CircularProgress, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import LocalCafeRoundedIcon from '@mui/icons-material/LocalCafeRounded';
 import dayjs from 'dayjs';
 import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { PageToolbar, ToolbarButtonGroup } from '../../components/PageToolbar';
@@ -10,9 +10,6 @@ import { MonthCalendarGrid } from '../../components/MonthCalendarGrid';
 import { toDateKey } from '../../utils/calendarUtils';
 import { AttendanceMetricsRow } from '../../components/AttendanceMetricsRow';
 import { AttendanceDayDetailPanel } from '../../components/AttendanceDayDetailPanel';
-import { SignInLocationDialog } from '../../components/attendance/SignInLocationDialog';
-import { SegmentedTabs } from '../../components/SegmentedTabs';
-import { RegularizationTabPanel } from '../../components/attendance/RegularizationTabPanel';
 import {
   useAttendanceDayDetail,
   useAttendanceDays,
@@ -59,12 +56,8 @@ const EMPTY_DETAIL = {
 
 export function AttendanceInfoPage() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { can } = useAuthorization();
   const canPunch = can('ess.attendance:punch');
-  const canRegularize = can('ess.attendance.regularization:apply');
-  const tab = searchParams.get('tab') === 'regularization' && canRegularize ? 'regularization' : 'calendar';
-  const initialRegDate = searchParams.get('date') || '';
   const [month, setMonth] = useState(dayjs());
   const [selectedDate, setSelectedDate] = useState(dayjs());
 
@@ -72,7 +65,6 @@ export function AttendanceInfoPage() {
   const signInMutation = useSignInAttendance();
   const signOutMutation = useSignOutAttendance();
   const { snackbar, show, close } = useAppSnackbar();
-  const [signInDialogOpen, setSignInDialogOpen] = useState(false);
 
   const year = month.year();
   const monthNum = month.month() + 1;
@@ -84,34 +76,21 @@ export function AttendanceInfoPage() {
 
   const signedIn = homeData?.attendance?.signedIn ?? false;
 
-  const refetchAttendanceViews = () =>
-    Promise.all([
-      refetchHome(),
-      summaryQuery.refetch(),
-      daysQuery.refetch(),
-      detailQuery.refetch(),
-    ]);
-
   const handleAttendanceToggle = async () => {
-    if (signedIn) {
-      try {
+    try {
+      if (signedIn) {
         await signOutMutation.mutateAsync();
         show('Signed out successfully');
-        await refetchAttendanceViews();
-      } catch (e) {
-        show(e?.message ?? 'Attendance action failed', 'error');
+      } else {
+        await signInMutation.mutateAsync();
+        show('Signed in successfully');
       }
-      return;
-    }
-    setSignInDialogOpen(true);
-  };
-
-  const handleSignInConfirm = async (signInLocation) => {
-    try {
-      await signInMutation.mutateAsync(signInLocation);
-      setSignInDialogOpen(false);
-      show('Signed in successfully');
-      await refetchAttendanceViews();
+      await Promise.all([
+        refetchHome(),
+        summaryQuery.refetch(),
+        daysQuery.refetch(),
+        detailQuery.refetch(),
+      ]);
     } catch (e) {
       show(e?.message ?? 'Attendance action failed', 'error');
     }
@@ -179,51 +158,28 @@ export function AttendanceInfoPage() {
 
   const detailData = detailQuery.data ?? { ...EMPTY_DETAIL, date: dateKey, dayOfWeek: selectedDate.format('ddd') };
 
-  const tabOptions = [
-    { value: 'calendar', label: 'Calendar' },
-    ...(canRegularize ? [{ value: 'regularization', label: 'Regularization' }] : []),
-  ];
-
-  const setTab = (value) => {
-    const next = new URLSearchParams(searchParams);
-    if (value === 'calendar') {
-      next.delete('tab');
-      next.delete('date');
-    } else {
-      next.set('tab', value);
-    }
-    setSearchParams(next);
-  };
-
   return (
     <>
       <PageToolbar
         right={
-          canPunch ? (
-            <ToolbarButtonGroup>
-              <CrudButton
-                intent="create"
-                size="small"
-                disabled={signInMutation.isPending || signOutMutation.isPending}
-                onClick={handleAttendanceToggle}
-              >
-                {signedIn ? 'Sign Out' : 'Sign In'}
-              </CrudButton>
-            </ToolbarButtonGroup>
-          ) : null
+          <ToolbarButtonGroup>
+            <Button variant="outlined" color="secondary" size="small">
+              My Regularizations
+            </Button>
+            {canPunch ? (
+            <CrudButton
+              intent="create"
+              size="small"
+              disabled={signInMutation.isPending || signOutMutation.isPending}
+              onClick={handleAttendanceToggle}
+            >
+              {signedIn ? 'Sign Out' : 'Sign In'}
+            </CrudButton>
+            ) : null}
+          </ToolbarButtonGroup>
         }
       />
 
-      {canRegularize ? (
-        <Box sx={{ width: '100%', mb: 3 }}>
-          <SegmentedTabs value={tab} options={tabOptions} onChange={setTab} />
-        </Box>
-      ) : null}
-
-      {tab === 'regularization' ? (
-        <RegularizationTabPanel initialDate={initialRegDate} />
-      ) : (
-        <>
       {summaryQuery.isLoading ? (
         <CircularProgress size={32} />
       ) : summaryQuery.error ? (
@@ -266,17 +222,8 @@ export function AttendanceInfoPage() {
           />
         </Box>
       </Stack>
-        </>
-      )}
 
       <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={close} />
-
-      <SignInLocationDialog
-        open={signInDialogOpen}
-        onClose={() => setSignInDialogOpen(false)}
-        onConfirm={handleSignInConfirm}
-        isPending={signInMutation.isPending}
-      />
     </>
   );
 }

@@ -91,11 +91,10 @@ export const MOCK_SESSIONS = [
 /** @type {Record<string, import('../types/employeePortal.types').CalendarDayMarker>} */
 export function buildMockLeaveCalendarDays(year, month) {
   const markers = {};
-  const lastDay = new Date(year, month, 0).getDate();
   const holidays = {
     '2026-05-28': 'general',
   };
-  for (let d = 1; d <= lastDay; d += 1) {
+  for (let d = 1; d <= 31; d += 1) {
     const key = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     if (holidays[key]) {
       markers[key] = { date: key, holiday: holidays[key] };

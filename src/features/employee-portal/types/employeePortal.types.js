@@ -156,9 +156,7 @@
 
 /**
  * @typedef {{
- *   id?: string,
  *   employeeName: string,
- *   leaveType?: string,
  *   days: number,
  *   from: string,
  *   to: string,

@@ -1,82 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   approveLeaveRequest,
-  approveRegularizationRequest,
   approveTimesheetDay,
   fetchLeaveApprovalDetail,
   fetchLeaveApprovalDocument,
   fetchPendingLeaveApprovals,
-  fetchPendingRegularizationApprovals,
-  fetchRegularizationApprovalDetail,
   fetchTeamTimesheetDays,
   fetchTimesheetApprovalDetail,
   bulkApproveTimesheetDays,
   rejectLeaveRequest,
-  rejectRegularizationRequest,
   rejectTimesheetDay,
 } from '../api/approvalsApi';
 import { approvalsKeys } from '../api/queryKeys';
 import { employeePortalKeys } from '@/features/employee-portal/api/queryKeys';
 
-export function usePendingLeaveApprovals(enabled = true) {
+export function usePendingLeaveApprovals() {
   return useQuery({
     queryKey: approvalsKeys.pendingLeave(),
     queryFn: fetchPendingLeaveApprovals,
-    enabled,
-  });
-}
-
-export function usePendingRegularizationApprovals(enabled = true) {
-  return useQuery({
-    queryKey: approvalsKeys.pendingRegularization(),
-    queryFn: fetchPendingRegularizationApprovals,
-    enabled,
-  });
-}
-
-/**
- * @param {string | null | undefined} id
- */
-export function useRegularizationApprovalDetail(id) {
-  return useQuery({
-    queryKey: approvalsKeys.regularizationDetail(id),
-    queryFn: () => fetchRegularizationApprovalDetail(id),
-    enabled: Boolean(id),
-  });
-}
-
-export function useApproveRegularizationRequest() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, notes }) => approveRegularizationRequest(id, notes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: approvalsKeys.all });
-      queryClient.invalidateQueries({ queryKey: employeePortalKeys.home() });
-      queryClient.invalidateQueries({ queryKey: employeePortalKeys.notificationUnreadCount() });
-      queryClient.invalidateQueries({ queryKey: employeePortalKeys.notifications() });
-      queryClient.invalidateQueries({
-        queryKey: [...employeePortalKeys.all, 'attendance-regularization'],
-      });
-      queryClient.invalidateQueries({ queryKey: [...employeePortalKeys.all, 'attendance-summary'] });
-      queryClient.invalidateQueries({ queryKey: [...employeePortalKeys.all, 'attendance-days'] });
-      queryClient.invalidateQueries({ queryKey: [...employeePortalKeys.all, 'attendance-day'] });
-    },
-  });
-}
-
-export function useRejectRegularizationRequest() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, reason }) => rejectRegularizationRequest(id, reason),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: approvalsKeys.all });
-      queryClient.invalidateQueries({ queryKey: employeePortalKeys.home() });
-      queryClient.invalidateQueries({ queryKey: employeePortalKeys.notificationUnreadCount() });
-      queryClient.invalidateQueries({ queryKey: employeePortalKeys.notifications() });
-      queryClient.invalidateQueries({
-        queryKey: [...employeePortalKeys.all, 'attendance-regularization'],
-      });
-    },
   });
 }
 

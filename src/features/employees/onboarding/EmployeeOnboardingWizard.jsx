@@ -83,7 +83,6 @@ export function EmployeeOnboardingWizard({
   const [duplicateResult, setDuplicateResult] = useState(null);
   const initialContactRef = useRef(null);
   const initialDocumentIdsRef = useRef([]);
-  const initialProfilePhotoStorageKeyRef = useRef('');
   const uploadBatchIdRef = useRef(
     typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID()
@@ -115,8 +114,6 @@ export function EmployeeOnboardingWizard({
       initialDocumentIdsRef.current = (initialValues.documents || [])
         .filter((d) => d.serverDocumentId)
         .map((d) => d.serverDocumentId);
-      initialProfilePhotoStorageKeyRef.current =
-        initialValues.basic?.profilePhotoStorageKey?.trim() || '';
     }
   }, [initialValues, reset, initialContact]);
 
@@ -264,9 +261,6 @@ export function EmployeeOnboardingWizard({
     try {
       const payload = buildHrOnboardingPayload(r.data, {
         isEditMode: Boolean(employeeId),
-        initialProfilePhotoStorageKey: employeeId
-          ? initialProfilePhotoStorageKeyRef.current
-          : undefined,
         deletedDocumentIds: employeeId
           ? getDeletedDocumentIds(initialDocumentIdsRef.current, r.data.documents)
           : undefined,

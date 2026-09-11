@@ -5,45 +5,6 @@ export async function fetchPendingLeaveApprovals() {
   return apiFetch('/ess/approvals/leave');
 }
 
-export async function fetchPendingRegularizationApprovals() {
-  return apiFetch('/ess/approvals/attendance-regularization');
-}
-
-/**
- * @param {string} id
- */
-export async function fetchRegularizationApprovalDetail(id) {
-  return apiFetch(`/ess/approvals/attendance-regularization/${encodeURIComponent(id)}`);
-}
-
-/**
- * @param {string} id
- * @param {string} [notes]
- */
-export async function approveRegularizationRequest(id, notes) {
-  return apiFetch(
-    `/ess/approvals/attendance-regularization/${encodeURIComponent(id)}/approve`,
-    {
-      method: 'POST',
-      body: JSON.stringify({ notes: notes?.trim() || undefined }),
-    },
-  );
-}
-
-/**
- * @param {string} id
- * @param {string} [reason]
- */
-export async function rejectRegularizationRequest(id, reason) {
-  return apiFetch(
-    `/ess/approvals/attendance-regularization/${encodeURIComponent(id)}/reject`,
-    {
-      method: 'POST',
-      body: JSON.stringify({ reason: reason?.trim() || undefined }),
-    },
-  );
-}
-
 /**
  * @param {string} id
  */

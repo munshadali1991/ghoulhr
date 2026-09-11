@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { Can } from '@/features/auth/components/Can';
-import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
 import { HomeCardEyebrow } from '../home/HomeCardEyebrow';
 
 function pad(n) {
@@ -43,10 +42,6 @@ function EndOfDayCountdown() {
  */
 export function AttendanceHomeWidget({ attendance, onToggle, isPending = false }) {
   const navigate = useNavigate();
-  const { can } = useAuthorization();
-  const swipesPath = can('ess.attendance.swipes:read')
-    ? '/attendance/swipes'
-    : '/attendance';
 
   if (!attendance) return null;
 
@@ -92,7 +87,7 @@ export function AttendanceHomeWidget({ attendance, onToggle, isPending = false }
         <Link
           component="button"
           underline="none"
-          onClick={() => navigate(swipesPath)}
+          onClick={() => navigate('/attendance')}
           variant="body2"
           sx={{
             fontWeight: 600,

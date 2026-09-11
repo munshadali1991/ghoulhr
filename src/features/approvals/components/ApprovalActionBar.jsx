@@ -9,22 +9,13 @@ import { Can } from '@/features/auth/components/Can';
  *   disabled?: boolean,
  * }} props
  */
-export function ApprovalActionBar({
-  onApprove,
-  onSendBack,
-  onReject,
-  disabled,
-  permission = 'approvals.leave:act',
-  showSendBack = true,
-}) {
+export function ApprovalActionBar({ onApprove, onSendBack, onReject, disabled }) {
   return (
-    <Can permission={permission}>
+    <Can permission="approvals.leave:act">
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="flex-end">
-        {showSendBack ? (
-          <Button variant="outlined" color="warning" onClick={onSendBack} disabled={disabled}>
-            Send back
-          </Button>
-        ) : null}
+        <Button variant="outlined" color="warning" onClick={onSendBack} disabled={disabled}>
+          Send back
+        </Button>
         <Button variant="outlined" color="error" onClick={onReject} disabled={disabled}>
           Reject
         </Button>
