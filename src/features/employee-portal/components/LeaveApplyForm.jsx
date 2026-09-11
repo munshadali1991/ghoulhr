@@ -39,6 +39,7 @@ const ACCEPTED_FILE_TYPES =
  *   form: ReturnType<import('../hooks/useLeaveApplyForm').useLeaveApplyForm>,
  *   leaveTypes: { value: string; label: string }[],
  *   approvers: { value: string; label: string }[],
+ *   hasAssignedManager?: boolean,
  *   rules?: Array<{
  *     leaveConfigurationId: string,
  *     allowHalfDay?: boolean,
@@ -55,6 +56,7 @@ export function LeaveApplyForm({
   form,
   leaveTypes,
   approvers,
+  hasAssignedManager = false,
   rules = [],
   onSubmit,
   submitting,
@@ -114,6 +116,12 @@ export function LeaveApplyForm({
   const balanceLoading =
     (Boolean(previewParams) && previewQuery.isLoading) ||
     (Boolean(leaveType) && balancesQuery.isLoading && remainingBalance == null);
+
+  const previewDays = previewQuery.data?.daysCount ?? null;
+  const insufficientBalance =
+    remainingBalance != null &&
+    previewDays != null &&
+    Number(previewDays) > Number(remainingBalance);
 
   const selectedRule = useMemo(
     () => rules.find((r) => r.leaveConfigurationId === leaveType),
@@ -393,6 +401,13 @@ export function LeaveApplyForm({
                   active={Boolean(leaveType)}
                 />
               </Grid>
+              {insufficientBalance ? (
+                <Grid size={{ xs: 12 }}>
+                  <Alert severity="error" sx={{ borderRadius: 2 }}>
+                    Requested days exceed your available balance. Reduce the date range or choose another leave type.
+                  </Alert>
+                </Grid>
+              ) : null}
             </Grid>
           </FormLabelRow>
 
@@ -408,6 +423,7 @@ export function LeaveApplyForm({
                     labelId="leave-approver-label"
                     label="Select approver"
                     displayEmpty
+                    disabled
                     renderValue={(selected) => {
                       if (!selected) return 'Select an approver';
                       return approvers.find((a) => a.value === selected)?.label ?? selected;
@@ -423,6 +439,17 @@ export function LeaveApplyForm({
                     <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
                       {errors.applyingTo.message}
                     </Typography>
+                  ) : null}
+                  {!hasAssignedManager && approvers.length > 0 ? (
+                    <Alert severity="info" sx={{ mt: 1 }}>
+                      You have no manager assigned. Your leave request will go to Admin for approval.
+                    </Alert>
+                  ) : null}
+                  {!hasAssignedManager && approvers.length === 0 ? (
+                    <Alert severity="error" sx={{ mt: 1 }}>
+                      No approver is available. Assign a reporting manager or ensure an Admin exists
+                      before applying for leave.
+                    </Alert>
                   ) : null}
                 </FormControl>
               )}
@@ -598,7 +625,7 @@ export function LeaveApplyForm({
         <CrudButton
           intent="save"
           type="submit"
-          disabled={submitting}
+          disabled={submitting || insufficientBalance}
           sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 140 } }}
         >
           Submit request

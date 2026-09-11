@@ -54,6 +54,19 @@ export function EmployeeNotificationsMenu() {
     if (item.type === 'LEAVE_PENDING_APPROVAL' && item.leaveRequestId) {
       handleClose();
       navigate('/leave/requests');
+      return;
+    }
+    if (item.type === 'REGULARIZATION_PENDING_APPROVAL') {
+      handleClose();
+      navigate('/leave/requests?tab=regularization');
+      return;
+    }
+    if (
+      item.type === 'REGULARIZATION_APPROVED' ||
+      item.type === 'REGULARIZATION_REJECTED'
+    ) {
+      handleClose();
+      navigate('/attendance?tab=regularization');
     }
   };
 

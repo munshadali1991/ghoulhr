@@ -32,9 +32,11 @@ export function ApproveLeaveDialog({
     if (!open) setNotes('');
   }, [open]);
 
+  const title = leaveType === 'regularization' ? 'Approve regularization request' : 'Approve leave request';
+
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
-      <DialogTitle>Approve leave request</DialogTitle>
+      <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <TextField
           autoFocus

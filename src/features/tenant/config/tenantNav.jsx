@@ -7,6 +7,8 @@ import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import BeachAccessRoundedIcon from '@mui/icons-material/BeachAccessRounded';
 import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
 import AssignmentTurnedInRoundedIcon from '@mui/icons-material/AssignmentTurnedInRounded';
+import FolderSharedRoundedIcon from '@mui/icons-material/FolderSharedRounded';
+import PsychologyRoundedIcon from '@mui/icons-material/PsychologyRounded';
 import {
   DEFAULT_SETTINGS_PATH,
   settingsNavChildren,
@@ -27,6 +29,8 @@ const ICONS = {
   attendance: EventNoteRoundedIcon,
   timesheet: ScheduleRoundedIcon,
   performance: AssignmentTurnedInRoundedIcon,
+  skills: PsychologyRoundedIcon,
+  'document-centre': FolderSharedRoundedIcon,
   payroll: AttachMoneyRoundedIcon,
   settings: SettingsRoundedIcon,
 };
@@ -38,18 +42,29 @@ export const TENANT_NAV_CONFIG = [
     label: 'Leave',
     expandPathPrefix: '/leave',
     module: 'leave',
-    permission: 'ess.leave:read',
+    permissions: [
+      'ess.leave:read',
+      'dashboard.ess.team-on-leave:read',
+      'approvals.leave:read',
+      'approvals.attendance:read',
+    ],
     children: [
       { key: 'leave-apply', label: 'Leave Apply', path: '/leave/apply', permission: 'ess.leave:apply' },
       {
         key: 'leave-requests',
         label: 'Leave Requests',
         path: '/leave/requests',
-        permission: 'approvals.leave:read',
+        permissions: ['approvals.leave:read', 'approvals.attendance:read'],
       },
       { key: 'leave-balances', label: 'Leave Balances', path: '/leave/balances', permission: 'ess.leave:read' },
       { key: 'leave-calendar', label: 'Leave Calendar', path: '/leave/calendar', permission: 'ess.leave:read' },
       { key: 'leave-holidays', label: 'Holiday Calendar', path: '/leave/holidays', permission: 'ess.leave:read' },
+      {
+        key: 'team-on-leave',
+        label: 'Team On Leave',
+        path: '/leave/team-on-leave',
+        permission: 'dashboard.ess.team-on-leave:read',
+      },
     ],
   },
   {
@@ -57,9 +72,11 @@ export const TENANT_NAV_CONFIG = [
     label: 'Attendance',
     expandPathPrefix: '/attendance',
     module: 'attendance',
-    permissions: ['ess.attendance:read'],
+    permissions: ['ess.attendance:read', 'dashboard.ess.who-is-in:read', 'ess.attendance.swipes:read'],
     children: [
-      { key: 'attendance-info', label: 'Attendance Info', path: '/attendance', permission: 'ess.attendance:read' },
+      { key: 'attendance-info', label: 'Attendance Info', path: '/attendance', permission: 'ess.attendance:read', exact: true },
+      { key: 'who-is-in', label: 'Who is in', path: '/attendance/who-is-in', permission: 'dashboard.ess.who-is-in:read' },
+      { key: 'employee-swipes', label: 'Employee Swipes', path: '/attendance/swipes', permission: 'ess.attendance.swipes:read' },
     ],
   },
   {
@@ -106,7 +123,36 @@ export const TENANT_NAV_CONFIG = [
       },
     ],
   },
+  {
+    key: 'skills',
+    label: 'Skills',
+    expandPathPrefix: '/skills',
+    module: 'employees',
+    permissions: ['ess.skills:read', 'employees.skills:read'],
+    children: [
+      {
+        key: 'skills-my',
+        label: 'My Skills',
+        path: '/skills',
+        permission: 'ess.skills:read',
+        exact: true,
+      },
+      {
+        key: 'skills-search',
+        label: 'Skill search',
+        path: '/skills/search',
+        permission: 'employees.skills:read',
+      },
+    ],
+  },
   { key: 'employees', label: 'Employees', path: '/employees', module: 'employees', permission: 'employees:read' },
+  {
+    key: 'document-centre',
+    label: 'Document Centre',
+    path: '/document-centre',
+    module: 'documents',
+    permissions: ['ess.documents:read', 'documents:read'],
+  },
   { key: 'payroll', label: 'Payroll', path: '/payroll', module: 'payroll', permission: 'payroll:read' },
   {
     key: 'settings',
@@ -144,6 +190,9 @@ export function filterTenantNavConfig(session) {
     if (item.children) {
       const children = item.children.filter((child) => {
         if (child.permission && !can(session, child.permission)) return false;
+        if (child.permissions?.length && !child.permissions.some((p) => can(session, p))) {
+          return false;
+        }
         return true;
       });
       if (children.length === 0) return null;
@@ -273,7 +322,10 @@ export function getTenantPageTitle(pathname, session) {
   if (pathname.startsWith('/performance/manage')) return 'Manage & assign';
   if (pathname.match(/^\/performance\/[^/]+$/)) return 'Performance assessment';
   if (pathname === '/performance') return 'My assessments';
+  if (pathname.startsWith('/skills/search')) return 'Skill search';
+  if (pathname.startsWith('/skills')) return 'My Skills';
   if (pathname.startsWith('/employees')) return 'Employees';
+  if (pathname.startsWith('/document-centre')) return 'Document Centre';
   if (pathname.startsWith('/payroll')) return 'Payroll';
   return 'Dashboard';
 }
