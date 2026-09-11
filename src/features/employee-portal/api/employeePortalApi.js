@@ -308,6 +308,35 @@ export async function signOutAttendance() {
   });
 }
 
+/**
+ * @param {string} [status]
+ */
+export async function fetchAttendanceRegularization(status) {
+  const qs = new URLSearchParams();
+  if (status) qs.set('status', status);
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  return apiFetch(`/ess/attendance/regularization${suffix}`);
+}
+
+/**
+ * @param {{ workDate: string, inTime: string, outTime: string, reason: string }} payload
+ */
+export async function submitAttendanceRegularization(payload) {
+  return apiFetch('/ess/attendance/regularization', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * @param {string} id
+ */
+export async function withdrawAttendanceRegularization(id) {
+  return apiFetch(`/ess/attendance/regularization/${encodeURIComponent(id)}/withdraw`, {
+    method: 'POST',
+  });
+}
+
 export async function fetchNotifications() {
   return apiFetch('/ess/notifications');
 }

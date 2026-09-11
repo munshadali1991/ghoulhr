@@ -42,14 +42,19 @@ export const TENANT_NAV_CONFIG = [
     label: 'Leave',
     expandPathPrefix: '/leave',
     module: 'leave',
-    permissions: ['ess.leave:read', 'dashboard.ess.team-on-leave:read'],
+    permissions: [
+      'ess.leave:read',
+      'dashboard.ess.team-on-leave:read',
+      'approvals.leave:read',
+      'approvals.attendance:read',
+    ],
     children: [
       { key: 'leave-apply', label: 'Leave Apply', path: '/leave/apply', permission: 'ess.leave:apply' },
       {
         key: 'leave-requests',
         label: 'Leave Requests',
         path: '/leave/requests',
-        permission: 'approvals.leave:read',
+        permissions: ['approvals.leave:read', 'approvals.attendance:read'],
       },
       { key: 'leave-balances', label: 'Leave Balances', path: '/leave/balances', permission: 'ess.leave:read' },
       { key: 'leave-calendar', label: 'Leave Calendar', path: '/leave/calendar', permission: 'ess.leave:read' },
@@ -185,6 +190,9 @@ export function filterTenantNavConfig(session) {
     if (item.children) {
       const children = item.children.filter((child) => {
         if (child.permission && !can(session, child.permission)) return false;
+        if (child.permissions?.length && !child.permissions.some((p) => can(session, p))) {
+          return false;
+        }
         return true;
       });
       if (children.length === 0) return null;

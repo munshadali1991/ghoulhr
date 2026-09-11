@@ -110,7 +110,7 @@ export function EmployeeRoutes({
         <Route
           path="/leave/requests"
           element={
-            <RequireAccess module="leave" permission="approvals.leave:read">
+            <RequireAccess permissions={['approvals.leave:read', 'approvals.attendance:read']}>
               <LeaveRequestsPage />
             </RequireAccess>
           }

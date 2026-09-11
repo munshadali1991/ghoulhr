@@ -63,6 +63,29 @@ export const PERMISSION_PREVIEW_BY_CODE = {
     scopeNote:
       'Self: empty. Team: assigned reporting-manager employees only. Organization (Org Admin / HR): everyone.',
   },
+  'ess.attendance.regularization:apply': {
+    code: 'ess.attendance.regularization:apply',
+    title: 'Attendance regularization',
+    kind: 'Attendance page',
+    location: 'Attendance Info → Regularization tab (/attendance?tab=regularization)',
+    summary:
+      'Submit forgotten check-in or check-out times for a past or current day. The assigned reporting manager approves or rejects the request. Rejected requests stay visible on this tab.',
+    placementHint: 'Attendance Info → Regularization',
+    previewKind: 'generic',
+    scopeNote: 'Always own records only (Self).',
+  },
+  'approvals.attendance:read': {
+    code: 'approvals.attendance:read',
+    title: 'Regularization approvals',
+    kind: 'Leave Requests page',
+    location: 'Leave → Leave Requests → Regularization Requests (/leave/requests?tab=regularization)',
+    summary:
+      'Review pending attendance regularization requests from people in your access scope. Approve writes IN/OUT punches and updates the attendance calendar.',
+    placementHint: 'Leave submenu → Leave Requests → Regularization Requests',
+    previewKind: 'generic',
+    scopeNote:
+      'Self: assigned as approver. Team: reporting-manager employees. Organization (Org Admin / HR): everyone.',
+  },
 };
 
 /**

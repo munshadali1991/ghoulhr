@@ -25,6 +25,11 @@ export const employeePortalKeys = {
   attendanceDay: (date) => [...employeePortalKeys.all, 'attendance-day', date],
   whoIsIn: (date) => [...employeePortalKeys.all, 'who-is-in', date ?? 'today'],
   employeeSwipes: (params) => [...employeePortalKeys.all, 'employee-swipes', params],
+  attendanceRegularization: (status) => [
+    ...employeePortalKeys.all,
+    'attendance-regularization',
+    status ?? 'all',
+  ],
   home: () => [...employeePortalKeys.all, 'home'],
   leaveTypes: () => [...employeePortalKeys.all, 'leave-types'],
   colleagues: (search) => [...employeePortalKeys.all, 'colleagues', search ?? ''],

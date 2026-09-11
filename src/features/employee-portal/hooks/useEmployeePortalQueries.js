@@ -20,6 +20,9 @@ import {
   fetchColleagues,
   signInAttendance,
   signOutAttendance,
+  fetchAttendanceRegularization,
+  submitAttendanceRegularization,
+  withdrawAttendanceRegularization,
   submitLeaveRequest,
   withdrawLeaveRequest,
   fetchNotifications,
@@ -257,6 +260,44 @@ export function useSignOutAttendance() {
     onSuccess: (data) => {
       patchEmployeeHomeAttendance(queryClient, data?.signedIn ?? false);
       queryClient.invalidateQueries({ queryKey: employeePortalKeys.all });
+    },
+  });
+}
+
+/**
+ * @param {string} [status]
+ */
+export function useAttendanceRegularization(status) {
+  return useQuery({
+    queryKey: employeePortalKeys.attendanceRegularization(status),
+    queryFn: () => fetchAttendanceRegularization(status),
+  });
+}
+
+export function useSubmitAttendanceRegularization() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: submitAttendanceRegularization,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [...employeePortalKeys.all, 'attendance-regularization'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: employeePortalKeys.notificationUnreadCount(),
+      });
+      queryClient.invalidateQueries({ queryKey: employeePortalKeys.notifications() });
+    },
+  });
+}
+
+export function useWithdrawAttendanceRegularization() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: withdrawAttendanceRegularization,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [...employeePortalKeys.all, 'attendance-regularization'],
+      });
     },
   });
 }
