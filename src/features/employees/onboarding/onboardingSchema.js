@@ -1035,7 +1035,11 @@ function isFilledExperience(exp) {
 /**
  * Maps React Hook Form values → POST /employees/hr-onboarding body
  * @param {ReturnType<typeof getDefaultOnboardingValues>} v
- * @param {{ deletedDocumentIds?: string[] }} [options]
+ * @param {{
+ *   deletedDocumentIds?: string[],
+ *   isEditMode?: boolean,
+ *   initialProfilePhotoStorageKey?: string | null,
+ * }} [options]
  */
 export function buildHrOnboardingPayload(v, options = {}) {
   const allowances =
@@ -1082,6 +1086,14 @@ export function buildHrOnboardingPayload(v, options = {}) {
           .join('\n')
       : primaryExperience.experienceSummary?.trim() || undefined;
 
+  const currentPhotoKey = v.basic.profilePhotoStorageKey?.trim() || '';
+  const initialPhotoKey = options.initialProfilePhotoStorageKey?.trim() || '';
+  // Edit: only send photo key when the user uploaded a new one (mirrors documents).
+  // Create: send any present key so the backend can finalize it.
+  const includePhotoUpload =
+    Boolean(currentPhotoKey) &&
+    (!options.isEditMode || currentPhotoKey !== initialPhotoKey);
+
   return {
     basic: {
       firstName: v.basic.firstName.trim(),
@@ -1094,8 +1106,12 @@ export function buildHrOnboardingPayload(v, options = {}) {
       mobileNumber: v.basic.mobileNumber.trim(),
       alternateMobile: v.basic.alternateMobile?.trim() || undefined,
       profilePhotoUrl: v.basic.profilePhotoUrl?.trim() || undefined,
-      profilePhotoStorageKey: v.basic.profilePhotoStorageKey || undefined,
-      profilePhotoFileName: v.basic.profilePhotoFileName || undefined,
+      ...(includePhotoUpload
+        ? {
+            profilePhotoStorageKey: currentPhotoKey,
+            profilePhotoFileName: v.basic.profilePhotoFileName || undefined,
+          }
+        : {}),
     },
     employment: {
       dateOfJoining: toDateOrUndefined(v.employment.dateOfJoining),
