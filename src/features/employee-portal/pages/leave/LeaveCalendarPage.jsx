@@ -27,9 +27,13 @@ import { useLeaveCalendar, useLeaveTransactions } from '../../hooks/useEmployeeP
 import { useAuthorization } from '@/features/auth/hooks/useAuthorization';
 import { orgNow } from '../../utils/orgDayjs';
 
+const ROSTER_FILTERS = new Set(['team', 'organization']);
+
 function initialLeaveFilter(searchParams, canTeam) {
-  if (!canTeam) return 'me';
-  return searchParams.get('filter') === 'team' ? 'team' : 'me';
+  const raw = searchParams.get('filter');
+  if (raw === 'organization') return 'organization';
+  if (raw === 'team' && canTeam) return 'team';
+  return 'me';
 }
 
 export function LeaveCalendarPage() {
@@ -64,6 +68,7 @@ export function LeaveCalendarPage() {
   const year = month.year();
   const monthNum = month.month() + 1;
   const dateKey = toDateKey(selectedDate);
+  const isRosterFilter = ROSTER_FILTERS.has(filter);
 
   const calendarQuery = useLeaveCalendar(year, monthNum, filter);
   const transactionsQuery = useLeaveTransactions(dateKey, filter, search);
@@ -81,6 +86,11 @@ export function LeaveCalendarPage() {
       {filter === 'team' ? (
         <Typography variant="caption" color="text.secondary">
           Team on Leave <strong>{teamOnLeaveCount}</strong>
+        </Typography>
+      ) : null}
+      {filter === 'organization' ? (
+        <Typography variant="caption" color="text.secondary">
+          Organization on Leave <strong>{teamOnLeaveCount}</strong>
         </Typography>
       ) : null}
       <Stack direction="row" alignItems="center" spacing={0.5}>
@@ -104,9 +114,9 @@ export function LeaveCalendarPage() {
         const key = toDateKey(date);
         const marker = calendarQuery.data?.days?.[key];
         const count = Number(marker?.onLeaveCount ?? 0);
-        const showTeamBadge = filter === 'team' && count > 0;
+        const showRosterBadge = isRosterFilter && count > 0;
         const showMeDot = filter === 'me' && marker?.onLeave;
-        if (!marker?.holiday && !showTeamBadge && !showMeDot) return null;
+        if (!marker?.holiday && !showRosterBadge && !showMeDot) return null;
 
         return (
           <Stack
@@ -116,7 +126,7 @@ export function LeaveCalendarPage() {
             alignItems="center"
             sx={{ mt: 0.25, minHeight: 18 }}
           >
-            {showTeamBadge ? (
+            {showRosterBadge ? (
               <Box
                 sx={{
                   minWidth: 18,
@@ -161,26 +171,25 @@ export function LeaveCalendarPage() {
           </Stack>
         );
       },
-    [calendarQuery.data?.days, filter],
+    [calendarQuery.data?.days, filter, isRosterFilter],
   );
 
   return (
     <>
       <PageToolbar
         left={
-          canTeam ? (
-            <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel>Filter Type</InputLabel>
-              <Select
-                label="Filter Type"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-              >
-                <MenuItem value="me">Me</MenuItem>
-                <MenuItem value="team">My Team</MenuItem>
-              </Select>
-            </FormControl>
-          ) : null
+          <FormControl size="small" sx={{ minWidth: 160 }}>
+            <InputLabel>Filter Type</InputLabel>
+            <Select
+              label="Filter Type"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            >
+              <MenuItem value="me">Me</MenuItem>
+              <MenuItem value="organization">My Organization</MenuItem>
+              {canTeam ? <MenuItem value="team">My Team</MenuItem> : null}
+            </Select>
+          </FormControl>
         }
       />
 

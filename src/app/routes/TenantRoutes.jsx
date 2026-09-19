@@ -4,6 +4,8 @@ import { TenantAdminDashboardPage } from '@/features/tenant/pages/TenantDashboar
 import { TenantAttendancePage } from '@/features/tenant/pages/TenantAttendancePage';
 import { WhoIsInPage } from '@/features/employee-portal/pages/attendance/WhoIsInPage';
 import { EmployeeSwipesPage } from '@/features/employee-portal/pages/attendance/EmployeeSwipesPage';
+import { LiveAttendancePage } from '@/features/employee-portal/pages/attendance/LiveAttendancePage';
+import { UnmappedPunchesPage } from '@/features/employee-portal/pages/attendance/UnmappedPunchesPage';
 import { EmployeeHomePage } from '@/features/employee-portal/pages/home/EmployeeHomePage';
 import { getDefaultLandingPath } from '@/features/tenant/config/tenantNav';
 import { LeaveApplyPage } from '@/features/employee-portal/pages/leave/LeaveApplyPage';
@@ -14,6 +16,12 @@ import { TeamOnLeavePage } from '@/features/employee-portal/pages/leave/TeamOnLe
 import { HolidayCalendarPage } from '@/features/employee-portal/pages/leave/HolidayCalendarPage';
 import { LeaveRequestsPage } from '@/features/approvals/pages/leave/LeaveRequestsPage';
 import { TeamTimesheetsPage } from '@/features/approvals/pages/timesheet/TeamTimesheetsPage';
+import {
+  ExpenseApprovalsPage,
+  ExpenseClaimEditorPage,
+  ExpenseClaimsPage,
+  ExpenseFinancePage,
+} from '@/features/expense';
 import { TimesheetDayPage } from '@/features/employee-portal/pages/timesheet/TimesheetDayPage';
 import { ModulePlaceholderPage } from '@/features/org-admin/pages/ModulePlaceholderPage';
 import { EmployeesPage } from '@/features/employees';
@@ -155,6 +163,22 @@ export function TenantRoutes({
             </RequireAccess>
           }
         />
+        <Route
+          path="/attendance/live"
+          element={
+            <RequireAccess module="attendance" permission="ess.attendance.live:read">
+              <LiveAttendancePage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/attendance/unmapped"
+          element={
+            <RequireAccess module="attendance" permission="ess.attendance.unmapped:read">
+              <UnmappedPunchesPage />
+            </RequireAccess>
+          }
+        />
 
         <Route
           path="/leave/requests"
@@ -165,6 +189,47 @@ export function TenantRoutes({
           }
         />
         <Route path="/approvals/leave" element={<Navigate to="/leave/requests" replace />} />
+
+        <Route
+          path="/expense/claims"
+          element={
+            <RequireAccess module="expense" permission="ess.expense:read">
+              <ExpenseClaimsPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/expense/claims/new"
+          element={
+            <RequireAccess module="expense" permission="ess.expense:apply">
+              <ExpenseClaimEditorPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/expense/claims/:id"
+          element={
+            <RequireAccess module="expense" permission="ess.expense:read">
+              <ExpenseClaimEditorPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/expense/approvals"
+          element={
+            <RequireAccess permission="approvals.expense:read">
+              <ExpenseApprovalsPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/expense/finance"
+          element={
+            <RequireAccess module="expense" permission="expense.finance:read">
+              <ExpenseFinancePage />
+            </RequireAccess>
+          }
+        />
 
         <Route
           path="/timesheet"

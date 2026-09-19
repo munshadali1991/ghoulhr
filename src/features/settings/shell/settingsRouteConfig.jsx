@@ -7,10 +7,12 @@ import { OrgStructurePage } from '@/features/settings/org-structure';
 import { AttendanceSettingsPage } from '@/features/settings/attendance';
 import { LocationsSettingsPage } from '@/features/settings/locations';
 import { LeaveConfigSettingsPage } from '@/features/settings/leave';
+import { ExpenseSettingsPage } from '@/features/expense';
 import { TimesheetSettingsPage } from '@/features/settings/timesheet';
 import { PerformanceSettingsPage } from '@/features/settings/performance';
 import { SkillsSettingsPage } from '@/features/settings/skills';
 import { RbacSettingsPage } from '@/features/rbac/pages/RbacSettingsPage';
+import { BiometricSettingsPage } from '@/features/settings/biometric/BiometricSettingsPage';
 
 /**
  * @param {string} organizationId
@@ -75,10 +77,24 @@ export function settingsFlatRoutes(organizationId) {
         )}
       />
       <Route
+        path="/settings/expense"
+        element={guardedSettingsRoute(
+          organizationId,
+          <ExpenseSettingsPage organizationId={organizationId} />,
+        )}
+      />
+      <Route
         path="/settings/attendance"
         element={guardedSettingsRoute(
           organizationId,
           <AttendanceSettingsPage organizationId={organizationId} />,
+        )}
+      />
+      <Route
+        path="/settings/biometric"
+        element={guardedSettingsRoute(
+          organizationId,
+          <BiometricSettingsPage organizationId={organizationId} />,
         )}
       />
       <Route

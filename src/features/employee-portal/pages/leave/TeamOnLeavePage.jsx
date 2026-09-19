@@ -55,12 +55,55 @@ const SERIES_COLORS = [
   '#34D399',
 ];
 
+const MONTH_SHORT = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+const YEAR_DURATION_PRESETS = new Set(['thisYear', 'lastYear']);
+
+const DURATION_OPTIONS = [
+  { value: 'thisWeek', label: 'This Week' },
+  { value: 'lastWeek', label: 'Last Week' },
+  { value: 'nextWeek', label: 'Next Week' },
+  { value: 'thisMonth', label: 'This Month' },
+  { value: 'lastMonth', label: 'Last Month' },
+  { value: 'nextMonth', label: 'Next Month' },
+  { value: 'thisYear', label: 'This Year' },
+  { value: 'lastYear', label: 'Last Year' },
+];
+
 function durationRange(preset, timezone) {
   const now = timezone ? orgNow(timezone) : dayjs();
-  if (preset === 'week') {
+
+  if (preset === 'thisWeek' || preset === 'week') {
     return {
       from: now.startOf('week').format('YYYY-MM-DD'),
       to: now.endOf('week').format('YYYY-MM-DD'),
+    };
+  }
+  if (preset === 'lastWeek') {
+    const last = now.subtract(1, 'week');
+    return {
+      from: last.startOf('week').format('YYYY-MM-DD'),
+      to: last.endOf('week').format('YYYY-MM-DD'),
+    };
+  }
+  if (preset === 'nextWeek') {
+    const next = now.add(1, 'week');
+    return {
+      from: next.startOf('week').format('YYYY-MM-DD'),
+      to: next.endOf('week').format('YYYY-MM-DD'),
     };
   }
   if (preset === 'lastMonth') {
@@ -70,10 +113,63 @@ function durationRange(preset, timezone) {
       to: last.endOf('month').format('YYYY-MM-DD'),
     };
   }
+  if (preset === 'nextMonth') {
+    const next = now.add(1, 'month');
+    return {
+      from: next.startOf('month').format('YYYY-MM-DD'),
+      to: next.endOf('month').format('YYYY-MM-DD'),
+    };
+  }
+  if (preset === 'thisYear') {
+    return {
+      from: now.startOf('year').format('YYYY-MM-DD'),
+      to: now.endOf('year').format('YYYY-MM-DD'),
+    };
+  }
+  if (preset === 'lastYear') {
+    const last = now.subtract(1, 'year');
+    return {
+      from: last.startOf('year').format('YYYY-MM-DD'),
+      to: last.endOf('year').format('YYYY-MM-DD'),
+    };
+  }
+
+  // thisMonth (default) and unknown presets
   return {
     from: now.startOf('month').format('YYYY-MM-DD'),
     to: now.endOf('month').format('YYYY-MM-DD'),
   };
+}
+
+/**
+ * Collapse daily chart points into 12 monthly buckets for year presets.
+ * @param {Array<{ date: string, values?: Record<string, number> }>} points
+ * @param {string[]} seriesKeys
+ */
+function aggregatePointsByMonth(points, seriesKeys) {
+  const buckets = new Map();
+  for (let m = 1; m <= 12; m += 1) {
+    const monthKey = String(m).padStart(2, '0');
+    const values = {};
+    for (const key of seriesKeys) values[key] = 0;
+    buckets.set(monthKey, {
+      date: monthKey,
+      label: MONTH_SHORT[m - 1],
+      ...values,
+    });
+  }
+
+  for (const point of points) {
+    const monthKey = String(point.date ?? '').slice(5, 7);
+    const bucket = buckets.get(monthKey);
+    if (!bucket) continue;
+    const vals = point.values ?? {};
+    for (const key of seriesKeys) {
+      bucket[key] = Math.round(((bucket[key] ?? 0) + Number(vals[key] ?? 0)) * 100) / 100;
+    }
+  }
+
+  return Array.from(buckets.values());
 }
 
 function formatRangeLabel(from, to) {
@@ -110,6 +206,7 @@ export function TeamOnLeavePage() {
 
   const query = useTeamOnLeaveChart(queryParams, allowed);
   const data = query.data;
+  const isYearDuration = YEAR_DURATION_PRESETS.has(duration);
 
   useEffect(() => {
     if (!data?.timezone || syncedTz.current) return;
@@ -119,15 +216,18 @@ export function TeamOnLeavePage() {
 
   const series = data?.series ?? [];
   const points = data?.points ?? [];
-  const chartData = useMemo(
-    () =>
-      points.map((p) => ({
-        date: p.date,
-        label: p.label,
-        ...p.values,
-      })),
-    [points],
-  );
+  const seriesKeys = useMemo(() => series.map((s) => s.key), [series]);
+
+  const chartData = useMemo(() => {
+    if (isYearDuration) {
+      return aggregatePointsByMonth(points, seriesKeys);
+    }
+    return points.map((p) => ({
+      date: p.date,
+      label: p.label,
+      ...p.values,
+    }));
+  }, [points, seriesKeys, isYearDuration]);
 
   const breakdown = selectedDate
     ? data?.breakdownByDate?.[selectedDate]
@@ -145,6 +245,7 @@ export function TeamOnLeavePage() {
   }, [series]);
 
   const handleBarClick = (state) => {
+    if (isYearDuration) return;
     const date = state?.activePayload?.[0]?.payload?.date;
     if (!date) return;
     setSelectedDate(date);
@@ -190,7 +291,9 @@ export function TeamOnLeavePage() {
           }}
         >
           <Typography variant="body2" color="text.secondary" textAlign="center">
-            Click on the graph to see the breakdown.
+            {isYearDuration
+              ? 'Use list view for day-level detail in year ranges.'
+              : 'Click on the graph to see the breakdown.'}
           </Typography>
         </Box>
       ) : (
@@ -323,9 +426,11 @@ export function TeamOnLeavePage() {
               setSelectedDate(null);
             }}
           >
-            <MenuItem value="thisMonth">This Month</MenuItem>
-            <MenuItem value="week">This Week</MenuItem>
-            <MenuItem value="lastMonth">Last Month</MenuItem>
+            {DURATION_OPTIONS.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -461,16 +566,16 @@ export function TeamOnLeavePage() {
                 <BarChart
                   data={chartData}
                   margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
-                  onClick={handleBarClick}
+                  onClick={isYearDuration ? undefined : handleBarClick}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis
                     dataKey="label"
                     tick={{ fontSize: 11 }}
                     interval={0}
-                    angle={-45}
-                    textAnchor="end"
-                    height={64}
+                    angle={isYearDuration ? 0 : -45}
+                    textAnchor={isYearDuration ? 'middle' : 'end'}
+                    height={isYearDuration ? 40 : 64}
                   />
                   <YAxis
                     label={{
@@ -491,7 +596,7 @@ export function TeamOnLeavePage() {
                       stackId="tol"
                       fill={colorByKey[s.key]}
                       radius={[2, 2, 0, 0]}
-                      cursor="pointer"
+                      cursor={isYearDuration ? 'default' : 'pointer'}
                     />
                   ))}
                 </BarChart>

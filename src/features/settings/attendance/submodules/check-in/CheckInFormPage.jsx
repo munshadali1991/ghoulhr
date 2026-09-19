@@ -14,7 +14,7 @@ import { SettingsField } from '@/shared/components/settings/SettingsField';
 import { RecordFormLayout } from '@/features/settings/shared';
 import { IpAddressInput } from '@/features/settings/attendance/components/IpAddressInput';
 import { checkInFormSchema } from '../../schemas';
-import { TRACKING_MODES } from '../../constants';
+import { PUNCH_DIRECTION_MODES, TRACKING_MODES } from '../../constants';
 
 export function CheckInFormPage({
   checkIn,
@@ -41,6 +41,8 @@ export function CheckInFormPage({
     try {
       await onSave({
         tracking_mode: values.tracking_mode,
+        punch_direction_mode: values.punch_direction_mode,
+        biometric_dedupe_window_seconds: values.biometric_dedupe_window_seconds,
         geo_fencing_enabled: values.geo_fencing_enabled,
         allowed_ip_addresses: values.allowed_ip_addresses,
       });
@@ -91,6 +93,58 @@ export function CheckInFormPage({
                     </MenuItem>
                   ))}
                 </TextField>
+              </SettingsField>
+            )}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <Controller
+            name="punch_direction_mode"
+            control={control}
+            render={({ field }) => (
+              <SettingsField
+                label="Biometric punch direction"
+                description="Smart Shift ignores the device IN/OUT button and uses the shift schedule."
+                error={errors.punch_direction_mode?.message}
+              >
+                <TextField
+                  fullWidth
+                  select
+                  size="medium"
+                  label="Direction mode"
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                >
+                  {PUNCH_DIRECTION_MODES.map((mode) => (
+                    <MenuItem key={mode.value} value={mode.value}>
+                      {mode.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </SettingsField>
+            )}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Controller
+            name="biometric_dedupe_window_seconds"
+            control={control}
+            render={({ field }) => (
+              <SettingsField
+                label="Biometric dedupe window (seconds)"
+                description="Identical scans within this window are acknowledged but not stored twice."
+                error={errors.biometric_dedupe_window_seconds?.message}
+              >
+                <TextField
+                  fullWidth
+                  type="number"
+                  size="medium"
+                  label="Seconds"
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                />
               </SettingsField>
             )}
           />

@@ -79,6 +79,7 @@ export function EmployeesPage({ organizationId }) {
   const [newEmployeeCredentials, setNewEmployeeCredentials] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showEditWizard, setShowEditWizard] = useState(false);
+  const [wizardMode, setWizardMode] = useState('edit'); // 'edit' | 'view'
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [editInitialValues, setEditInitialValues] = useState(null);
   const isDirectoryTab = employeeTabs[pageTab]?.key === 'directory';
@@ -114,21 +115,30 @@ export function EmployeesPage({ organizationId }) {
     showSnackbar('Employee created successfully!', 'success');
   };
 
-  const openEditWizard = async (employee) => {
+  const openEmployeeWizard = async (employee, mode) => {
     try {
       const fullEmployee = await getEmployeeById(employee.id);
       setSelectedEmployeeId(employee.id);
       setEditInitialValues(mapEmployeeToOnboardingValues(fullEmployee));
+      setWizardMode(mode);
       setShowEditWizard(true);
     } catch (error) {
       showSnackbar(error.message || 'Failed to open employee details', 'error');
     }
   };
 
-  const handleEditSuccess = async () => {
+  const openEditWizard = (employee) => openEmployeeWizard(employee, 'edit');
+  const openViewWizard = (employee) => openEmployeeWizard(employee, 'view');
+
+  const closeEmployeeWizard = () => {
     setShowEditWizard(false);
     setSelectedEmployeeId('');
     setEditInitialValues(null);
+    setWizardMode('edit');
+  };
+
+  const handleEditSuccess = async () => {
+    closeEmployeeWizard();
     await fetchEmployees();
     showSnackbar('Employee updated successfully', 'success');
   };
@@ -214,11 +224,8 @@ export function EmployeesPage({ organizationId }) {
         employees={employees}
         employeeId={selectedEmployeeId}
         initialValues={editInitialValues}
-        onCancel={() => {
-          setShowEditWizard(false);
-          setSelectedEmployeeId('');
-          setEditInitialValues(null);
-        }}
+        readOnly={wizardMode === 'view'}
+        onCancel={closeEmployeeWizard}
         onSuccess={handleEditSuccess}
       />
     );
@@ -382,9 +389,10 @@ export function EmployeesPage({ organizationId }) {
                   },
                 ]}
                 actions={
-                  canUpdate ? (
-                    <TableRowActions onEdit={() => openEditWizard(employee)} />
-                  ) : null
+                  <TableRowActions
+                    onView={() => openViewWizard(employee)}
+                    onEdit={canUpdate ? () => openEditWizard(employee) : undefined}
+                  />
                 }
               />
             ))}
@@ -416,9 +424,7 @@ export function EmployeesPage({ organizationId }) {
                 <TableCell><strong>Role</strong></TableCell>
                 <TableCell><strong>Status</strong></TableCell>
                 <TableCell><strong>Join Date</strong></TableCell>
-                {canUpdate ? (
-                  <TableCell align="right"><strong>Actions</strong></TableCell>
-                ) : null}
+                <TableCell align="right"><strong>Actions</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -455,15 +461,16 @@ export function EmployeesPage({ organizationId }) {
                         ? new Date(employee.dateOfJoining).toLocaleDateString()
                         : '-'}
                     </TableCell>
-                    {canUpdate ? (
-                      <TableCell
-                        align="right"
-                        className="table-actions-cell"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <TableRowActions onEdit={() => openEditWizard(employee)} />
-                      </TableCell>
-                    ) : null}
+                    <TableCell
+                      align="right"
+                      className="table-actions-cell"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <TableRowActions
+                        onView={() => openViewWizard(employee)}
+                        onEdit={canUpdate ? () => openEditWizard(employee) : undefined}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
             </TableBody>

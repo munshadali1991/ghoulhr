@@ -1290,18 +1290,22 @@ export function mapEmployeeToOnboardingValues(employee) {
       temporaryPassword: '',
     },
     documents:
-      (employee.documents || []).length > 0
-        ? employee.documents.map((doc) =>
-            createEmptyDocumentRow({
-              id: doc.id,
-              serverDocumentId: doc.id,
-              documentType: doc.documentType || 'OFFER_LETTER',
-              fileName: doc.fileName || '',
-              mimeType: doc.mimeType || '',
-              sizeBytes: doc.sizeBytes || 0,
-              verificationStatus: doc.verificationStatus || 'PENDING',
-            }),
-          )
+      (employee.documents || []).filter((doc) =>
+        DOCUMENT_TYPE_VALUES.includes(doc.documentType),
+      ).length > 0
+        ? (employee.documents || [])
+            .filter((doc) => DOCUMENT_TYPE_VALUES.includes(doc.documentType))
+            .map((doc) =>
+              createEmptyDocumentRow({
+                id: doc.id,
+                serverDocumentId: doc.id,
+                documentType: doc.documentType || 'OFFER_LETTER',
+                fileName: doc.fileName || '',
+                mimeType: doc.mimeType || '',
+                sizeBytes: doc.sizeBytes || 0,
+                verificationStatus: doc.verificationStatus || 'PENDING',
+              }),
+            )
         : [createEmptyDocumentRow()],
   };
 }

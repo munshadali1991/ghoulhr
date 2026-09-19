@@ -15,7 +15,7 @@ import {
   Paper,
   Stack,
   Step,
-  StepLabel,
+  StepButton,
   Stepper,
   Typography,
   useMediaQuery,
@@ -73,8 +73,10 @@ export function EmployeeOnboardingWizard({
   onSuccess,
   employeeId,
   initialValues,
+  readOnly = false,
 }) {
-  const isEditMode = Boolean(employeeId);
+  const isEditMode = Boolean(employeeId) && !readOnly;
+  const isViewMode = Boolean(readOnly);
   const theme = useTheme();
   const isNarrow = useMediaQuery(theme.breakpoints.down('md'));
   const [activeStep, setActiveStep] = useState(0);
@@ -100,13 +102,13 @@ export function EmployeeOnboardingWizard({
   const { getValues, reset, setError, clearErrors, formState, control } = methods;
 
   const initialContact = useMemo(() => {
-    if (!isEditMode || !initialValues) return null;
+    if ((!isEditMode && !isViewMode) || !initialValues) return null;
     return {
       personalEmail: initialValues.basic?.personalEmail || '',
       officialEmail: initialValues.employment?.officialEmail || '',
       mobileNumber: initialValues.basic?.mobileNumber || '',
     };
-  }, [isEditMode, initialValues]);
+  }, [isEditMode, isViewMode, initialValues]);
 
   useEffect(() => {
     if (initialValues) {
@@ -124,27 +126,28 @@ export function EmployeeOnboardingWizard({
 
   const watchedForm = useWatch({ control });
 
-  useBeforeUnloadDirty(formState.isDirty);
+  useBeforeUnloadDirty(formState.isDirty && !isViewMode);
 
   useEffect(() => {
-    if (isEditMode) return;
+    if (isEditMode || isViewMode) return;
     if (!resumeDraft()) return;
     showSnackbar('Draft restored from this device.', 'info');
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only on mount
-  }, [isEditMode]);
+  }, [isEditMode, isViewMode]);
 
   useEffect(() => {
-    if (isEditMode) return;
+    if (isEditMode || isViewMode) return;
     if (!formState.isDirty) return;
     const id = setTimeout(() => saveDraftNow(), 1000);
     return () => clearTimeout(id);
-  }, [isEditMode, watchedForm, formState.isDirty, saveDraftNow]);
+  }, [isEditMode, isViewMode, watchedForm, formState.isDirty, saveDraftNow]);
 
   const personalEmail = useWatch({ control, name: 'basic.personalEmail' });
   const officialEmail = useWatch({ control, name: 'employment.officialEmail' });
   const mobileNumber = useWatch({ control, name: 'basic.mobileNumber' });
 
   useEffect(() => {
+    if (isViewMode) return undefined;
     let cancelled = false;
     const t = setTimeout(async () => {
       if (!personalEmail && !officialEmail && !mobileNumber) {
@@ -177,7 +180,7 @@ export function EmployeeOnboardingWizard({
       cancelled = true;
       clearTimeout(t);
     };
-  }, [personalEmail, officialEmail, mobileNumber, employeeId]);
+  }, [personalEmail, officialEmail, mobileNumber, employeeId, isViewMode]);
 
   const validationOptions = useCallback(() => {
     const values = getValues();
@@ -193,7 +196,21 @@ export function EmployeeOnboardingWizard({
 
   const progress = ((activeStep + 1) / STEP_LABELS.length) * 100;
 
+  const goToStep = useCallback(
+    (index) => {
+      const clamped = Math.max(0, Math.min(index, STEP_LABELS.length - 1));
+      clearErrors();
+      setActiveStep(clamped);
+    },
+    [clearErrors],
+  );
+
   const goNext = useCallback(async () => {
+    if (isViewMode) {
+      goToStep(activeStep + 1);
+      return;
+    }
+
     clearErrors();
     const options = validationOptions();
     const r = validateOnboardingStep(activeStep, getValues(), options);
@@ -237,7 +254,18 @@ export function EmployeeOnboardingWizard({
     }
 
     setActiveStep((s) => Math.min(s + 1, STEP_LABELS.length - 1));
-  }, [activeStep, clearErrors, duplicateResult, getValues, initialContact, setError, showSnackbar, validationOptions]);
+  }, [
+    activeStep,
+    clearErrors,
+    duplicateResult,
+    getValues,
+    goToStep,
+    initialContact,
+    isViewMode,
+    setError,
+    showSnackbar,
+    validationOptions,
+  ]);
 
   const goBack = useCallback(() => {
     clearErrors();
@@ -245,6 +273,7 @@ export function EmployeeOnboardingWizard({
   }, [clearErrors]);
 
   const finalizeSubmit = async () => {
+    if (isViewMode) return;
     clearErrors();
     const values = getValues();
     const options = validationOptions();
@@ -292,22 +321,25 @@ export function EmployeeOnboardingWizard({
   };
 
   const handleSaveDraft = () => {
-    if (isEditMode) return;
+    if (isEditMode || isViewMode) return;
     if (saveDraftNow()) {
       showSnackbar('Draft saved on this device.', 'success');
     }
   };
+
+  const wizardTitle = isViewMode ? 'View employee' : employeeId ? 'Edit employee' : 'HR onboarding';
 
   const stepPanel = () => {
     switch (activeStep) {
       case 0:
         return (
           <StepBasicInfo
-            duplicateResult={duplicateResult}
-            isEditMode={isEditMode}
+            duplicateResult={isViewMode ? null : duplicateResult}
+            isEditMode={isEditMode || isViewMode}
             initialContact={initialContact}
             uploadBatchId={uploadBatchIdRef.current}
             employeeId={employeeId}
+            readOnly={isViewMode}
           />
         );
       case 1:
@@ -315,20 +347,25 @@ export function EmployeeOnboardingWizard({
           <StepEmployment
             organizationId={organizationId}
             employeeSettings={employeeSettings}
+            readOnly={isViewMode}
           />
         );
       case 2:
-        return <StepExperience />;
+        return <StepExperience readOnly={isViewMode} />;
       case 3:
-        return <StepPayrollBank />;
+        return <StepPayrollBank readOnly={isViewMode} />;
       case 4:
-        return <StepCompliance />;
+        return <StepCompliance readOnly={isViewMode} />;
       case 5:
         return (
-          <StepDocuments uploadBatchId={uploadBatchIdRef.current} employeeId={employeeId} />
+          <StepDocuments
+            uploadBatchId={uploadBatchIdRef.current}
+            employeeId={employeeId}
+            readOnly={isViewMode}
+          />
         );
       case 6:
-        return <StepAccess isEditMode={isEditMode} />;
+        return <StepAccess isEditMode={isEditMode || isViewMode} readOnly={isViewMode} />;
       default:
         return null;
     }
@@ -374,18 +411,20 @@ export function EmployeeOnboardingWizard({
               >
                 Back to list
               </Button>
-              <Button
-                variant="outlined"
-                startIcon={<SaveRoundedIcon />}
-                onClick={handleSaveDraft}
-                disabled={submitting || isEditMode}
-              >
-                Save draft
-              </Button>
+              {!isViewMode ? (
+                <Button
+                  variant="outlined"
+                  startIcon={<SaveRoundedIcon />}
+                  onClick={handleSaveDraft}
+                  disabled={submitting || isEditMode}
+                >
+                  Save draft
+                </Button>
+              ) : null}
             </Stack>
             <Box textAlign={{ xs: 'left', sm: 'right' }}>
               <Typography variant="h5" fontWeight={700}>
-                {employeeId ? 'Edit employee' : 'HR onboarding'}
+                {wizardTitle}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Step {activeStep + 1} of {STEP_LABELS.length} — {STEP_LABELS[activeStep]}
@@ -418,14 +457,25 @@ export function EmployeeOnboardingWizard({
                       label={label}
                       color={i === activeStep ? 'primary' : i < activeStep ? 'success' : 'default'}
                       variant={i === activeStep ? 'filled' : 'outlined'}
+                      onClick={() => goToStep(i)}
+                      clickable
+                      sx={{ cursor: 'pointer' }}
                     />
                   ))}
                 </Stack>
               ) : (
-                <Stepper activeStep={activeStep} alternativeLabel>
-                  {STEP_LABELS.map((label) => (
-                    <Step key={label}>
-                      <StepLabel>{label}</StepLabel>
+                <Stepper activeStep={activeStep} alternativeLabel nonLinear>
+                  {STEP_LABELS.map((label, i) => (
+                    <Step key={label} completed={i < activeStep}>
+                      <StepButton
+                        color="inherit"
+                        onClick={() => goToStep(i)}
+                        sx={{
+                          '& .MuiStepLabel-label': { cursor: 'pointer' },
+                        }}
+                      >
+                        {label}
+                      </StepButton>
                     </Step>
                   ))}
                 </Stepper>
@@ -457,7 +507,7 @@ export function EmployeeOnboardingWizard({
                 disabled={submitting}
                 fullWidth={isNarrow}
               >
-                {activeStep === 0 ? 'Cancel' : 'Previous'}
+                {activeStep === 0 ? (isViewMode ? 'Close' : 'Cancel') : 'Previous'}
               </Button>
               <Stack direction="row" spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
                 {activeStep < STEP_LABELS.length - 1 ? (
@@ -469,6 +519,15 @@ export function EmployeeOnboardingWizard({
                     fullWidth={isNarrow}
                   >
                     Next
+                  </BrandedButton>
+                ) : isViewMode ? (
+                  <BrandedButton
+                    brandVariant="onboarding"
+                    onClick={onCancel}
+                    fullWidth={isNarrow}
+                    sx={{ minWidth: { sm: 200 } }}
+                  >
+                    Close
                   </BrandedButton>
                 ) : (
                   <BrandedButton

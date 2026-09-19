@@ -16,7 +16,7 @@ function maskAccount(v) {
   return `•••• •••• •••• ${v.slice(-4)}`;
 }
 
-export function StepPayrollBank() {
+export function StepPayrollBank({ readOnly = false }) {
   const {
     control,
     watch,
@@ -65,6 +65,7 @@ export function StepPayrollBank() {
                 fullWidth
                 type="number"
                 label="CTC (annual)"
+                disabled={readOnly}
                 inputProps={{ min: 0, step: 1000 }}
                 error={!!errors.payroll?.ctc}
                 helperText={errors.payroll?.ctc?.message}
@@ -81,6 +82,7 @@ export function StepPayrollBank() {
                 {...field}
                 fullWidth
                 label="Salary structure"
+                disabled={readOnly}
                 error={!!errors.payroll?.salaryStructure}
                 helperText={errors.payroll?.salaryStructure?.message}
               />
@@ -97,6 +99,7 @@ export function StepPayrollBank() {
                 select
                 fullWidth
                 label="Tax regime"
+                disabled={readOnly}
                 error={!!errors.payroll?.taxRegime}
                 helperText={errors.payroll?.taxRegime?.message}
               >
@@ -119,6 +122,7 @@ export function StepPayrollBank() {
                 fullWidth
                 type="number"
                 label="Basic salary"
+                disabled={readOnly}
                 inputProps={{ min: 0, step: 100 }}
                 error={!!errors.payroll?.basicSalary}
                 helperText={errors.payroll?.basicSalary?.message}
@@ -136,6 +140,7 @@ export function StepPayrollBank() {
                 fullWidth
                 type="number"
                 label="HRA"
+                disabled={readOnly}
                 inputProps={{ min: 0, step: 100 }}
                 error={!!errors.payroll?.hra}
                 helperText={errors.payroll?.hra?.message}
@@ -155,6 +160,7 @@ export function StepPayrollBank() {
                 minRows={2}
                 label="Allowances (JSON)"
                 placeholder='{"lta": 5000}'
+                disabled={readOnly}
                 error={!!errors.payroll?.allowancesJson}
                 helperText={errors.payroll?.allowancesJson?.message}
               />
@@ -166,7 +172,16 @@ export function StepPayrollBank() {
             name="payroll.pfApplicable"
             control={control}
             render={({ field }) => (
-              <FormControlLabel control={<Switch checked={!!field.value} onChange={(_, c) => field.onChange(c)} />} label="PF applicable" />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={!!field.value}
+                    onChange={(_, c) => field.onChange(c)}
+                    disabled={readOnly}
+                  />
+                }
+                label="PF applicable"
+              />
             )}
           />
         </Grid>
@@ -175,7 +190,16 @@ export function StepPayrollBank() {
             name="payroll.esicApplicable"
             control={control}
             render={({ field }) => (
-              <FormControlLabel control={<Switch checked={!!field.value} onChange={(_, c) => field.onChange(c)} />} label="ESIC applicable" />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={!!field.value}
+                    onChange={(_, c) => field.onChange(c)}
+                    disabled={readOnly}
+                  />
+                }
+                label="ESIC applicable"
+              />
             )}
           />
         </Grid>
@@ -194,6 +218,7 @@ export function StepPayrollBank() {
                 {...field}
                 fullWidth
                 label="Account holder name"
+                disabled={readOnly}
                 error={!!errors.bank?.accountHolderName}
                 helperText={errors.bank?.accountHolderName?.message}
               />
@@ -209,6 +234,7 @@ export function StepPayrollBank() {
                 {...field}
                 fullWidth
                 label="Bank name"
+                disabled={readOnly}
                 error={!!errors.bank?.bankName}
                 helperText={errors.bank?.bankName?.message}
               />
@@ -226,6 +252,7 @@ export function StepPayrollBank() {
                 label="Account number"
                 type="password"
                 autoComplete="new-password"
+                disabled={readOnly}
                 error={!!errors.bank?.accountNumber}
                 helperText={accountHelperText}
               />
@@ -242,6 +269,7 @@ export function StepPayrollBank() {
                 fullWidth
                 label="Confirm account number"
                 type="password"
+                disabled={readOnly}
                 error={!!errors.bank?.confirmAccountNumber}
                 helperText={confirmHelperText}
               />
@@ -257,6 +285,7 @@ export function StepPayrollBank() {
                 {...field}
                 fullWidth
                 label="IFSC code"
+                disabled={readOnly}
                 error={!!errors.bank?.ifscCode}
                 helperText={errors.bank?.ifscCode?.message}
               />
@@ -272,6 +301,7 @@ export function StepPayrollBank() {
                 {...field}
                 fullWidth
                 label="Branch name"
+                disabled={readOnly}
                 error={!!errors.bank?.branchName}
                 helperText={errors.bank?.branchName?.message}
               />
@@ -283,7 +313,7 @@ export function StepPayrollBank() {
             name="bank.verificationStatus"
             control={control}
             render={({ field }) => (
-              <TextField {...field} select fullWidth label="Verification status">
+              <TextField {...field} select fullWidth label="Verification status" disabled={readOnly}>
                 {BANK_VERIFICATION_OPTIONS.map((o) => (
                   <MenuItem key={o.value} value={o.value}>
                     {o.label}

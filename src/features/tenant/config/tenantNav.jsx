@@ -9,6 +9,7 @@ import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
 import AssignmentTurnedInRoundedIcon from '@mui/icons-material/AssignmentTurnedInRounded';
 import FolderSharedRoundedIcon from '@mui/icons-material/FolderSharedRounded';
 import PsychologyRoundedIcon from '@mui/icons-material/PsychologyRounded';
+import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
 import {
   DEFAULT_SETTINGS_PATH,
   settingsNavChildren,
@@ -30,6 +31,7 @@ const ICONS = {
   timesheet: ScheduleRoundedIcon,
   performance: AssignmentTurnedInRoundedIcon,
   skills: PsychologyRoundedIcon,
+  expense: ReceiptLongRoundedIcon,
   'document-centre': FolderSharedRoundedIcon,
   payroll: AttachMoneyRoundedIcon,
   settings: SettingsRoundedIcon,
@@ -72,11 +74,19 @@ export const TENANT_NAV_CONFIG = [
     label: 'Attendance',
     expandPathPrefix: '/attendance',
     module: 'attendance',
-    permissions: ['ess.attendance:read', 'dashboard.ess.who-is-in:read', 'ess.attendance.swipes:read'],
+    permissions: [
+      'ess.attendance:read',
+      'dashboard.ess.who-is-in:read',
+      'ess.attendance.swipes:read',
+      'ess.attendance.live:read',
+      'ess.attendance.unmapped:read',
+    ],
     children: [
       { key: 'attendance-info', label: 'Attendance Info', path: '/attendance', permission: 'ess.attendance:read', exact: true },
       { key: 'who-is-in', label: 'Who is in', path: '/attendance/who-is-in', permission: 'dashboard.ess.who-is-in:read' },
       { key: 'employee-swipes', label: 'Employee Swipes', path: '/attendance/swipes', permission: 'ess.attendance.swipes:read' },
+      { key: 'attendance-live', label: 'Live attendance', path: '/attendance/live', permission: 'ess.attendance.live:read' },
+      { key: 'attendance-unmapped', label: 'Unmapped punches', path: '/attendance/unmapped', permission: 'ess.attendance.unmapped:read' },
     ],
   },
   {
@@ -92,6 +102,37 @@ export const TENANT_NAV_CONFIG = [
         label: 'Team Timesheets',
         path: '/timesheet/team',
         permission: 'approvals.timesheet:read',
+      },
+    ],
+  },
+  {
+    key: 'expense',
+    label: 'Expense',
+    expandPathPrefix: '/expense',
+    module: 'expense',
+    permissions: [
+      'ess.expense:read',
+      'approvals.expense:read',
+      'expense.finance:read',
+    ],
+    children: [
+      {
+        key: 'expense-claims',
+        label: 'My Claims',
+        path: '/expense/claims',
+        permission: 'ess.expense:read',
+      },
+      {
+        key: 'expense-approvals',
+        label: 'Approvals',
+        path: '/expense/approvals',
+        permission: 'approvals.expense:read',
+      },
+      {
+        key: 'expense-finance',
+        label: 'Finance',
+        path: '/expense/finance',
+        permission: 'expense.finance:read',
       },
     ],
   },
