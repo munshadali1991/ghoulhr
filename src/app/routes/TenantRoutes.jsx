@@ -25,6 +25,7 @@ import {
 import { TimesheetDayPage } from '@/features/employee-portal/pages/timesheet/TimesheetDayPage';
 import { ModulePlaceholderPage } from '@/features/org-admin/pages/ModulePlaceholderPage';
 import { EmployeesPage } from '@/features/employees';
+import { PeoplePage, PeoplePersonRedirect } from '@/features/people';
 import { MyAssessmentsPage, PerformanceAssessmentPage, TeamPerformancePage, HrPerformancePage } from '@/features/performance';
 import { MySkillsPage } from '@/features/employee-portal/pages/skills/MySkillsPage';
 import { SkillSearchPage } from '@/features/skill-search';
@@ -313,6 +314,22 @@ export function TenantRoutes({
           }
         />
 
+        <Route
+          path="/people"
+          element={
+            <RequireAccess module="employees" permission="employees:read">
+              <PeoplePage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="/people/:employeeId"
+          element={
+            <RequireAccess module="employees" permission="employees:read">
+              <PeoplePersonRedirect />
+            </RequireAccess>
+          }
+        />
         <Route
           path="/employees"
           element={

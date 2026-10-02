@@ -176,20 +176,6 @@ export function EmployeesPage({ organizationId }) {
     page * rowsPerPage + rowsPerPage,
   );
 
-  // Get role chip color
-  const getRoleColor = (role) => {
-    switch (role) {
-      case 'ORG_ADMIN':
-        return 'error';
-      case 'MANAGER':
-        return 'warning';
-      case 'EMPLOYEE':
-        return 'success';
-      default:
-        return 'default';
-    }
-  };
-
   // Get status chip color
   const getStatusColor = (status) => {
     switch (status) {
@@ -367,9 +353,7 @@ export function EmployeesPage({ organizationId }) {
                   { label: 'Designation', value: employee.designationName || '-' },
                   {
                     label: 'Role',
-                    value: (
-                      <Chip label={employee.role} size="small" color={getRoleColor(employee.role)} />
-                    ),
+                    value: employee.role || '-',
                   },
                   {
                     label: 'Status',
@@ -442,13 +426,7 @@ export function EmployeesPage({ organizationId }) {
                     <TableCell>{employee.email}</TableCell>
                     <TableCell>{employee.departmentName || '-'}</TableCell>
                     <TableCell>{employee.designationName || '-'}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={employee.role}
-                        size="small"
-                        color={getRoleColor(employee.role)}
-                      />
-                    </TableCell>
+                    <TableCell>{employee.role || '-'}</TableCell>
                     <TableCell>
                       <Chip
                         label={employee.status.replace(/_/g, ' ')}

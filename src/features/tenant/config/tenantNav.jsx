@@ -1,6 +1,7 @@
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import PeopleRoundedIcon from '@mui/icons-material/PeopleRounded';
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import EventNoteRoundedIcon from '@mui/icons-material/EventNoteRounded';
 import AttachMoneyRoundedIcon from '@mui/icons-material/AttachMoneyRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
@@ -25,6 +26,7 @@ import {
 const ICONS = {
   home: HomeRoundedIcon,
   dashboard: DashboardRoundedIcon,
+  people: GroupsRoundedIcon,
   employees: PeopleRoundedIcon,
   leave: BeachAccessRoundedIcon,
   attendance: EventNoteRoundedIcon,
@@ -186,6 +188,7 @@ export const TENANT_NAV_CONFIG = [
       },
     ],
   },
+  { key: 'people', label: 'People', path: '/people', module: 'employees', permission: 'employees:read' },
   { key: 'employees', label: 'Employees', path: '/employees', module: 'employees', permission: 'employees:read' },
   {
     key: 'document-centre',
@@ -365,6 +368,7 @@ export function getTenantPageTitle(pathname, session) {
   if (pathname === '/performance') return 'My assessments';
   if (pathname.startsWith('/skills/search')) return 'Skill search';
   if (pathname.startsWith('/skills')) return 'My Skills';
+  if (pathname.startsWith('/people')) return 'People';
   if (pathname.startsWith('/employees')) return 'Employees';
   if (pathname.startsWith('/document-centre')) return 'Document Centre';
   if (pathname.startsWith('/payroll')) return 'Payroll';

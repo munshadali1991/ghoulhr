@@ -3,25 +3,23 @@ import {
   Alert,
   Box,
   Button,
-  Chip,
+  CardContent,
   CircularProgress,
-  Divider,
-  IconButton,
-  MenuItem,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
-import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
+import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageCard } from '@/shared/components/ui/PageCard';
-import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { useAuth } from '@/app/providers/useAuth';
 import { uploadStorageFile } from '@/shared/api/storageApi';
 import { AppSnackbar } from '@/shared/components/feedback/AppSnackbar';
 import { useAppSnackbar } from '@/shared/hooks/useAppSnackbar';
-import { EmptyStatePanel } from '@/features/employee-portal/components/EmptyStatePanel';
+import { ExpenseClaimActions } from '../components/ExpenseClaimActions';
+import { ExpenseInlineLineRow } from '../components/ExpenseInlineLineRow';
+import { ExpenseSavedLinesTable } from '../components/ExpenseSavedLinesTable';
 import {
   useAddExpenseLine,
   useCreateExpenseClaim,
@@ -128,7 +126,7 @@ export function ExpenseClaimEditorPage() {
       setPurpose(claim.purpose || '');
       setClaimId(claim.id);
       const lineCount = (claim.lines ?? []).length;
-      setAddPanelOpen(lineCount === 0);
+      setAddPanelOpen(lineCount === 0 && EDITABLE.has(claim.status));
     }
   }, [claim]);
 
@@ -148,6 +146,23 @@ export function ExpenseClaimEditorPage() {
       delete next[key];
       return next;
     });
+  };
+
+  const handleReceiptChange = (file) => {
+    setReceiptFile(file);
+    if (file) {
+      setLineErrors((prev) => {
+        if (!prev.receipt) return prev;
+        const next = { ...prev };
+        delete next.receipt;
+        return next;
+      });
+    } else if (showAttemptedRef.current) {
+      setLineErrors((prev) => ({
+        ...prev,
+        receipt: 'Receipt is required',
+      }));
+    }
   };
 
   const ensureClaim = async () => {
@@ -176,19 +191,6 @@ export function ExpenseClaimEditorPage() {
     }
     setTitleError('');
     return true;
-  };
-
-  const handleSaveHeader = async () => {
-    try {
-      setSaving(true);
-      if (!assertTitleValid()) return;
-      await ensureClaim();
-      show('Claim saved', 'success');
-    } catch (err) {
-      show(err?.message || 'Failed to save claim', 'error');
-    } finally {
-      setSaving(false);
-    }
   };
 
   /**
@@ -270,9 +272,9 @@ export function ExpenseClaimEditorPage() {
     }
   };
 
-  const handleCancelAdd = () => {
+  const handleAddRow = () => {
     resetLineForm();
-    setAddPanelOpen(false);
+    setAddPanelOpen(true);
   };
 
   const handleDeleteLine = async (lineId) => {
@@ -404,13 +406,14 @@ export function ExpenseClaimEditorPage() {
   }
 
   const formDirty = isLineFormDirty(lineForm);
-  const submitDisabled =
-    saving ||
-    !editable ||
-    missingReceiptCount > 0 ||
-    (!lines.length && !formDirty);
+  const canSubmit =
+    editable &&
+    !saving &&
+    missingReceiptCount === 0 &&
+    (lines.length > 0 || formDirty);
 
-  let submitHelper = '';
+  let submitHelper =
+    'Your manager will review this claim, then finance will settle it.';
   if (editable) {
     if (!lines.length && !formDirty) {
       submitHelper = 'Add at least one expense to submit';
@@ -420,409 +423,192 @@ export function ExpenseClaimEditorPage() {
     }
   }
 
-  const receiptHasError = Boolean(lineErrors.receipt);
-  const receiptBorderColor = receiptHasError
-    ? 'error.main'
-    : receiptFile
-      ? 'success.main'
-      : 'divider';
+  const currency = claim?.currency || 'INR';
+  const summaryCountLabel = `${lines.length} expense(s) · ${currency} ${claim?.totalAmount ?? '0.00'}`;
 
   return (
     <Box>
-      <PageHeader
-        title={isNew ? 'New expense claim' : `Claim ${claim?.claimNumber || ''}`}
-        secondaryActions={
-          <Button onClick={() => navigate('/expense/claims')}>Back to list</Button>
-        }
-      />
-      <PageCard sx={{ p: 2, mt: 2 }}>
-        <Stack spacing={3}>
-          {claim?.sendBackReason && (
-            <Alert severity="warning">Sent back: {claim.sendBackReason}</Alert>
-          )}
-          {claim?.rejectionReason && (
-            <Alert severity="error">Rejected: {claim.rejectionReason}</Alert>
-          )}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'stretch', sm: 'flex-start' },
+          gap: 2,
+          mb: 3,
+        }}
+      >
+        <Box>
+          <Typography variant="h4" fontWeight={700} gutterBottom>
+            {isNew ? 'New expense claim' : `Claim ${claim?.claimNumber || ''}`}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Fill claim details, add expenses with receipts, then submit for approval.
+          </Typography>
+        </Box>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1}
+          sx={{ alignSelf: { sm: 'flex-start' } }}
+        >
+          <Button
+            variant="outlined"
+            startIcon={<RefreshRoundedIcon />}
+            onClick={() => claimQuery.refetch()}
+            disabled={isNew || claimQuery.isFetching}
+          >
+            Refresh
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<ArrowBackRoundedIcon />}
+            onClick={() => navigate('/expense/claims')}
+          >
+            Back to list
+          </Button>
+        </Stack>
+      </Box>
 
-          <Box>
-            <Typography variant="h6" sx={{ mb: 1.5 }}>
-              Claim details
+      {claim?.sendBackReason ? (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Sent back: {claim.sendBackReason}
+        </Alert>
+      ) : null}
+      {claim?.rejectionReason ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Rejected: {claim.rejectionReason}
+        </Alert>
+      ) : null}
+
+      <PageCard sx={{ mb: 2 }}>
+        <CardContent>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            justifyContent="space-between"
+            alignItems={{ xs: 'stretch', sm: 'center' }}
+            spacing={2}
+            sx={{ mb: 2 }}
+          >
+            {missingReceiptCount > 0 ? (
+              <Typography variant="body2" color="warning.main" fontWeight={600}>
+                {missingReceiptCount} missing receipt(s)
+              </Typography>
+            ) : (
+              <Box />
+            )}
+            <Typography variant="body2" fontWeight={600}>
+              {summaryCountLabel}
             </Typography>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-              <TextField
-                id={FIELD_INPUT_IDS.title}
-                label="Title"
-                required
-                size="small"
-                fullWidth
-                value={title}
-                onChange={(e) => {
-                  setTitle(e.target.value);
-                  if (titleError) setTitleError('');
-                }}
-                disabled={!editable}
-                error={Boolean(titleError)}
-                helperText={
-                  titleError || 'Short name for this claim (min 3 characters)'
-                }
+          </Stack>
+
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'flex-start' }}>
+            <TextField
+              id={FIELD_INPUT_IDS.title}
+              label="Title"
+              required
+              size="small"
+              fullWidth
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (titleError) setTitleError('');
+              }}
+              disabled={!editable}
+              error={Boolean(titleError)}
+              helperText={titleError || 'Short name for this claim (min 3 characters)'}
+            />
+            <TextField
+              label="Purpose"
+              size="small"
+              fullWidth
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              disabled={!editable}
+              helperText="Why these expenses were incurred"
+            />
+          </Stack>
+        </CardContent>
+      </PageCard>
+
+      {editable ? (
+        <PageCard sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 2 }}>
+              New expense
+            </Typography>
+
+            {showLineValidationAlert && Object.keys(lineErrors).length > 0 ? (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                Please fix the highlighted fields
+              </Alert>
+            ) : null}
+
+            {addPanelOpen ? (
+              <ExpenseInlineLineRow
+                value={lineForm}
+                onChange={updateLineField}
+                errors={lineErrors}
+                receiptFile={receiptFile}
+                onReceiptChange={handleReceiptChange}
+                fieldIds={FIELD_INPUT_IDS}
+                todayKey={todayKey}
+                categories={categories}
+                onSave={handleSaveExpense}
+                onAdd={handleAddRow}
+                addLabel="Add expense"
+                saving={saving}
+                showActions={false}
               />
-              <TextField
-                label="Purpose"
-                size="small"
-                fullWidth
-                value={purpose}
-                onChange={(e) => setPurpose(e.target.value)}
-                disabled={!editable}
-                helperText="Why these expenses were incurred"
-              />
-            </Stack>
-            {editable && (
-              <Button
-                variant="outlined"
-                onClick={handleSaveHeader}
-                disabled={saving}
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                Use + to add another expense after saving.
+              </Typography>
+            )}
+
+            <ExpenseInlineLineRow
+              actionsOnly
+              value={lineForm}
+              onChange={updateLineField}
+              onSave={handleSaveExpense}
+              onAdd={handleAddRow}
+              addLabel="Add expense"
+              saving={saving}
+            />
+
+            {submitError ? (
+              <Alert
+                severity="error"
+                onClose={() => setSubmitError('')}
                 sx={{ mt: 2 }}
               >
-                Save draft
-              </Button>
-            )}
-          </Box>
+                {submitError}
+              </Alert>
+            ) : null}
 
-          <Divider />
+            <ExpenseClaimActions
+              editable={editable}
+              isSaving={saving}
+              canSubmit={canSubmit}
+              onSubmit={handleSubmit}
+              helperText={submitHelper}
+            />
+          </CardContent>
+        </PageCard>
+      ) : null}
 
-          <Box>
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              justifyContent="space-between"
-              alignItems={{ sm: 'center' }}
-              spacing={1}
-              sx={{ mb: 1.5 }}
-            >
-              <Typography variant="h6">Expense items</Typography>
-              {editable && !addPanelOpen && (
-                <Button variant="contained" onClick={() => setAddPanelOpen(true)}>
-                  {lines.length ? 'Add another expense' : 'Add expense'}
-                </Button>
-              )}
-            </Stack>
-
-            {!lines.length && !addPanelOpen && (
-              <EmptyStatePanel
-                title="No expenses yet"
-                description="Add your first expense with a receipt, then submit the claim for approval."
-              />
-            )}
-
-            <Stack spacing={1.5}>
-              {lines.map((line) => (
-                <Box
-                  key={line.id}
-                  sx={{
-                    border: '1px solid',
-                    borderColor: line.hasReceipt ? 'divider' : 'warning.main',
-                    borderRadius: 1,
-                    p: 1.5,
-                  }}
-                >
-                  <Stack
-                    direction={{ xs: 'column', sm: 'row' }}
-                    justifyContent="space-between"
-                    spacing={1}
-                  >
-                    <Box>
-                      <Typography fontWeight={600}>
-                        #{line.lineNo} · {line.categoryName} · {claim?.currency || 'INR'}{' '}
-                        {line.amount}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {line.expenseDate} · {line.merchant}
-                      </Typography>
-                      <Typography variant="body2" sx={{ mt: 0.5 }}>
-                        {line.description}
-                      </Typography>
-                      <Chip
-                        size="small"
-                        sx={{ mt: 1 }}
-                        color={line.hasReceipt ? 'success' : 'warning'}
-                        label={line.hasReceipt ? 'Receipt attached' : 'Receipt missing'}
-                      />
-                    </Box>
-                    {editable && (
-                      <Stack direction="row" spacing={1} alignItems="flex-start">
-                        <Button
-                          component="label"
-                          size="small"
-                          variant={line.hasReceipt ? 'outlined' : 'contained'}
-                          disabled={saving}
-                        >
-                          {line.hasReceipt ? 'Replace receipt' : 'Attach receipt'}
-                          <input
-                            hidden
-                            type="file"
-                            accept=".pdf,.png,.jpg,.jpeg"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              e.target.value = '';
-                              handleAttachReceiptToLine(line.id, file);
-                            }}
-                          />
-                        </Button>
-                        <Button
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteLine(line.id)}
-                          disabled={saving}
-                        >
-                          Remove
-                        </Button>
-                      </Stack>
-                    )}
-                  </Stack>
-                </Box>
-              ))}
-            </Stack>
-
-            {editable && addPanelOpen && (
-              <Box
-                sx={{
-                  mt: 2,
-                  p: 2,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 1,
-                  bgcolor: 'background.paper',
-                  maxWidth: 720,
-                }}
-              >
-                <Typography variant="subtitle1" fontWeight={600}>
-                  Add expense
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  All fields marked * are required
-                </Typography>
-
-                {showLineValidationAlert && Object.keys(lineErrors).length > 0 && (
-                  <Alert severity="error" sx={{ mb: 2 }}>
-                    Please fix the highlighted fields
-                  </Alert>
-                )}
-
-                <Stack spacing={2}>
-                  <TextField
-                    id={FIELD_INPUT_IDS.categoryId}
-                    select
-                    required
-                    size="small"
-                    label="Category"
-                    value={lineForm.categoryId}
-                    onChange={(e) => updateLineField('categoryId', e.target.value)}
-                    error={Boolean(lineErrors.categoryId)}
-                    helperText={lineErrors.categoryId || ' '}
-                  >
-                    {categories.map((c) => (
-                      <MenuItem key={c.id} value={c.id}>
-                        {c.name}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                  <TextField
-                    id={FIELD_INPUT_IDS.expenseDate}
-                    type="date"
-                    required
-                    size="small"
-                    label="Expense date"
-                    InputLabelProps={{ shrink: true }}
-                    inputProps={{ max: todayKey }}
-                    value={lineForm.expenseDate}
-                    onChange={(e) => updateLineField('expenseDate', e.target.value)}
-                    error={Boolean(lineErrors.expenseDate)}
-                    helperText={
-                      lineErrors.expenseDate || 'Cannot be a future date'
-                    }
-                  />
-                  <TextField
-                    id={FIELD_INPUT_IDS.merchant}
-                    required
-                    size="small"
-                    label="Merchant"
-                    value={lineForm.merchant}
-                    onChange={(e) => updateLineField('merchant', e.target.value)}
-                    error={Boolean(lineErrors.merchant)}
-                    helperText={
-                      lineErrors.merchant || 'Where you spent (min 2 characters)'
-                    }
-                  />
-                  <TextField
-                    id={FIELD_INPUT_IDS.description}
-                    required
-                    size="small"
-                    label="Description"
-                    value={lineForm.description}
-                    onChange={(e) => updateLineField('description', e.target.value)}
-                    error={Boolean(lineErrors.description)}
-                    helperText={
-                      lineErrors.description ||
-                      'What this expense was for (min 3 characters)'
-                    }
-                  />
-                  <TextField
-                    id={FIELD_INPUT_IDS.amount}
-                    required
-                    size="small"
-                    label="Amount"
-                    value={lineForm.amount}
-                    onChange={(e) => updateLineField('amount', e.target.value)}
-                    error={Boolean(lineErrors.amount)}
-                    helperText={lineErrors.amount || 'Amount greater than zero'}
-                  />
-
-                  <Box>
-                    <Box
-                      component="label"
-                      htmlFor={FIELD_INPUT_IDS.receipt}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
-                        px: 1.5,
-                        py: 1.25,
-                        borderRadius: 1,
-                        borderWidth: 1,
-                        borderStyle: receiptFile && !receiptHasError ? 'solid' : 'dashed',
-                        borderColor: receiptBorderColor,
-                        bgcolor: receiptHasError
-                          ? 'rgba(211, 47, 47, 0.04)'
-                          : receiptFile
-                            ? 'rgba(46, 125, 50, 0.04)'
-                            : 'action.hover',
-                        cursor: 'pointer',
-                        '&:hover': { borderColor: receiptHasError ? 'error.main' : 'primary.main' },
-                      }}
-                    >
-                      <InsertDriveFileOutlinedIcon
-                        color={
-                          receiptHasError ? 'error' : receiptFile ? 'success' : 'action'
-                        }
-                        fontSize="small"
-                      />
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body2" fontWeight={600}>
-                          {receiptFile
-                            ? receiptFile.name
-                            : 'Attach receipt (required)'}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          PDF or image, max 5 MB
-                        </Typography>
-                      </Box>
-                      {receiptFile && (
-                        <IconButton
-                          size="small"
-                          aria-label="Clear receipt"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setReceiptFile(null);
-                            if (showAttemptedRef.current) {
-                              setLineErrors((prev) => ({
-                                ...prev,
-                                receipt: 'Receipt is required',
-                              }));
-                            }
-                          }}
-                        >
-                          <CloseRoundedIcon fontSize="small" />
-                        </IconButton>
-                      )}
-                      <input
-                        id={FIELD_INPUT_IDS.receipt}
-                        hidden
-                        type="file"
-                        accept=".pdf,.png,.jpg,.jpeg"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0] || null;
-                          setReceiptFile(file);
-                          if (file) {
-                            setLineErrors((prev) => {
-                              if (!prev.receipt) return prev;
-                              const next = { ...prev };
-                              delete next.receipt;
-                              return next;
-                            });
-                          }
-                        }}
-                      />
-                    </Box>
-                    {receiptHasError && (
-                      <Typography variant="caption" color="error" sx={{ mt: 0.75, display: 'block' }}>
-                        {lineErrors.receipt}
-                      </Typography>
-                    )}
-                  </Box>
-
-                  <Stack direction="row" spacing={1}>
-                    <Button
-                      variant="contained"
-                      onClick={handleSaveExpense}
-                      disabled={saving}
-                    >
-                      Save expense
-                    </Button>
-                    <Button
-                      variant="text"
-                      onClick={handleCancelAdd}
-                      disabled={saving}
-                    >
-                      Cancel
-                    </Button>
-                  </Stack>
-                </Stack>
-              </Box>
-            )}
-          </Box>
-
-          <Divider />
-
-          <Box>
-            <Typography variant="subtitle1" fontWeight={600}>
-              Total: {claim?.currency || 'INR'} {claim?.totalAmount ?? '0.00'}
-              {claim?.status
-                ? ` · Status: ${claim.status.replace(/_/g, ' ')}`
-                : ''}
-            </Typography>
-            {editable && (
-              <Stack spacing={1} sx={{ mt: 1.5 }} alignItems="flex-start">
-                {submitError ? (
-                  <Alert
-                    severity="error"
-                    onClose={() => setSubmitError('')}
-                    sx={{ width: '100%', maxWidth: 560 }}
-                  >
-                    {submitError}
-                  </Alert>
-                ) : null}
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleSubmit}
-                  disabled={submitDisabled}
-                >
-                  Submit for approval
-                </Button>
-                {submitHelper ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {submitHelper}
-                  </Typography>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    Your manager will review this claim, then finance will settle it.
-                  </Typography>
-                )}
-              </Stack>
-            )}
-          </Box>
-        </Stack>
+      <PageCard>
+        <ExpenseSavedLinesTable
+          lines={lines}
+          currency={currency}
+          isLoading={!isNew && claimQuery.isLoading}
+          error={!isNew && claimQuery.isError ? claimQuery.error : null}
+          isEditable={Boolean(editable)}
+          saving={saving}
+          onAttachReceipt={handleAttachReceiptToLine}
+          onDelete={handleDeleteLine}
+        />
       </PageCard>
+
       <AppSnackbar
         open={snackbar.open}
         message={snackbar.message}

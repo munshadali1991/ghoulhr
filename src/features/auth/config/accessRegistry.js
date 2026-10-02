@@ -239,6 +239,24 @@ export const EMPLOYEES_MODULE_ACCESS = {
   ],
 };
 
+/** Read-only people directory (Everyone / My Team). */
+/** @type {{ module: string, tabs: TabAccessDef[] }} */
+export const PEOPLE_MODULE_ACCESS = {
+  module: 'employees',
+  tabs: [
+    {
+      key: 'everyone',
+      label: 'Everyone',
+      read: 'employees:read',
+    },
+    {
+      key: 'my-team',
+      label: 'My Team',
+      read: 'employees:read',
+    },
+  ],
+};
+
 /** @type {{ module: string, permission: string, apiRead: string }} */
 export const SKILL_SEARCH_ACCESS = {
   module: 'employees',
@@ -312,6 +330,7 @@ export {
 export const ACCESS_REGISTRY = {
   settings: SETTINGS_ACCESS,
   employees: EMPLOYEES_MODULE_ACCESS,
+  people: PEOPLE_MODULE_ACCESS,
   skillSearch: SKILL_SEARCH_ACCESS,
   ess: ESS_ACCESS,
   approvals: APPROVALS_ACCESS,
