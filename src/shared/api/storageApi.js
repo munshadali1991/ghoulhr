@@ -22,6 +22,7 @@ export async function uploadStorageFile(params) {
   if (params.documentType) formData.append('documentType', params.documentType);
   if (params.employeeId) formData.append('employeeId', params.employeeId);
   if (params.leaveRequestId) formData.append('leaveRequestId', params.leaveRequestId);
+  if (params.expenseClaimId) formData.append('expenseClaimId', params.expenseClaimId);
   if (params.uploadBatchId) formData.append('uploadBatchId', params.uploadBatchId);
 
   return apiFetch('/storage/upload', {

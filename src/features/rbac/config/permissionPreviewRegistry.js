@@ -63,6 +63,26 @@ export const PERMISSION_PREVIEW_BY_CODE = {
     scopeNote:
       'Self: empty. Team: assigned reporting-manager employees only. Organization (Org Admin / HR): everyone.',
   },
+  'ess.attendance.live:read': {
+    code: 'ess.attendance.live:read',
+    title: 'Live attendance',
+    kind: 'Attendance page',
+    location: 'Attendance → Live attendance (/attendance/live)',
+    summary:
+      'Auto-refreshing feed of biometric punches from registered wall devices for this organization.',
+    placementHint: 'Attendance submenu → Live attendance',
+    previewKind: 'generic',
+  },
+  'ess.attendance.unmapped:read': {
+    code: 'ess.attendance.unmapped:read',
+    title: 'Unmapped punches',
+    kind: 'Attendance page',
+    location: 'Attendance → Unmapped punches (/attendance/unmapped)',
+    summary:
+      'Review device scans whose hardware PIN is not linked to an employee, then bind or ignore them.',
+    placementHint: 'Attendance submenu → Unmapped punches',
+    previewKind: 'generic',
+  },
   'ess.attendance.regularization:apply': {
     code: 'ess.attendance.regularization:apply',
     title: 'Attendance regularization',

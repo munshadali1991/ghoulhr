@@ -34,6 +34,7 @@ function initialsFromName(firstName, lastName) {
  *   initialContact?: object,
  *   uploadBatchId?: string,
  *   employeeId?: string,
+ *   readOnly?: boolean,
  * }} props
  */
 export function StepBasicInfo({
@@ -42,6 +43,7 @@ export function StepBasicInfo({
   initialContact,
   uploadBatchId,
   employeeId,
+  readOnly = false,
 }) {
   const {
     control,
@@ -184,6 +186,7 @@ export function StepBasicInfo({
                 fullWidth
                 required
                 label="First name"
+                disabled={readOnly}
                 error={!!errors.basic?.firstName}
                 helperText={errors.basic?.firstName?.message}
               />
@@ -199,6 +202,7 @@ export function StepBasicInfo({
                 {...field}
                 fullWidth
                 label="Middle name"
+                disabled={readOnly}
                 error={!!errors.basic?.middleName}
                 helperText={errors.basic?.middleName?.message}
               />
@@ -215,6 +219,7 @@ export function StepBasicInfo({
                 fullWidth
                 required
                 label="Last name"
+                disabled={readOnly}
                 error={!!errors.basic?.lastName}
                 helperText={errors.basic?.lastName?.message}
               />
@@ -231,6 +236,7 @@ export function StepBasicInfo({
                 select
                 fullWidth
                 label="Gender"
+                disabled={readOnly}
                 error={!!errors.basic?.gender}
                 helperText={errors.basic?.gender?.message}
               >
@@ -253,6 +259,7 @@ export function StepBasicInfo({
                 fullWidth
                 type="date"
                 label="Date of birth"
+                disabled={readOnly}
                 InputLabelProps={{ shrink: true }}
                 error={!!errors.basic?.dateOfBirth}
                 helperText={errors.basic?.dateOfBirth?.message}
@@ -271,6 +278,7 @@ export function StepBasicInfo({
                 required
                 type="email"
                 label="Personal email"
+                disabled={readOnly}
                 error={!!errors.basic?.personalEmail}
                 helperText={errors.basic?.personalEmail?.message}
               />
@@ -289,6 +297,7 @@ export function StepBasicInfo({
                 label="Mobile number"
                 type="tel"
                 inputMode="tel"
+                disabled={readOnly}
                 error={!!errors.basic?.mobileNumber}
                 helperText={errors.basic?.mobileNumber?.message}
               />
@@ -306,6 +315,7 @@ export function StepBasicInfo({
                 label="Alternate mobile"
                 type="tel"
                 inputMode="tel"
+                disabled={readOnly}
                 error={!!errors.basic?.alternateMobile}
                 helperText={errors.basic?.alternateMobile?.message}
               />
@@ -318,27 +328,31 @@ export function StepBasicInfo({
               {!avatarSrc && avatarInitials ? avatarInitials : null}
             </Avatar>
             <Box>
-              <input
-                id="hr-profile-photo"
-                type="file"
-                accept={PHOTO_ACCEPT}
-                style={{ display: 'none' }}
-                disabled={photoUploading}
-                onChange={handlePhotoPick}
-              />
-              <Button
-                component="label"
-                htmlFor="hr-profile-photo"
-                variant="outlined"
-                size="small"
-                startIcon={photoUploading ? <CircularProgress size={16} /> : <AttachFileRoundedIcon />}
-                disabled={photoUploading}
-              >
-                {photoUploading ? 'Uploading…' : 'Upload profile photo'}
-              </Button>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-                PNG or JPG, max 2 MB. Optional.
-              </Typography>
+              {!readOnly ? (
+                <>
+                  <input
+                    id="hr-profile-photo"
+                    type="file"
+                    accept={PHOTO_ACCEPT}
+                    style={{ display: 'none' }}
+                    disabled={photoUploading}
+                    onChange={handlePhotoPick}
+                  />
+                  <Button
+                    component="label"
+                    htmlFor="hr-profile-photo"
+                    variant="outlined"
+                    size="small"
+                    startIcon={photoUploading ? <CircularProgress size={16} /> : <AttachFileRoundedIcon />}
+                    disabled={photoUploading}
+                  >
+                    {photoUploading ? 'Uploading…' : 'Upload profile photo'}
+                  </Button>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                    PNG or JPG, max 2 MB. Optional.
+                  </Typography>
+                </>
+              ) : null}
               {photoFileName ? (
                 <Typography variant="caption" color="text.secondary" display="block">
                   {photoFileName}
@@ -372,6 +386,7 @@ export function StepBasicInfo({
                   {...field}
                   fullWidth
                   label="Contact name"
+                  disabled={readOnly}
                   error={!!errors.emergency?.contactName}
                   helperText={errors.emergency?.contactName?.message}
                 />
@@ -389,6 +404,7 @@ export function StepBasicInfo({
                   label="Contact phone"
                   type="tel"
                   inputMode="tel"
+                  disabled={readOnly}
                   error={!!errors.emergency?.contactPhone}
                   helperText={errors.emergency?.contactPhone?.message}
                 />
@@ -405,6 +421,7 @@ export function StepBasicInfo({
                   select
                   fullWidth
                   label="Relationship"
+                  disabled={readOnly}
                   error={!!errors.emergency?.relationship}
                   helperText={errors.emergency?.relationship?.message}
                 >

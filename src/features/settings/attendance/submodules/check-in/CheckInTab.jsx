@@ -3,13 +3,16 @@ import {
   SettingsOverviewCard,
   SettingsOverviewRow,
 } from '@/features/settings/attendance/components/SettingsOverviewCard';
-import { TRACKING_MODES } from '../../constants';
+import { TRACKING_MODES, PUNCH_DIRECTION_MODES } from '../../constants';
 
 const IP_CHIP_LIMIT = 6;
 
 export function CheckInTab({ checkIn, actionError, onClearActionError }) {
   const mode = TRACKING_MODES.find((m) => m.value === checkIn.tracking_mode);
   const modeLabel = mode?.label || checkIn.tracking_mode;
+  const direction = PUNCH_DIRECTION_MODES.find(
+    (m) => m.value === checkIn.punch_direction_mode,
+  );
   const ips = checkIn.allowed_ip_addresses || [];
   const isIpMode = checkIn.tracking_mode === 'ip';
   const visibleIps = ips.slice(0, IP_CHIP_LIMIT);
@@ -36,6 +39,28 @@ export function CheckInTab({ checkIn, actionError, onClearActionError }) {
               </Typography>
             ) : null}
           </Stack>
+        </SettingsOverviewRow>
+
+        <SettingsOverviewRow label="Punch direction">
+          <Stack spacing={0.75}>
+            <Chip
+              size="small"
+              label={direction?.label || checkIn.punch_direction_mode || 'Smart Shift'}
+              variant="outlined"
+              sx={{ alignSelf: 'flex-start' }}
+            />
+            {direction?.description ? (
+              <Typography variant="body2" color="text.secondary">
+                {direction.description}
+              </Typography>
+            ) : null}
+          </Stack>
+        </SettingsOverviewRow>
+
+        <SettingsOverviewRow label="Biometric dedupe">
+          <Typography variant="body2">
+            {checkIn.biometric_dedupe_window_seconds ?? 120} seconds
+          </Typography>
         </SettingsOverviewRow>
 
         <SettingsOverviewRow label="Geo-fencing">

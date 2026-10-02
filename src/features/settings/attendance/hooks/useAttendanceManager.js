@@ -71,6 +71,9 @@ export function useAttendanceManager(organizationId) {
   const checkIn = useMemo(
     () => ({
       tracking_mode: settings?.tracking_mode || 'manual',
+      punch_direction_mode: settings?.punch_direction_mode || 'smart_shift',
+      biometric_dedupe_window_seconds:
+        settings?.biometric_dedupe_window_seconds ?? 120,
       geo_fencing_enabled: settings?.geo_fencing_enabled ?? false,
       allowed_ip_addresses: settings?.allowed_ip_addresses || [],
     }),

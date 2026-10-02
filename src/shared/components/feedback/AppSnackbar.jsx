@@ -12,6 +12,7 @@ const DEFAULT_ANCHOR = { vertical: 'bottom', horizontal: 'right' };
  *   filled?: boolean;
  *   autoHideDuration?: number;
  *   icon?: import('react').ReactNode;
+ *   sx?: import('@mui/material').SxProps;
  * }} props
  */
 export function AppSnackbar({
@@ -23,6 +24,7 @@ export function AppSnackbar({
   filled = false,
   autoHideDuration = 4000,
   icon,
+  sx,
 }) {
   return (
     <Snackbar
@@ -30,6 +32,7 @@ export function AppSnackbar({
       autoHideDuration={autoHideDuration}
       onClose={onClose}
       anchorOrigin={anchorOrigin}
+      sx={sx}
     >
       <Alert
         severity={severity}

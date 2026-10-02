@@ -1,7 +1,7 @@
 import { Box, Grid, Stack, TextField, Typography } from '@mui/material';
 import { Controller, useFormContext } from 'react-hook-form';
 
-export function StepCompliance() {
+export function StepCompliance({ readOnly = false }) {
   const {
     control,
     watch,
@@ -36,6 +36,7 @@ export function StepCompliance() {
                 fullWidth
                 label="PAN"
                 placeholder="ABCDE1234F"
+                disabled={readOnly}
                 error={!!errors.compliance?.panNumber}
                 helperText={
                   errors.compliance?.panNumber?.message ||
@@ -55,6 +56,7 @@ export function StepCompliance() {
                 fullWidth
                 label="Aadhaar"
                 placeholder="12 digits"
+                disabled={readOnly}
                 error={!!errors.compliance?.aadhaarNumber}
                 helperText={
                   errors.compliance?.aadhaarNumber?.message ||
@@ -73,6 +75,7 @@ export function StepCompliance() {
                 {...field}
                 fullWidth
                 label="UAN"
+                disabled={readOnly}
                 error={!!errors.compliance?.uanNumber}
                 helperText={errors.compliance?.uanNumber?.message}
               />
@@ -88,6 +91,7 @@ export function StepCompliance() {
                 {...field}
                 fullWidth
                 label="ESIC number"
+                disabled={readOnly}
                 error={!!errors.compliance?.esicNumber}
                 helperText={errors.compliance?.esicNumber?.message}
               />
@@ -103,6 +107,7 @@ export function StepCompliance() {
                 {...field}
                 fullWidth
                 label="PF number"
+                disabled={readOnly}
                 error={!!errors.compliance?.pfNumber}
                 helperText={errors.compliance?.pfNumber?.message}
               />
@@ -118,6 +123,7 @@ export function StepCompliance() {
                 {...field}
                 fullWidth
                 label="Passport number"
+                disabled={readOnly}
                 error={!!errors.compliance?.passportNumber}
                 helperText={errors.compliance?.passportNumber?.message}
               />
@@ -134,6 +140,7 @@ export function StepCompliance() {
                 fullWidth
                 type="date"
                 label="Passport expiry"
+                disabled={readOnly}
                 InputLabelProps={{ shrink: true }}
                 error={!!errors.compliance?.passportExpiry}
                 helperText={errors.compliance?.passportExpiry?.message}

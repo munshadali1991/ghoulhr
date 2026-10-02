@@ -517,6 +517,8 @@ export function getMockLeaveCalendar(year, month, filter) {
   const timezone = 'Asia/Kolkata';
   const monthPad = String(month).padStart(2, '0');
   const lastDay = new Date(year, month, 0).getDate();
+  const isRoster = filter === 'team' || filter === 'organization';
+  const rosterMultiplier = filter === 'organization' ? 2 : 1;
 
   if (getEssQaMockScenario() === 'empty') {
     return {
@@ -543,7 +545,7 @@ export function getMockLeaveCalendar(year, month, filter) {
     days[`${year}-02-29`] = {
       date: `${year}-02-29`,
       onLeave: true,
-      onLeaveCount: filter === 'team' ? 4 : 1,
+      onLeaveCount: isRoster ? 4 * rosterMultiplier : 1,
       holiday: undefined,
     };
   }
@@ -552,11 +554,11 @@ export function getMockLeaveCalendar(year, month, filter) {
   for (let d = 16; d <= Math.min(28, lastDay); d += 1) {
     const key = `${year}-${monthPad}-${String(d).padStart(2, '0')}`;
     const existing = days[key] || { date: key };
+    const teamCount = d === 28 ? 12 : 3 + (d % 4);
     days[key] = {
       ...existing,
       onLeave: true,
-      onLeaveCount:
-        filter === 'team' ? (d === 28 ? 12 : 3 + (d % 4)) : 1,
+      onLeaveCount: isRoster ? teamCount * rosterMultiplier : 1,
     };
   }
 
@@ -565,7 +567,7 @@ export function getMockLeaveCalendar(year, month, filter) {
   days[halfKey] = {
     ...(days[halfKey] || { date: halfKey }),
     onLeave: true,
-    onLeaveCount: filter === 'team' ? 2 : 1,
+    onLeaveCount: isRoster ? 2 * rosterMultiplier : 1,
   };
 
   return {
@@ -574,7 +576,11 @@ export function getMockLeaveCalendar(year, month, filter) {
     filter,
     timezone,
     days,
-    teamOnLeaveCount: filter === 'team' ? 18 : 0,
+    teamOnLeaveCount: isRoster
+      ? filter === 'organization'
+        ? 36
+        : 18
+      : 0,
   };
 }
 
@@ -676,6 +682,24 @@ export function getMockLeaveTransactions(date, filter, search = '') {
 
   if (filter === 'me') {
     items = items.filter((i) => i.id === 'lr-tx-1');
+  }
+
+  if (filter === 'organization') {
+    items = [
+      {
+        id: 'lr-tx-org-self',
+        employeeName: 'You',
+        employeeCode: 'E-100',
+        designation: 'Engineer',
+        location: 'HQ',
+        leaveType: 'Casual Leave',
+        days: 1,
+        from: date,
+        to: date,
+        durationLabel: 'Full Day',
+      },
+      ...items,
+    ];
   }
 
   if (search?.trim()) {

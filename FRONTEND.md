@@ -247,6 +247,19 @@ APIs: `GET/POST /ess/attendance/regularization`, `POST /ess/attendance/regulariz
 | `/timesheet/requests`                                     | —         | —                          | Redirect → `/timesheet/team?status=SUBMITTED` |                                  |
 | `/approvals/timesheet`                                    | —         | —                          | Redirect → `/timesheet/team?status=SUBMITTED` |                                  |
 
+### Expense (live)
+
+| Path | Module | Permission | Page | Notes |
+|------|--------|------------|------|-------|
+| `/expense/claims` | expense | `ess.expense:read` | `ExpenseClaimsPage` | My claims list |
+| `/expense/claims/new` | expense | `ess.expense:apply` | `ExpenseClaimEditorPage` | Create draft |
+| `/expense/claims/:id` | expense | `ess.expense:read` | `ExpenseClaimEditorPage` | Edit draft/sent-back or view |
+| `/expense/approvals` | — | `approvals.expense:read` | `ExpenseApprovalsPage` | Manager inbox |
+| `/expense/finance` | expense | `expense.finance:read` | `ExpenseFinancePage` | Finance queue, mark paid, export |
+| `/settings/expense` | expense | `settings.expense:read` | `ExpenseSettingsPage` | Categories + policy |
+
+Feature folder: `src/features/expense/`.
+
 
 
 
@@ -331,9 +344,9 @@ HR tiles: employees, attendance, payroll, settings (org or employee settings rea
 
 ### Settings access (`SETTINGS_ACCESS`)
 
-Nav order: organization → employees → departments → locations → leave → attendance → timesheet → performance → skills → rbac.
+Nav order: organization → employees → departments → locations → leave → expense → attendance → timesheet → performance → skills → rbac.
 
-Most sections require module `settings`. Exceptions: **timesheet** settings require entitled module `timesheet`; **rbac** requires module `rbac`.
+Most sections require module `settings`. Exceptions: **timesheet** settings require entitled module `timesheet`; **expense** settings require entitled module `expense`; **rbac** requires module `rbac`.
 
 
 | Slug         | Label                      | Read                           | Write                                                  |

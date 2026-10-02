@@ -15,7 +15,7 @@ import {
   resolveShiftName,
 } from '../utils/employmentLocationShift';
 
-export function StepEmployment({ organizationId, employeeSettings }) {
+export function StepEmployment({ organizationId, employeeSettings, readOnly = false }) {
   const {
     control,
     setValue,
@@ -80,6 +80,7 @@ export function StepEmployment({ organizationId, employeeSettings }) {
   }, [activeDesignations, selectedDepartmentId]);
 
   useEffect(() => {
+    if (readOnly) return;
     if (!selectedDesignationId) return;
     if (
       filteredDesignations.length === 0 ||
@@ -87,17 +88,19 @@ export function StepEmployment({ organizationId, employeeSettings }) {
     ) {
       setValue('employment.designationId', '');
     }
-  }, [filteredDesignations, selectedDesignationId, setValue]);
+  }, [filteredDesignations, selectedDesignationId, setValue, readOnly]);
 
   useEffect(() => {
+    if (readOnly) return;
     if (!selectedLocationId) return;
     const storedName = locationNameForId(selectedLocationId, activeLocations);
     if (storedName && selectedBusinessUnit !== storedName) {
       setValue('employment.businessUnit', storedName, { shouldDirty: false });
     }
-  }, [activeLocations, selectedBusinessUnit, selectedLocationId, setValue]);
+  }, [activeLocations, selectedBusinessUnit, selectedLocationId, setValue, readOnly]);
 
   useEffect(() => {
+    if (readOnly) return;
     if (!selectedLocationId) {
       if (selectedShift) setValue('employment.shift', '');
       return;
@@ -134,6 +137,7 @@ export function StepEmployment({ organizationId, employeeSettings }) {
     shiftsForSelectedLocation,
     selectedShift,
     setValue,
+    readOnly,
   ]);
 
   const businessUnitHelper =
@@ -175,6 +179,7 @@ export function StepEmployment({ organizationId, employeeSettings }) {
                 required
                 type="date"
                 label="Date of joining"
+                disabled={readOnly}
                 InputLabelProps={{ shrink: true }}
                 error={!!errors.employment?.dateOfJoining}
                 helperText={errors.employment?.dateOfJoining?.message}
@@ -193,7 +198,7 @@ export function StepEmployment({ organizationId, employeeSettings }) {
             name="employment.employmentType"
             control={control}
             render={({ field }) => (
-              <TextField {...field} select fullWidth label="Employment type">
+              <TextField {...field} select fullWidth label="Employment type" disabled={readOnly}>
                 {EMPLOYMENT_TYPE_OPTIONS.map((o) => (
                   <MenuItem key={o.value} value={o.value}>
                     {o.label}
@@ -208,7 +213,7 @@ export function StepEmployment({ organizationId, employeeSettings }) {
             name="employment.employmentStatus"
             control={control}
             render={({ field }) => (
-              <TextField {...field} select fullWidth label="Employment status">
+              <TextField {...field} select fullWidth label="Employment status" disabled={readOnly}>
                 {EMPLOYMENT_STATUS_OPTIONS.map((o) => (
                   <MenuItem key={o.value} value={o.value}>
                     {o.label}
@@ -229,6 +234,7 @@ export function StepEmployment({ organizationId, employeeSettings }) {
                 type="email"
                 label="Official email login"
                 placeholder="Leave blank to use personal email for login"
+                disabled={readOnly}
                 error={!!errors.employment?.officialEmail}
                 helperText={errors.employment?.officialEmail?.message}
               />
@@ -248,6 +254,7 @@ export function StepEmployment({ organizationId, employeeSettings }) {
                   activeDepartments.find((department) => department.id === field.value) || null
                 }
                 onChange={(_, v) => field.onChange(v?.id || '')}
+                disabled={readOnly}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -273,12 +280,12 @@ export function StepEmployment({ organizationId, employeeSettings }) {
                 value={filteredDesignations.find((designation) => designation.id === field.value) || null}
                 onChange={(_, v) => field.onChange(v?.id || '')}
                 freeSolo={false}
+                disabled={readOnly || !selectedDepartmentId}
                 renderInput={(params) => (
                   <TextField
                     {...params}
                     label="Designation"
                     required
-                    disabled={!selectedDepartmentId}
                     error={!!errors.employment?.designationId}
                     helperText={
                       errors.employment?.designationId?.message ||
@@ -295,7 +302,7 @@ export function StepEmployment({ organizationId, employeeSettings }) {
             name="employment.workMode"
             control={control}
             render={({ field }) => (
-              <TextField {...field} select fullWidth label="Work mode">
+              <TextField {...field} select fullWidth label="Work mode" disabled={readOnly}>
                 {WORK_MODE_OPTIONS.map((o) => (
                   <MenuItem key={o.value} value={o.value}>
                     {o.label}
@@ -326,6 +333,7 @@ export function StepEmployment({ organizationId, employeeSettings }) {
                   field.onChange(v?.name || '');
                   setValue('employment.shift', '');
                 }}
+                disabled={readOnly}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -348,7 +356,7 @@ export function StepEmployment({ organizationId, employeeSettings }) {
                 select
                 fullWidth
                 label="Shift"
-                disabled={!selectedLocationId || shiftOptions.length === 0}
+                disabled={readOnly || !selectedLocationId || shiftOptions.length === 0}
                 helperText={errors.employment?.shift?.message || shiftHelper}
                 error={!!errors.employment?.shift}
               >
@@ -371,6 +379,7 @@ export function StepEmployment({ organizationId, employeeSettings }) {
                 fullWidth
                 type="number"
                 label="Probation (days)"
+                disabled={readOnly}
                 inputProps={{ min: 0 }}
                 error={!!errors.employment?.probationPeriodDays}
                 helperText={errors.employment?.probationPeriodDays?.message}
@@ -388,6 +397,7 @@ export function StepEmployment({ organizationId, employeeSettings }) {
                 fullWidth
                 type="number"
                 label="Notice period (days)"
+                disabled={readOnly}
                 inputProps={{ min: 0 }}
                 error={!!errors.employment?.noticePeriodDays}
                 helperText={errors.employment?.noticePeriodDays?.message}

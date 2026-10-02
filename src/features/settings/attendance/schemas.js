@@ -48,6 +48,8 @@ export const scheduleFormSchema = z.object({
 
 export const checkInFormSchema = z.object({
   tracking_mode: z.enum(['manual', 'biometric', 'geo', 'ip']),
+  punch_direction_mode: z.enum(['smart_shift', 'strict']),
+  biometric_dedupe_window_seconds: z.coerce.number().min(0).max(3600),
   geo_fencing_enabled: z.boolean(),
   allowed_ip_addresses: z.array(z.string()),
 });
