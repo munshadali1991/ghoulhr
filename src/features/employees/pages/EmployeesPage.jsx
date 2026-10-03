@@ -118,7 +118,6 @@ export function EmployeesPage({ organizationId }) {
     showSnackbar('Employee created successfully!', 'success');
   };
 
-  const openEmployeeWizard = async (employee, mode) => {
   const handleRegenerateCredentials = async (employee) => {
     const confirmed = window.confirm(
       `Regenerate login credentials for "${employee.name}"?\n\nEmail: ${employee.email}\nThe current password will stop working immediately.`,
@@ -169,7 +168,7 @@ export function EmployeesPage({ organizationId }) {
       </Tooltip>
     ) : null;
 
-  const openEditWizard = async (employee) => {
+  const openEmployeeWizard = async (employee, mode) => {
     try {
       const fullEmployee = await getEmployeeById(employee.id);
       setSelectedEmployeeId(employee.id);
