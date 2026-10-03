@@ -6,7 +6,7 @@ function fieldError(errors, index, field) {
   return errors?.experience?.experiences?.[index]?.[field];
 }
 
-export function StepExperience() {
+export function StepExperience({ readOnly = false }) {
   const {
     control,
     formState: { errors },
@@ -38,15 +38,17 @@ export function StepExperience() {
                 <Typography variant="subtitle2" fontWeight={700}>
                   Experience #{index + 1}
                 </Typography>
-                <Button
-                  size="small"
-                  color="error"
-                  startIcon={<DeleteOutlineRoundedIcon />}
-                  onClick={() => removeExperience(index)}
-                  disabled={fields.length === 1}
-                >
-                  Remove
-                </Button>
+                {!readOnly ? (
+                  <Button
+                    size="small"
+                    color="error"
+                    startIcon={<DeleteOutlineRoundedIcon />}
+                    onClick={() => removeExperience(index)}
+                    disabled={fields.length === 1}
+                  >
+                    Remove
+                  </Button>
+                ) : null}
               </Stack>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -58,6 +60,7 @@ export function StepExperience() {
                         {...field}
                         fullWidth
                         label="Previous company name"
+                        disabled={readOnly}
                         error={!!fieldError(errors, index, 'previousCompanyName')}
                         helperText={fieldError(errors, index, 'previousCompanyName')?.message}
                       />
@@ -73,6 +76,7 @@ export function StepExperience() {
                         {...field}
                         fullWidth
                         label="Previous designation"
+                        disabled={readOnly}
                         error={!!fieldError(errors, index, 'previousDesignation')}
                         helperText={fieldError(errors, index, 'previousDesignation')?.message}
                       />
@@ -88,6 +92,7 @@ export function StepExperience() {
                         {...field}
                         fullWidth
                         label="Total experience (years)"
+                        disabled={readOnly}
                         error={!!fieldError(errors, index, 'totalExperienceYears')}
                         helperText={fieldError(errors, index, 'totalExperienceYears')?.message}
                       />
@@ -103,6 +108,7 @@ export function StepExperience() {
                         {...field}
                         fullWidth
                         label="Last drawn CTC"
+                        disabled={readOnly}
                         error={!!fieldError(errors, index, 'lastDrawnCtc')}
                         helperText={fieldError(errors, index, 'lastDrawnCtc')?.message}
                       />
@@ -120,6 +126,7 @@ export function StepExperience() {
                         multiline
                         minRows={3}
                         label="Experience summary"
+                        disabled={readOnly}
                         error={!!fieldError(errors, index, 'experienceSummary')}
                         helperText={fieldError(errors, index, 'experienceSummary')?.message}
                       />
@@ -130,22 +137,24 @@ export function StepExperience() {
             </Stack>
           </Paper>
         ))}
-        <Box>
-          <Button
-            variant="outlined"
-            onClick={() =>
-              appendExperience({
-                previousCompanyName: '',
-                previousDesignation: '',
-                totalExperienceYears: '',
-                lastDrawnCtc: '',
-                experienceSummary: '',
-              })
-            }
-          >
-            Add another experience
-          </Button>
-        </Box>
+        {!readOnly ? (
+          <Box>
+            <Button
+              variant="outlined"
+              onClick={() =>
+                appendExperience({
+                  previousCompanyName: '',
+                  previousDesignation: '',
+                  totalExperienceYears: '',
+                  lastDrawnCtc: '',
+                  experienceSummary: '',
+                })
+              }
+            >
+              Add another experience
+            </Button>
+          </Box>
+        ) : null}
       </Stack>
     </Stack>
   );

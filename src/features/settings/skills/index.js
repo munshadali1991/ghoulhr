@@ -1,0 +1,1 @@
+export { SkillsSettingsPage } from './SkillsSettingsPage';

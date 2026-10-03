@@ -23,9 +23,9 @@ import { createEmptyDocumentRow, MAX_DOCUMENT_BYTES } from '../onboardingSchema'
 const ACCEPT = '.pdf,.png,.jpg,.jpeg,.doc,.docx';
 
 /**
- * @param {{ uploadBatchId?: string, employeeId?: string }} props
+ * @param {{ uploadBatchId?: string, employeeId?: string, readOnly?: boolean }} props
  */
-export function StepDocuments({ uploadBatchId, employeeId }) {
+export function StepDocuments({ uploadBatchId, employeeId, readOnly = false }) {
   const {
     control,
     setValue,
@@ -37,10 +37,11 @@ export function StepDocuments({ uploadBatchId, employeeId }) {
   const [uploadingIndex, setUploadingIndex] = useState(null);
 
   useEffect(() => {
+    if (readOnly) return;
     if (fields.length === 0) {
       append(createEmptyDocumentRow());
     }
-  }, [fields.length, append]);
+  }, [fields.length, append, readOnly]);
 
   const onPickFile = async (index, fileList) => {
     setUploadError('');
@@ -99,10 +100,12 @@ export function StepDocuments({ uploadBatchId, employeeId }) {
         </Typography>
       </Box>
 
-      <Alert severity="info">
-        Allowed: PDF, images, Word. Max {MAX_DOCUMENT_BYTES / (1024 * 1024)} MB per file. Documents are optional but
-        recommended for compliance.
-      </Alert>
+      {!readOnly ? (
+        <Alert severity="info">
+          Allowed: PDF, images, Word. Max {MAX_DOCUMENT_BYTES / (1024 * 1024)} MB per file. Documents are optional but
+          recommended for compliance.
+        </Alert>
+      ) : null}
 
       {uploadError && <Alert severity="error">{uploadError}</Alert>}
 
@@ -116,6 +119,11 @@ export function StepDocuments({ uploadBatchId, employeeId }) {
           const isPersisted = Boolean(serverDocumentId);
           const isUploaded = Boolean(storageKey);
           const isUploading = uploadingIndex === index;
+          const hasFile = Boolean(fileName || serverDocumentId);
+
+          if (readOnly && !hasFile) {
+            return null;
+          }
 
           return (
             <Paper
@@ -141,7 +149,7 @@ export function StepDocuments({ uploadBatchId, employeeId }) {
                     sx={{ minWidth: { xs: '100%', sm: 220 } }}
                     error={!!errors.documents?.[index]?.documentType}
                     helperText={errors.documents?.[index]?.documentType?.message}
-                    disabled={isPersisted || isUploaded || isUploading}
+                    disabled={readOnly || isPersisted || isUploaded || isUploading}
                   >
                     {DOCUMENT_TYPE_OPTIONS.map((o) => (
                       <MenuItem key={o.value} value={o.value}>
@@ -153,18 +161,18 @@ export function StepDocuments({ uploadBatchId, employeeId }) {
               />
 
               <Box sx={{ flex: 1, minWidth: 180 }}>
-                {isPersisted ? (
+                {isPersisted || readOnly ? (
                   <Stack spacing={0.5}>
                     <Typography variant="body2" fontWeight={600}>
-                      {fileName}
+                      {fileName || 'Document'}
                     </Typography>
                     <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                      <Chip size="small" color="success" variant="outlined" label="Saved on server" />
-                      <Chip
-                        size="small"
-                        variant="outlined"
-                        label={verificationStatus || 'PENDING'}
-                      />
+                      {isPersisted ? (
+                        <Chip size="small" color="success" variant="outlined" label="Saved on server" />
+                      ) : null}
+                      {verificationStatus ? (
+                        <Chip size="small" variant="outlined" label={verificationStatus} />
+                      ) : null}
                       {sizeBytes > 0 && (
                         <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center' }}>
                           {(sizeBytes / 1024).toFixed(1)} KB
@@ -220,29 +228,42 @@ export function StepDocuments({ uploadBatchId, employeeId }) {
                 )}
               </Box>
 
-              <IconButton
-                edge="end"
-                onClick={() => handleRemove(index)}
-                aria-label="Remove document row"
-                sx={{ alignSelf: { xs: 'flex-end', sm: 'center' } }}
-                disabled={isUploading}
-              >
-                <DeleteOutlineRoundedIcon />
-              </IconButton>
+              {!readOnly ? (
+                <IconButton
+                  edge="end"
+                  onClick={() => handleRemove(index)}
+                  aria-label="Remove document row"
+                  sx={{ alignSelf: { xs: 'flex-end', sm: 'center' } }}
+                  disabled={isUploading}
+                >
+                  <DeleteOutlineRoundedIcon />
+                </IconButton>
+              ) : null}
             </Paper>
           );
         })}
       </Stack>
 
-      <Box>
-        <Button
-          variant="outlined"
-          startIcon={<AddRoundedIcon />}
-          onClick={() => append(createEmptyDocumentRow())}
-        >
-          Add another document
-        </Button>
-      </Box>
+      {readOnly &&
+      !fields.some(
+        (_, i) => watch(`documents.${i}.fileName`) || watch(`documents.${i}.serverDocumentId`),
+      ) ? (
+        <Typography variant="body2" color="text.secondary">
+          No documents on file.
+        </Typography>
+      ) : null}
+
+      {!readOnly ? (
+        <Box>
+          <Button
+            variant="outlined"
+            startIcon={<AddRoundedIcon />}
+            onClick={() => append(createEmptyDocumentRow())}
+          >
+            Add another document
+          </Button>
+        </Box>
+      ) : null}
 
       {fields.some((_, i) => watch(`documents.${i}.fileName`) || watch(`documents.${i}.serverDocumentId`)) && (
         <Typography variant="caption" color="text.secondary">

@@ -98,6 +98,15 @@ export const SETTINGS_ACCESS = {
     apiRead: 'GET /settings/leave-config',
     apiWrite: 'POST /settings/leave-config',
   },
+  expense: {
+    slug: 'expense',
+    label: 'Expense',
+    module: 'expense',
+    read: 'settings.expense:read',
+    write: 'settings.expense:write',
+    apiRead: 'GET /settings/expense/categories',
+    apiWrite: 'POST /settings/expense/categories',
+  },
   attendance: {
     slug: 'attendance',
     label: 'Attendance',
@@ -110,6 +119,32 @@ export const SETTINGS_ACCESS = {
       { key: 'shifts', label: 'Shifts', read: 'settings.attendance:read', write: 'settings.attendance:write' },
       { key: 'schedule', label: 'Schedule & rules', read: 'settings.attendance:read', write: 'settings.attendance:write' },
       { key: 'checkin', label: 'Check-in', read: 'settings.attendance:read', write: 'settings.attendance:write' },
+    ],
+  },
+  biometric: {
+    slug: 'biometric',
+    label: 'Biometric',
+    module: 'attendance',
+    readAny: [
+      'settings.biometric.devices:read',
+      'settings.biometric.mapping:read',
+    ],
+    write: 'settings.biometric.devices:write',
+    apiRead: 'GET /settings/biometric/devices',
+    apiWrite: 'POST /settings/biometric/devices',
+    tabs: [
+      {
+        key: 'devices',
+        label: 'Devices',
+        read: 'settings.biometric.devices:read',
+        write: 'settings.biometric.devices:write',
+      },
+      {
+        key: 'mapping',
+        label: 'ID mapping',
+        read: 'settings.biometric.mapping:read',
+        write: 'settings.biometric.mapping:write',
+      },
     ],
   },
   timesheet: {
@@ -134,6 +169,20 @@ export const SETTINGS_ACCESS = {
     apiRead: 'GET /settings/performance/master',
     apiWrite: 'PUT /settings/performance/master',
   },
+  skills: {
+    slug: 'skills',
+    label: 'Skills',
+    module: 'settings',
+    read: 'settings.skills:read',
+    write: 'settings.skills:write',
+    apiRead: 'GET /settings/skills/items',
+    apiWrite: 'POST /settings/skills/items',
+    tabs: [
+      { key: 'categories', label: 'Categories', read: 'settings.skills:read', write: 'settings.skills:write' },
+      { key: 'subcategories', label: 'Subcategories', read: 'settings.skills:read', write: 'settings.skills:write' },
+      { key: 'skills', label: 'Skills', read: 'settings.skills:read', write: 'settings.skills:write' },
+    ],
+  },
   rbac: {
     slug: 'rbac',
     label: 'Roles & Permissions',
@@ -157,9 +206,12 @@ export const SETTINGS_SLUG_ORDER = [
   'departments',
   'locations',
   'leave',
+  'expense',
   'attendance',
+  'biometric',
   'timesheet',
   'performance',
+  'skills',
   'rbac',
 ];
 
@@ -187,6 +239,31 @@ export const EMPLOYEES_MODULE_ACCESS = {
   ],
 };
 
+/** Read-only people directory (Everyone / My Team). */
+/** @type {{ module: string, tabs: TabAccessDef[] }} */
+export const PEOPLE_MODULE_ACCESS = {
+  module: 'employees',
+  tabs: [
+    {
+      key: 'everyone',
+      label: 'Everyone',
+      read: 'employees:read',
+    },
+    {
+      key: 'my-team',
+      label: 'My Team',
+      read: 'employees:read',
+    },
+  ],
+};
+
+/** @type {{ module: string, permission: string, apiRead: string }} */
+export const SKILL_SEARCH_ACCESS = {
+  module: 'employees',
+  permission: 'employees.skills:read',
+  apiRead: 'GET /hr/skills/employees',
+};
+
 /** @type {Record<string, { module: string, permission?: string, permissions?: string[], permissionsMode?: string }>} */
 export const ESS_ACCESS = {
   home: {
@@ -196,10 +273,15 @@ export const ESS_ACCESS = {
   },
   leaveApply: { module: 'leave', permission: 'ess.leave:apply' },
   leaveRead: { module: 'leave', permission: 'ess.leave:read' },
+  expenseRead: { module: 'expense', permission: 'ess.expense:read' },
+  expenseApply: { module: 'expense', permission: 'ess.expense:apply' },
   attendanceRead: { module: 'attendance', permission: 'ess.attendance:read' },
   attendancePunch: { module: 'attendance', permission: 'ess.attendance:punch' },
   timesheetRead: { module: 'timesheet', permission: 'ess.timesheet:read' },
   timesheetWrite: { module: 'timesheet', permission: 'ess.timesheet:write' },
+  documentsRead: { module: 'documents', permission: 'ess.documents:read' },
+  skillsRead: { module: 'employees', permission: 'ess.skills:read' },
+  skillsWrite: { module: 'employees', permission: 'ess.skills:write' },
 };
 
 /** @type {Record<string, { permission: string }>} */
@@ -208,6 +290,14 @@ export const APPROVALS_ACCESS = {
   leaveAct: { permission: 'approvals.leave:act' },
   timesheetRead: { permission: 'approvals.timesheet:read' },
   timesheetAct: { permission: 'approvals.timesheet:act' },
+  expenseRead: { permission: 'approvals.expense:read' },
+  expenseAct: { permission: 'approvals.expense:act' },
+};
+
+/** @type {Record<string, { permission: string }>} */
+export const EXPENSE_FINANCE_ACCESS = {
+  read: { module: 'expense', permission: 'expense.finance:read' },
+  act: { module: 'expense', permission: 'expense.finance:act' },
 };
 
 /** @type {{ module: string, read: string, write: string, run: string }} */
@@ -216,6 +306,14 @@ export const PAYROLL_ACCESS = {
   read: 'payroll:read',
   write: 'payroll:write',
   run: 'payroll:run',
+};
+
+/** @type {{ module: string, essRead: string, read: string, write: string }} */
+export const DOCUMENTS_ACCESS = {
+  module: 'documents',
+  essRead: 'ess.documents:read',
+  read: 'documents:read',
+  write: 'documents:write',
 };
 
 export {
@@ -232,9 +330,13 @@ export {
 export const ACCESS_REGISTRY = {
   settings: SETTINGS_ACCESS,
   employees: EMPLOYEES_MODULE_ACCESS,
+  people: PEOPLE_MODULE_ACCESS,
+  skillSearch: SKILL_SEARCH_ACCESS,
   ess: ESS_ACCESS,
   approvals: APPROVALS_ACCESS,
+  expenseFinance: EXPENSE_FINANCE_ACCESS,
   payroll: PAYROLL_ACCESS,
+  documents: DOCUMENTS_ACCESS,
   dashboards: DASHBOARDS,
 };
 

@@ -37,4 +37,17 @@ export const TRACKING_MODES = [
   },
 ];
 
+export const PUNCH_DIRECTION_MODES = [
+  {
+    value: 'smart_shift',
+    label: 'Smart Shift',
+    description: 'Infer IN/OUT from the employee shift schedule (recommended).',
+  },
+  {
+    value: 'strict',
+    label: 'Strict (device button)',
+    description: 'Trust the IN/OUT status reported by the wall device.',
+  },
+];
+
 export const ATTENDANCE_CLOCK_STORAGE_KEY = 'ghoulhr-attendance-clock-format';

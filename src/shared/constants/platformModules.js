@@ -6,6 +6,7 @@ export const PLATFORM_MODULES = [
   { code: 'attendance', name: 'Attendance' },
   { code: 'timesheet', name: 'Timesheet' },
   { code: 'payroll', name: 'Payroll' },
+  { code: 'expense', name: 'Expense Claims' },
   { code: 'tracking', name: 'Tracking' },
   { code: 'approvals', name: 'Approvals' },
   { code: 'rbac', name: 'Roles & Permissions' },
