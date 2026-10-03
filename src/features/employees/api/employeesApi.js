@@ -46,6 +46,13 @@ export function resetEmployeePassword(employeeId) {
   });
 }
 
+export function emailEmployeeCredentials(employeeId, temporaryPassword) {
+  return apiFetch(`/employees/${employeeId}/email-credentials`, {
+    method: 'POST',
+    body: JSON.stringify({ temporaryPassword }),
+  });
+}
+
 export function updateEmployee(employeeId, employeeData) {
   return apiFetch(`/employees/${employeeId}`, {
     method: 'PATCH',

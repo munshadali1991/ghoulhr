@@ -17,6 +17,10 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import RestoreFromTrashRoundedIcon from '@mui/icons-material/RestoreFromTrashRounded';
+import VpnKeyRoundedIcon from '@mui/icons-material/VpnKeyRounded';
 import { PageCard } from '@/shared/components/ui/PageCard';
 import { CrudButton } from '@/shared/components/ui/CrudButton';
 import { MobileDataCard } from '@/shared/components/data/MobileDataCard';
@@ -28,6 +32,7 @@ import RestoreFromTrashRoundedIcon from '@mui/icons-material/RestoreFromTrashRou
 import VpnKeyRoundedIcon from '@mui/icons-material/VpnKeyRounded';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { formatTenantHostname } from '@/app/config/appConfig';
 import { formatSubscriptionType } from '@/features/super-admin/utils/subscriptionPeriodUtils';
 import { regenerateOrgAdminPassword } from '@/features/super-admin/api/organizationsApi';
 import { OrgAdminCredentialsDialog } from '@/features/super-admin/components/OrgAdminCredentialsDialog';
@@ -51,7 +56,7 @@ function subscriptionChip(org) {
 }
 
 function subdomainLabel(org) {
-  return `${org.subdomain}.ghoulhr.com`;
+  return formatTenantHostname(org.subdomain);
 }
 
 function StatusChip({ status }) {
@@ -94,6 +99,7 @@ export function OrganizationsPage({
   const [regeneratingId, setRegeneratingId] = useState('');
   const [credentials, setCredentials] = useState(null);
   const [credentialsOpen, setCredentialsOpen] = useState(false);
+
   const filteredOrganizations = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) {
@@ -177,11 +183,10 @@ export function OrganizationsPage({
                 >
                   <TextField
                     size="small"
-                    label="Search org"
+                    placeholder="Search organizations"
                     value={search}
                     onChange={onSearchChange}
-                    fullWidth={isMobileLayout}
-                    sx={{ minWidth: { sm: 200 } }}
+                    sx={{ minWidth: { sm: 240 } }}
                   />
                   <CrudButton
                     intent="create"

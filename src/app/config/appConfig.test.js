@@ -40,7 +40,7 @@ describe('getApiBaseUrl', () => {
       pathname: '/',
     });
     expect(getApiBaseUrl()).toBe(
-      'https://ghoulhr.peopleaiq.com/ghoulhrms/api/v1',
+      'https://ghoulhr.peopleaiq.com/api/v1',
     );
   });
 
